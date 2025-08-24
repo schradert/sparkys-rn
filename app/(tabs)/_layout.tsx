@@ -57,6 +57,19 @@ export default function TabLayout() {
 					),
 				}}
 			/>
+			<Tabs.Screen
+				name="inventory"
+				options={{
+					title: "Inventory",
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "apps-sharp" : "apps-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
 		</Tabs>
 	);
 }
