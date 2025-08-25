@@ -1,4 +1,4 @@
-export const PRODUCT_FIELD_OPTIONS = {
+export const DEFAULT_FIELD_OPTIONS = {
 	productType: [
 		"Latex Balloons",
 		"Foil Balloons",
@@ -30,10 +30,32 @@ export const PRODUCT_FIELD_OPTIONS = {
 	texture: ["Matte", "Pearl", "Chrome", "Metallic", "Transparent"],
 } as const;
 
+export let PRODUCT_FIELD_OPTIONS = { ...DEFAULT_FIELD_OPTIONS };
+
+export function updateFieldOptions(
+	newOptions: Partial<typeof PRODUCT_FIELD_OPTIONS>,
+) {
+	PRODUCT_FIELD_OPTIONS = { ...PRODUCT_FIELD_OPTIONS, ...newOptions };
+}
+
 export type FieldOptions = typeof PRODUCT_FIELD_OPTIONS;
 export type Field = keyof FieldOptions;
 export type FieldFilters = {
-	[K in Field]: FieldOptions[K][number][];
+	[K in Field]: string[];
+};
+
+export type ProductSheet = {
+	id: string;
+	name: string;
+	product_type: string;
+	occasion: string;
+	color: string;
+	manufacturer: string;
+	size: string;
+	texture: string;
+	quantity: number;
+	bag_quantity: number;
+	image_url?: string;
 };
 
 export type Product = {
@@ -49,6 +71,38 @@ export type Product = {
 	bagQuantity: number;
 	imageUrl?: string;
 };
+
+export function convertSheetToProduct(sheet: ProductSheet): Product {
+	return {
+		id: sheet.id,
+		name: sheet.name,
+		productType: sheet.product_type,
+		occasion: sheet.occasion,
+		color: sheet.color,
+		manufacturer: sheet.manufacturer,
+		size: sheet.size,
+		texture: sheet.texture,
+		quantity: sheet.quantity,
+		bagQuantity: sheet.bag_quantity,
+		imageUrl: sheet.image_url,
+	};
+}
+
+export function convertProductToSheet(product: Product): ProductSheet {
+	return {
+		id: product.id,
+		name: product.name,
+		product_type: product.productType,
+		occasion: product.occasion,
+		color: product.color,
+		manufacturer: product.manufacturer,
+		size: product.size,
+		texture: product.texture,
+		quantity: product.quantity,
+		bag_quantity: product.bagQuantity,
+		image_url: product.imageUrl,
+	};
+}
 
 export const BALLOON_PRODUCTS: Product[] = [
 	{

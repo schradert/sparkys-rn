@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+	ActivityIndicator,
 	Alert,
 	LayoutAnimation,
 	Modal,
@@ -24,6 +25,7 @@ import {
 	PRODUCT_FIELD_OPTIONS,
 	type Product,
 } from "@/constants/Products";
+import { useSheetsData } from "@/hooks/useSheetsData";
 import { addProduct, getAllProducts, getProductById } from "@/store/products";
 
 type ViewMode =
@@ -268,6 +270,12 @@ function MetadataCard({
 }
 
 export default function Inventory() {
+	const {
+		isLoading: sheetsLoading,
+		error: sheetsError,
+		refresh,
+	} = useSheetsData();
+
 	const defaultFilters: FieldFilters = {
 		productType: [],
 		occasion: [],
@@ -279,12 +287,12 @@ export default function Inventory() {
 	const emptyProduct: Omit<Product, "id"> = {
 		name: "",
 		quantity: 0,
-		productType: PRODUCT_FIELD_OPTIONS.productType[0],
-		occasion: PRODUCT_FIELD_OPTIONS.occasion[0],
-		color: PRODUCT_FIELD_OPTIONS.color[0],
-		manufacturer: PRODUCT_FIELD_OPTIONS.manufacturer[0],
-		size: PRODUCT_FIELD_OPTIONS.size[0],
-		texture: PRODUCT_FIELD_OPTIONS.texture[0],
+		productType: PRODUCT_FIELD_OPTIONS.productType[0] || "",
+		occasion: PRODUCT_FIELD_OPTIONS.occasion[0] || "",
+		color: PRODUCT_FIELD_OPTIONS.color[0] || "",
+		manufacturer: PRODUCT_FIELD_OPTIONS.manufacturer[0] || "",
+		size: PRODUCT_FIELD_OPTIONS.size[0] || "",
+		texture: PRODUCT_FIELD_OPTIONS.texture[0] || "",
 	};
 
 	const [permission, requestPermission] = useCameraPermissions();
@@ -295,10 +303,14 @@ export default function Inventory() {
 	const [isScannerVisible, setIsScannerVisible] = useState(false);
 	const [isViewDropdownVisible, setIsViewDropdownVisible] = useState(false);
 	const [currentView, setCurrentView] = useState<ViewMode>("products");
-	const [products, setProducts] = useState<Product[]>(getAllProducts());
+	const [products, setProductsState] = useState<Product[]>(getAllProducts());
 	const [newProduct, setNewProduct] = useState(emptyProduct);
 	const [scannedBarcode, setScannedBarcode] = useState("");
 	const [newMetadataValue, setNewMetadataValue] = useState("");
+
+	useEffect(() => {
+		setProductsState(getAllProducts());
+	}, [sheetsLoading]);
 
 	function getCurrentData() {
 		switch (currentView) {
@@ -484,7 +496,7 @@ export default function Inventory() {
 		};
 
 		addProduct(productToAdd);
-		setProducts(getAllProducts());
+		setProductsState(getAllProducts());
 		setIsAddModalVisible(false);
 		resetNewProductForm();
 		Alert.alert(
@@ -555,6 +567,22 @@ export default function Inventory() {
 							</Text>
 						</Pressable>
 					))}
+				</View>
+			)}
+
+			{sheetsLoading && (
+				<View style={styles.loadingContainer}>
+					<ActivityIndicator size="small" color="#007bff" />
+					<Text style={styles.loadingText}>Loading data...</Text>
+				</View>
+			)}
+
+			{sheetsError && (
+				<View style={styles.errorContainer}>
+					<Text style={styles.errorText}>{sheetsError}</Text>
+					<Pressable onPress={refresh} style={styles.retryButton}>
+						<Text style={styles.retryButtonText}>Retry</Text>
+					</Pressable>
 				</View>
 			)}
 
@@ -1124,5 +1152,43 @@ const styles = StyleSheet.create({
 	},
 	camera: {
 		flex: 1,
+	},
+	loadingContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		padding: 16,
+		backgroundColor: "#f8f9fa",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e1e5e9",
+	},
+	loadingText: {
+		marginLeft: 8,
+		fontSize: 14,
+		color: "#6c757d",
+	},
+	errorContainer: {
+		padding: 16,
+		backgroundColor: "#f8d7da",
+		borderBottomWidth: 1,
+		borderBottomColor: "#f5c2c7",
+		alignItems: "center",
+	},
+	errorText: {
+		fontSize: 14,
+		color: "#721c24",
+		textAlign: "center",
+		marginBottom: 8,
+	},
+	retryButton: {
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		backgroundColor: "#dc3545",
+		borderRadius: 6,
+	},
+	retryButtonText: {
+		color: "white",
+		fontSize: 14,
+		fontWeight: "600",
 	},
 });
