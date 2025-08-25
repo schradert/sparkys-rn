@@ -234,4 +234,102 @@ export class GoogleSheetsService {
 			throw error;
 		}
 	}
+
+	async appendToSheet(
+		sheetName: string,
+		values: string[][],
+		accessToken: string,
+	): Promise<void> {
+		const endpoint = `values/${encodeURIComponent(sheetName)}:append?valueInputOption=USER_ENTERED`;
+
+		const body = {
+			values: values,
+		};
+
+		const response = await fetch(
+			`${this.baseUrl}/${this.spreadsheetId}/${endpoint}`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
+			},
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Sheets append error:", {
+				status: response.status,
+				statusText: response.statusText,
+				error: errorText,
+			});
+			throw new Error(
+				`Failed to append to sheet: ${response.status} ${response.statusText}`,
+			);
+		}
+
+		console.log(`Successfully appended ${values.length} rows to ${sheetName}`);
+	}
+
+	async getNextId(sheetName: string, accessToken: string): Promise<number> {
+		const values = await this.getSheetData(sheetName, accessToken);
+
+		if (values.length <= 1) return 1;
+
+		const headerRow = values[0];
+		const idColumnIndex = headerRow.findIndex(
+			(header) => header.toLowerCase() === "id",
+		);
+
+		if (idColumnIndex === -1) return 1;
+
+		let maxId = 0;
+		for (let i = 1; i < values.length; i++) {
+			const row = values[i];
+			const id = parseInt(row[idColumnIndex] || "0", 10);
+			if (id > maxId) {
+				maxId = id;
+			}
+		}
+
+		return maxId + 1;
+	}
+
+	async addMetadataItem(
+		sheetName: string,
+		name: string,
+		accessToken: string,
+	): Promise<void> {
+		const nextId = await this.getNextId(sheetName, accessToken);
+		const newRow = [name, nextId.toString()];
+
+		await this.appendToSheet(sheetName, [newRow], accessToken);
+		console.log(
+			`Added metadata item: ${name} with id ${nextId} to ${sheetName}`,
+		);
+	}
+
+	async addProduct(product: ProductSheet, accessToken: string): Promise<void> {
+		const newRow = [
+			product.id,
+			product.name,
+			product.product_type,
+			product.color,
+			product.manufacturer,
+			product.size,
+			product.texture,
+			product.bag_quantity.toString(),
+			product.shape,
+			product.distributor,
+			product.occasion,
+			product.quantity.toString(),
+		];
+
+		await this.appendToSheet("products", [newRow], accessToken);
+		console.log(
+			`Added product: ${product.name} (${product.id}) to products sheet`,
+		);
+	}
 }
