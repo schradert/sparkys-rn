@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -9,6 +10,7 @@ export default function AvatarDropdown() {
 	const { user, signOut } = useAuth();
 	const { theme, toggleTheme } = useTheme();
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+	const colors = Colors[theme];
 
 	const handleSignOut = async () => {
 		console.log("Sign out clicked");
@@ -36,29 +38,47 @@ export default function AvatarDropdown() {
 				{user?.user?.photo ? (
 					<Image source={{ uri: user.user.photo }} style={styles.avatar} />
 				) : (
-					<View style={styles.defaultAvatar}>
-						<Ionicons name="person" size={24} color="#007bff" />
+					<View
+						style={[
+							styles.defaultAvatar,
+							{ backgroundColor: colors.surface, borderColor: colors.border },
+						]}
+					>
+						<Ionicons name="person" size={24} color={colors.primary} />
 					</View>
 				)}
 			</Pressable>
 
 			{isDropdownVisible && (
-				<View style={styles.dropdown}>
-					<View style={styles.triangle} />
+				<View
+					style={[styles.dropdown, { backgroundColor: colors.cardBackground }]}
+				>
+					<View
+						style={[
+							styles.triangle,
+							{ borderBottomColor: colors.cardBackground },
+						]}
+					/>
 					<Pressable style={styles.dropdownItem} onPress={handleThemeToggle}>
 						<Ionicons
 							name={theme === "dark" ? "sunny-outline" : "moon-outline"}
 							size={20}
-							color="#666"
+							color={colors.icon}
 						/>
-						<Text style={styles.themeToggleText}>
+						<Text
+							style={[styles.themeToggleText, { color: colors.textSecondary }]}
+						>
 							{theme === "dark" ? "Light" : "Dark"}
 						</Text>
 					</Pressable>
-					<View style={styles.separator} />
+					<View
+						style={[styles.separator, { backgroundColor: colors.separator }]}
+					/>
 					<Pressable style={styles.dropdownItem} onPress={handleSignOut}>
-						<Ionicons name="log-out-outline" size={20} color="#dc3545" />
-						<Text style={styles.dropdownText}>Sign Out</Text>
+						<Ionicons name="log-out-outline" size={20} color={colors.error} />
+						<Text style={[styles.dropdownText, { color: colors.error }]}>
+							Sign Out
+						</Text>
 					</Pressable>
 				</View>
 			)}

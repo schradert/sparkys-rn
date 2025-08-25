@@ -10,12 +10,16 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "@/constants/Colors";
 import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
 	const { updateMetadata } = useSheetsData();
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 
 	const [viewMode, itemName] = params;
 	const decodedItemName = decodeURIComponent(itemName);
@@ -193,12 +197,26 @@ export default function MetadataDetail() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-			<View style={styles.header}>
-				<Pressable onPress={() => router.back()} style={styles.backButton}>
-					<Ionicons name="arrow-back" size={24} color="#007bff" />
+		<SafeAreaView
+			style={[styles.container, { backgroundColor: colors.background }]}
+			edges={["top", "bottom"]}
+		>
+			<View
+				style={[
+					styles.header,
+					{
+						backgroundColor: colors.cardBackground,
+						borderBottomColor: colors.borderLight,
+					},
+				]}
+			>
+				<Pressable
+					onPress={() => router.back()}
+					style={[styles.backButton, { backgroundColor: colors.surface }]}
+				>
+					<Ionicons name="arrow-back" size={24} color={colors.primary} />
 				</Pressable>
-				<Text style={styles.headerTitle}>
+				<Text style={[styles.headerTitle, { color: colors.text }]}>
 					Edit {categoryTitle.slice(0, -1)}
 				</Text>
 				<Pressable
@@ -216,23 +234,35 @@ export default function MetadataDetail() {
 
 			<View style={styles.content}>
 				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Edit Value</Text>
+					<Text style={[styles.sectionTitle, { color: colors.text }]}>
+						Edit Value
+					</Text>
 
 					<View style={styles.inputGroup}>
-						<Text style={styles.inputLabel}>
+						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
 							{categoryTitle.slice(0, -1)} Name *
 						</Text>
 						<TextInput
-							style={styles.textInput}
+							style={[
+								styles.textInput,
+								{
+									backgroundColor: colors.cardBackground,
+									color: colors.text,
+									borderColor: colors.border,
+								},
+							]}
 							value={editedValue}
 							onChangeText={setEditedValue}
 							placeholder={`Enter ${categoryTitle.slice(0, -1).toLowerCase()} name`}
-							placeholderTextColor="#6c757d"
+							placeholderTextColor={colors.textMuted}
 							autoFocus
 						/>
 					</View>
 
-					<Pressable style={styles.deleteButton} onPress={handleDelete}>
+					<Pressable
+						style={[styles.deleteButton, { backgroundColor: colors.error }]}
+						onPress={handleDelete}
+					>
 						<Ionicons name="trash-outline" size={20} color="white" />
 						<Text style={styles.deleteButtonText}>
 							Delete {categoryTitle.slice(0, -1)}

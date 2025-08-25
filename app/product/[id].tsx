@@ -14,12 +14,14 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "@/constants/Colors";
 import {
 	convertProductToSheet,
 	PRODUCT_FIELD_OPTIONS,
 	type Product,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
+import { useTheme } from "@/hooks/useTheme";
 import { getProductById, updateProduct } from "@/store/products";
 
 if (
@@ -110,6 +112,8 @@ export default function ProductDetail() {
 	const [editedProduct, setEditedProduct] = useState<Product>({ ...product! });
 	const [isSaving, setIsSaving] = useState(false);
 	const { updateProduct: updateProductInSheets } = useSheetsData();
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 
 	if (!product) {
 		return (
@@ -177,12 +181,28 @@ export default function ProductDetail() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-			<View style={styles.header}>
-				<Pressable onPress={() => router.back()} style={styles.backButton}>
-					<Ionicons name="arrow-back" size={24} color="#007bff" />
+		<SafeAreaView
+			style={[styles.container, { backgroundColor: colors.background }]}
+			edges={["top", "bottom"]}
+		>
+			<View
+				style={[
+					styles.header,
+					{
+						backgroundColor: colors.cardBackground,
+						borderBottomColor: colors.borderLight,
+					},
+				]}
+			>
+				<Pressable
+					onPress={() => router.back()}
+					style={[styles.backButton, { backgroundColor: colors.surface }]}
+				>
+					<Ionicons name="arrow-back" size={24} color={colors.primary} />
 				</Pressable>
-				<Text style={styles.headerTitle}>{product.name}</Text>
+				<Text style={[styles.headerTitle, { color: colors.text }]}>
+					{product.name}
+				</Text>
 				<Pressable
 					onPress={handleSave}
 					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -201,21 +221,43 @@ export default function ProductDetail() {
 				showsVerticalScrollIndicator={false}
 			>
 				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Basic Information</Text>
+					<Text style={[styles.sectionTitle, { color: colors.text }]}>
+						Basic Information
+					</Text>
 
 					<View style={styles.inputGroup}>
-						<Text style={styles.inputLabel}>Product ID</Text>
+						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+							Product ID
+						</Text>
 						<TextInput
-							style={[styles.textInput, styles.disabledInput]}
+							style={[
+								styles.textInput,
+								styles.disabledInput,
+								{
+									backgroundColor: colors.surface,
+									color: colors.textMuted,
+									borderColor: colors.border,
+								},
+							]}
 							value={editedProduct.id}
 							editable={false}
 						/>
 					</View>
 
 					<View style={styles.inputGroup}>
-						<Text style={styles.inputLabel}>Product Name</Text>
+						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+							Product Name
+						</Text>
 						<TextInput
-							style={[styles.textInput, styles.disabledInput]}
+							style={[
+								styles.textInput,
+								styles.disabledInput,
+								{
+									backgroundColor: colors.surface,
+									color: colors.textMuted,
+									borderColor: colors.border,
+								},
+							]}
 							value={editedProduct.name}
 							editable={false}
 						/>
@@ -223,7 +265,9 @@ export default function ProductDetail() {
 				</View>
 
 				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Quantity</Text>
+					<Text style={[styles.sectionTitle, { color: colors.text }]}>
+						Quantity
+					</Text>
 
 					<View style={styles.quantityContainer}>
 						<View style={styles.bagQuantityButtons}>

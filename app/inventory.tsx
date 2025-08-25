@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import Pagination from "@/components/Pagination";
+import { Colors } from "@/constants/Colors";
 import {
 	convertProductToSheet,
 	type Field,
@@ -27,6 +28,7 @@ import {
 	type Product,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
+import { useTheme } from "@/hooks/useTheme";
 import { addProduct, getAllProducts, getProductById } from "@/store/products";
 
 type ViewMode =
@@ -223,6 +225,8 @@ function ProductCard({
 	onFilterToggle: (field: Field, value: string) => void;
 }) {
 	const product = item;
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 
 	const getIconForMetadata = (field: string): string => {
 		switch (field) {
@@ -295,13 +299,17 @@ function ProductCard({
 	};
 
 	return (
-		<View style={styles.card}>
+		<View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
 			<Pressable
 				style={styles.cardHeader}
 				onPress={() => router.push(`/product/${product.id}`)}
 			>
-				<Text style={styles.productName}>{product.name}</Text>
-				<Text style={styles.price}>{product.quantity}</Text>
+				<Text style={[styles.productName, { color: colors.text }]}>
+					{product.name}
+				</Text>
+				<Text style={[styles.price, { color: colors.primary }]}>
+					{product.quantity}
+				</Text>
 			</Pressable>
 
 			<View style={styles.metadataGrid}>
@@ -312,19 +320,24 @@ function ProductCard({
 							key={item.field}
 							style={[
 								styles.metadataItem,
-								isSelected && styles.metadataItemSelected,
+								{ backgroundColor: colors.metadataBackground },
+								isSelected && {
+									backgroundColor: colors.selectedBackground,
+									borderColor: colors.primary,
+								},
 							]}
 							onPress={() => handleMetadataPress(item.field, item.value!)}
 						>
 							<Ionicons
 								name={item.icon as any}
 								size={16}
-								color={isSelected ? "#007bff" : "#666"}
+								color={isSelected ? colors.primary : colors.icon}
 							/>
 							<Text
 								style={[
 									styles.metadataValue,
-									isSelected && styles.metadataValueSelected,
+									{ color: colors.textSecondary },
+									isSelected && { color: colors.primary, fontWeight: "600" },
 								]}
 								numberOfLines={1}
 							>
@@ -345,21 +358,26 @@ function MetadataCard({
 	item: string;
 	viewMode: ViewMode;
 }) {
+	const { theme } = useTheme();
+	const colors = Colors[theme];
+
 	return (
 		<Pressable
-			style={styles.card}
+			style={[styles.card, { backgroundColor: colors.cardBackground }]}
 			onPress={() =>
 				router.push(`/metadata/${viewMode}/${encodeURIComponent(item)}`)
 			}
 		>
 			<View style={styles.cardHeader}>
-				<Text style={styles.productName}>{item}</Text>
+				<Text style={[styles.productName, { color: colors.text }]}>{item}</Text>
 			</View>
 		</Pressable>
 	);
 }
 
 export default function Inventory() {
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 	const {
 		isLoading: sheetsLoading,
 		error: sheetsError,
@@ -716,17 +734,30 @@ export default function Inventory() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-			<View style={styles.headerContainer}>
+		<SafeAreaView
+			style={[styles.container, { backgroundColor: colors.background }]}
+			edges={["top", "bottom"]}
+		>
+			<View
+				style={[
+					styles.headerContainer,
+					{
+						backgroundColor: colors.cardBackground,
+						borderBottomColor: colors.borderLight,
+					},
+				]}
+			>
 				<Pressable
 					onPress={() => setIsViewDropdownVisible(!isViewDropdownVisible)}
 					style={styles.titleButton}
 				>
-					<Text style={styles.title}>{currentViewLabel}</Text>
+					<Text style={[styles.title, { color: colors.text }]}>
+						{currentViewLabel}
+					</Text>
 					<Ionicons
 						name={isViewDropdownVisible ? "chevron-up" : "chevron-down"}
 						size={20}
-						color="#1a1a1a"
+						color={colors.text}
 					/>
 				</Pressable>
 				<View style={styles.headerActions}>
@@ -757,20 +788,35 @@ export default function Inventory() {
 			</View>
 
 			{isViewDropdownVisible && (
-				<View style={styles.dropdown}>
+				<View
+					style={[
+						styles.dropdown,
+						{
+							backgroundColor: colors.cardBackground,
+							borderBottomColor: colors.borderLight,
+						},
+					]}
+				>
 					{VIEW_OPTIONS.map((option) => (
 						<Pressable
 							key={option.key}
 							onPress={() => handleViewChange(option.key)}
 							style={[
 								styles.dropdownItem,
-								currentView === option.key && styles.dropdownItemActive,
+								{ borderBottomColor: colors.separator },
+								currentView === option.key && {
+									backgroundColor: colors.surface,
+								},
 							]}
 						>
 							<Text
 								style={[
 									styles.dropdownText,
-									currentView === option.key && styles.dropdownTextActive,
+									{ color: colors.textSecondary },
+									currentView === option.key && {
+										color: colors.primary,
+										fontWeight: "600",
+									},
 								]}
 							>
 								{option.label}
@@ -781,16 +827,33 @@ export default function Inventory() {
 			)}
 
 			{sheetsLoading && (
-				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="small" color="#007bff" />
-					<Text style={styles.loadingText}>Loading data...</Text>
+				<View
+					style={[
+						styles.loadingContainer,
+						{
+							backgroundColor: colors.surface,
+							borderBottomColor: colors.borderLight,
+						},
+					]}
+				>
+					<ActivityIndicator size="small" color={colors.primary} />
+					<Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+						Loading data...
+					</Text>
 				</View>
 			)}
 
 			{sheetsError && (
-				<View style={styles.errorContainer}>
-					<Text style={styles.errorText}>{sheetsError}</Text>
-					<Pressable onPress={refresh} style={styles.retryButton}>
+				<View
+					style={[styles.errorContainer, { backgroundColor: colors.surface }]}
+				>
+					<Text style={[styles.errorText, { color: colors.error }]}>
+						{sheetsError}
+					</Text>
+					<Pressable
+						onPress={refresh}
+						style={[styles.retryButton, { backgroundColor: colors.primary }]}
+					>
 						<Text style={styles.retryButtonText}>Retry</Text>
 					</Pressable>
 				</View>
