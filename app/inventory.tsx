@@ -213,7 +213,15 @@ function CollapsibleRadioSection({
 	);
 }
 
-function ProductCard({ item }: { item: Product }) {
+function ProductCard({
+	item,
+	filters,
+	onFilterToggle,
+}: {
+	item: Product;
+	filters: FieldFilters;
+	onFilterToggle: (field: Field, value: string) => void;
+}) {
 	const product = item;
 
 	const getIconForMetadata = (field: string): string => {
@@ -277,27 +285,56 @@ function ProductCard({ item }: { item: Product }) {
 		},
 	].filter((item) => item.value && item.value.trim() !== "");
 
+	const isMetadataSelected = (field: string, value: string): boolean => {
+		const fieldFilters = filters[field as Field];
+		return fieldFilters ? fieldFilters.includes(value) : false;
+	};
+
+	const handleMetadataPress = (field: string, value: string) => {
+		onFilterToggle(field as Field, value);
+	};
+
 	return (
-		<Pressable
-			style={styles.card}
-			onPress={() => router.push(`/product/${product.id}`)}
-		>
-			<View style={styles.cardHeader}>
+		<View style={styles.card}>
+			<Pressable
+				style={styles.cardHeader}
+				onPress={() => router.push(`/product/${product.id}`)}
+			>
 				<Text style={styles.productName}>{product.name}</Text>
 				<Text style={styles.price}>{product.quantity}</Text>
-			</View>
+			</Pressable>
 
 			<View style={styles.metadataGrid}>
-				{metadataItems.map((item, index) => (
-					<View key={item.field} style={styles.metadataItem}>
-						<Ionicons name={item.icon as any} size={16} color="#666" />
-						<Text style={styles.metadataValue} numberOfLines={1}>
-							{item.value}
-						</Text>
-					</View>
-				))}
+				{metadataItems.map((item, index) => {
+					const isSelected = isMetadataSelected(item.field, item.value!);
+					return (
+						<Pressable
+							key={item.field}
+							style={[
+								styles.metadataItem,
+								isSelected && styles.metadataItemSelected,
+							]}
+							onPress={() => handleMetadataPress(item.field, item.value!)}
+						>
+							<Ionicons
+								name={item.icon as any}
+								size={16}
+								color={isSelected ? "#007bff" : "#666"}
+							/>
+							<Text
+								style={[
+									styles.metadataValue,
+									isSelected && styles.metadataValueSelected,
+								]}
+								numberOfLines={1}
+							>
+								{item.value}
+							</Text>
+						</Pressable>
+					);
+				})}
 			</View>
-		</Pressable>
+		</View>
 	);
 }
 
@@ -435,7 +472,13 @@ export default function Inventory() {
 
 	function getCurrentRenderItem() {
 		return currentView === "products"
-			? ProductCard
+			? ({ item }: { item: Product }) => (
+					<ProductCard
+						item={item}
+						filters={filters}
+						onFilterToggle={handleFilterToggle}
+					/>
+				)
 			: ({ item }: { item: string }) => (
 					<MetadataCard item={item} viewMode={currentView} />
 				);
@@ -460,6 +503,22 @@ export default function Inventory() {
 			...prev,
 			[category]: values,
 		}));
+	}
+
+	function handleFilterToggle(field: Field, value: string): void {
+		setFilters((prev) => {
+			const currentValues = prev[field] || [];
+			const isSelected = currentValues.includes(value);
+
+			const newValues = isSelected
+				? currentValues.filter((v) => v !== value)
+				: [...currentValues, value];
+
+			return {
+				...prev,
+				[field]: newValues,
+			};
+		});
 	}
 
 	function formatCategoryTitle(category: string): string {
@@ -1227,6 +1286,15 @@ const styles = StyleSheet.create({
 		color: "#495057",
 		fontWeight: "500",
 		flex: 1,
+	},
+	metadataItemSelected: {
+		backgroundColor: "#e3f2fd",
+		borderWidth: 1,
+		borderColor: "#007bff",
+	},
+	metadataValueSelected: {
+		color: "#007bff",
+		fontWeight: "600",
 	},
 	formScrollView: {
 		flex: 1,
