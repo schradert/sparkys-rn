@@ -31,7 +31,9 @@ function updateAuthState(newState: Partial<AuthState>) {
 }
 
 GoogleSignin.configure({
-	webClientId: "YOUR_WEB_CLIENT_ID_HERE",
+	// TODO how does this "just know" where the Android app is?!
+	iosClientId:
+		"420632028099-5mcpspf5p2gkdsr0p8hhabglvp1jbkeq.apps.googleusercontent.com",
 	scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
