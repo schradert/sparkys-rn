@@ -11,13 +11,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
+import { useSheetsData } from "@/hooks/useSheetsData";
 
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
+	const { updateMetadata } = useSheetsData();
 
 	const [viewMode, itemName] = params;
 	const decodedItemName = decodeURIComponent(itemName);
 	const [editedValue, setEditedValue] = useState(decodedItemName);
+	const [isSaving, setIsSaving] = useState(false);
 
 	if (!params || params.length < 2) {
 		return (
@@ -68,6 +71,37 @@ export default function MetadataDetail() {
 				return "manufacturer";
 			case "textures":
 				return "texture";
+			case "bagQuantities":
+				return "bagQuantity";
+			case "shapes":
+				return "shape";
+			case "distributors":
+				return "distributor";
+			default:
+				return null;
+		}
+	}
+
+	function getSheetName(viewMode: string): string | null {
+		switch (viewMode) {
+			case "productTypes":
+				return "product_types";
+			case "occasions":
+				return "occasions";
+			case "colors":
+				return "colors";
+			case "sizes":
+				return null; // No sizes sheet, generated from products
+			case "manufacturers":
+				return "brands";
+			case "textures":
+				return "textures";
+			case "bagQuantities":
+				return "bag_quantities";
+			case "shapes":
+				return "shapes";
+			case "distributors":
+				return "distributors";
 			default:
 				return null;
 		}
@@ -84,7 +118,7 @@ export default function MetadataDetail() {
 		);
 	}
 
-	function handleSave() {
+	async function handleSave() {
 		if (!editedValue.trim()) {
 			Alert.alert("Error", "Please enter a value");
 			return;
@@ -105,13 +139,31 @@ export default function MetadataDetail() {
 			return;
 		}
 
-		const index = existingValues.indexOf(decodedItemName);
-		if (index !== -1) {
-			(existingValues as string[])[index] = trimmedValue;
+		const sheetName = getSheetName(viewMode);
+		if (!sheetName) {
+			Alert.alert("Error", "Cannot update this metadata type");
+			return;
 		}
 
-		Alert.alert("Success", `"${trimmedValue}" has been saved!`);
-		router.back();
+		setIsSaving(true);
+		try {
+			const result = await updateMetadata(
+				sheetName,
+				decodedItemName,
+				trimmedValue,
+			);
+
+			if (result.success) {
+				Alert.alert("Success", `"${trimmedValue}" has been saved!`);
+				router.back();
+			} else {
+				Alert.alert("Error", result.error || "Failed to save changes");
+			}
+		} catch (error) {
+			Alert.alert("Error", "Failed to save changes");
+		} finally {
+			setIsSaving(false);
+		}
 	}
 
 	function handleDelete() {
@@ -149,8 +201,16 @@ export default function MetadataDetail() {
 				<Text style={styles.headerTitle}>
 					Edit {categoryTitle.slice(0, -1)}
 				</Text>
-				<Pressable onPress={handleSave} style={styles.saveButton}>
-					<Ionicons name="checkmark" size={24} color="white" />
+				<Pressable
+					onPress={handleSave}
+					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+					disabled={isSaving}
+				>
+					{isSaving ? (
+						<Ionicons name="hourglass-outline" size={24} color="white" />
+					) : (
+						<Ionicons name="checkmark" size={24} color="white" />
+					)}
 				</Pressable>
 			</View>
 
@@ -222,6 +282,9 @@ const styles = StyleSheet.create({
 		backgroundColor: "#007bff",
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	saveButtonDisabled: {
+		backgroundColor: "#6c757d",
 	},
 	content: {
 		flex: 1,

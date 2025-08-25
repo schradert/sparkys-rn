@@ -14,7 +14,12 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PRODUCT_FIELD_OPTIONS, type Product } from "@/constants/Products";
+import {
+	convertProductToSheet,
+	PRODUCT_FIELD_OPTIONS,
+	type Product,
+} from "@/constants/Products";
+import { useSheetsData } from "@/hooks/useSheetsData";
 import { getProductById, updateProduct } from "@/store/products";
 
 if (
@@ -103,6 +108,8 @@ export default function ProductDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const product = getProductById(id as string);
 	const [editedProduct, setEditedProduct] = useState<Product>({ ...product! });
+	const [isSaving, setIsSaving] = useState(false);
+	const { updateProduct: updateProductInSheets } = useSheetsData();
 
 	if (!product) {
 		return (
@@ -131,10 +138,27 @@ export default function ProductDetail() {
 		);
 	}
 
-	function handleSave() {
-		updateProduct(editedProduct.id, editedProduct);
-		Alert.alert("Save", "Product saved successfully!");
-		router.back();
+	async function handleSave() {
+		setIsSaving(true);
+		try {
+			// First update local store
+			updateProduct(editedProduct.id, editedProduct);
+
+			// Then update sheets
+			const productSheet = convertProductToSheet(editedProduct);
+			const result = await updateProductInSheets(productSheet);
+
+			if (result.success) {
+				Alert.alert("Success", "Product saved successfully!");
+				router.back();
+			} else {
+				Alert.alert("Error", result.error || "Failed to save to spreadsheet");
+			}
+		} catch (error) {
+			Alert.alert("Error", "Failed to save product");
+		} finally {
+			setIsSaving(false);
+		}
 	}
 
 	function incrementQuantity(amount: number) {
@@ -159,8 +183,16 @@ export default function ProductDetail() {
 					<Ionicons name="arrow-back" size={24} color="#007bff" />
 				</Pressable>
 				<Text style={styles.headerTitle}>{product.name}</Text>
-				<Pressable onPress={handleSave} style={styles.saveButton}>
-					<Ionicons name="checkmark" size={24} color="white" />
+				<Pressable
+					onPress={handleSave}
+					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+					disabled={isSaving}
+				>
+					{isSaving ? (
+						<Ionicons name="hourglass-outline" size={24} color="white" />
+					) : (
+						<Ionicons name="checkmark" size={24} color="white" />
+					)}
 				</Pressable>
 			</View>
 
@@ -312,6 +344,9 @@ const styles = StyleSheet.create({
 		backgroundColor: "#007bff",
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	saveButtonDisabled: {
+		backgroundColor: "#6c757d",
 	},
 	scrollView: {
 		flex: 1,

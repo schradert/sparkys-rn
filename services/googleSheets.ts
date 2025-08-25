@@ -332,4 +332,131 @@ export class GoogleSheetsService {
 			`Added product: ${product.name} (${product.id}) to products sheet`,
 		);
 	}
+
+	async findRowByValue(
+		sheetName: string,
+		columnName: string,
+		value: string,
+		accessToken: string,
+	): Promise<number | null> {
+		const values = await this.getSheetData(sheetName, accessToken);
+
+		if (values.length === 0) return null;
+
+		const headerRow = values[0];
+		const columnIndex = headerRow.findIndex(
+			(header) => header.toLowerCase() === columnName.toLowerCase(),
+		);
+
+		if (columnIndex === -1) return null;
+
+		for (let i = 1; i < values.length; i++) {
+			if (values[i][columnIndex] === value) {
+				return i + 1; // Return 1-based row number for sheets API
+			}
+		}
+
+		return null;
+	}
+
+	async updateRow(
+		sheetName: string,
+		rowNumber: number,
+		values: string[],
+		accessToken: string,
+	): Promise<void> {
+		const range = `${sheetName}!A${rowNumber}:Z${rowNumber}`;
+		const endpoint = `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+
+		const body = {
+			values: [values],
+		};
+
+		const response = await fetch(
+			`${this.baseUrl}/${this.spreadsheetId}/${endpoint}`,
+			{
+				method: "PUT",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
+			},
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Sheets update error:", {
+				status: response.status,
+				statusText: response.statusText,
+				error: errorText,
+			});
+			throw new Error(
+				`Failed to update sheet: ${response.status} ${response.statusText}`,
+			);
+		}
+
+		console.log(`Successfully updated row ${rowNumber} in ${sheetName}`);
+	}
+
+	async updateMetadataItem(
+		sheetName: string,
+		oldName: string,
+		newName: string,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			sheetName,
+			"name",
+			oldName,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Metadata item "${oldName}" not found in ${sheetName}`);
+		}
+
+		// Get the existing row to preserve the ID
+		const values = await this.getSheetData(sheetName, accessToken);
+		const existingRow = values[rowNumber - 1]; // Convert to 0-based index
+		const id = existingRow[1]; // ID is in second column
+
+		const updatedRow = [newName, id];
+		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
+		console.log(
+			`Updated metadata item from "${oldName}" to "${newName}" in ${sheetName}`,
+		);
+	}
+
+	async updateProduct(
+		product: ProductSheet,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			"products",
+			"unique_id_sku",
+			product.id,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Product with ID "${product.id}" not found`);
+		}
+
+		const updatedRow = [
+			product.id, // Keep existing ID
+			product.name, // Keep existing name (not editable)
+			product.product_type,
+			product.color,
+			product.manufacturer,
+			product.size,
+			product.texture,
+			product.bag_quantity.toString(),
+			product.shape,
+			product.distributor,
+			product.occasion,
+			product.quantity.toString(),
+		];
+
+		await this.updateRow("products", rowNumber, updatedRow, accessToken);
+		console.log(`Updated product: ${product.name} (${product.id})`);
+	}
 }

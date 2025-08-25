@@ -159,6 +159,53 @@ async function addProductToSheet(
 	}
 }
 
+async function updateMetadataInSheet(
+	sheetName: string,
+	oldName: string,
+	newName: string,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.updateMetadataItem(
+			sheetName,
+			oldName,
+			newName,
+			accessToken,
+		);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error updating metadata in sheet:", error);
+		return {
+			success: false,
+			error: error.message || "Failed to update metadata",
+		};
+	}
+}
+
+async function updateProductInSheet(
+	product: ProductSheet,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.updateProduct(product, accessToken);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error updating product in sheet:", error);
+		return {
+			success: false,
+			error: error.message || "Failed to update product",
+		};
+	}
+}
+
 export function useSheetsData() {
 	const [, forceUpdate] = useState({});
 	const { getAccessToken, isSignedIn } = useAuth();
@@ -220,11 +267,42 @@ export function useSheetsData() {
 		return await addProductToSheet(product, accessToken);
 	};
 
+	const updateMetadata = async (
+		sheetName: string,
+		oldName: string,
+		newName: string,
+	) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await updateMetadataInSheet(
+			sheetName,
+			oldName,
+			newName,
+			accessToken,
+		);
+	};
+
+	const updateProduct = async (product: ProductSheet) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await updateProductInSheet(product, accessToken);
+	};
+
 	return {
 		...globalSheetsState,
 		refresh,
 		loadInitialData,
 		addMetadata,
 		addProduct,
+		updateMetadata,
+		updateProduct,
 	};
 }
