@@ -1,6 +1,6 @@
-import { BALLOON_PRODUCTS, type Product } from "@/constants/Products";
+import type { Product } from "@/constants/Products";
 
-let products: Product[] = [...BALLOON_PRODUCTS];
+let products: Product[] = [];
 
 export function getAllProducts(): Product[] {
 	return products;
