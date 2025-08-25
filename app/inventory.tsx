@@ -295,6 +295,7 @@ export default function Inventory() {
 		refresh,
 		addMetadata,
 		addProduct: addProductToSheets,
+		subscribeToMetadataChanges,
 	} = useSheetsData();
 
 	const defaultFilters: FieldFilters = {
@@ -338,6 +339,29 @@ export default function Inventory() {
 	useEffect(() => {
 		setProductsState(getAllProducts());
 	}, [sheetsLoading]);
+
+	// Subscribe to metadata changes to update filters
+	useEffect(() => {
+		const unsubscribe = subscribeToMetadataChanges((change) => {
+			const { fieldKey, oldValue, newValue } = change;
+			setFilters((prevFilters) => {
+				const currentSelectedValues = prevFilters[fieldKey as Field];
+				if (currentSelectedValues && currentSelectedValues.includes(oldValue)) {
+					// Replace old value with new value in the filter
+					const updatedValues = currentSelectedValues.map((value) =>
+						value === oldValue ? newValue : value,
+					);
+					return {
+						...prevFilters,
+						[fieldKey]: updatedValues,
+					};
+				}
+				return prevFilters;
+			});
+		});
+
+		return unsubscribe;
+	}, [subscribeToMetadataChanges]);
 
 	function getCurrentData() {
 		switch (currentView) {
