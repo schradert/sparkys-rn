@@ -3,9 +3,11 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function AvatarDropdown() {
 	const { user, signOut } = useAuth();
+	const { theme, toggleTheme } = useTheme();
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
 	const handleSignOut = async () => {
@@ -18,6 +20,11 @@ export default function AvatarDropdown() {
 		} catch (error) {
 			console.log("Sign out error:", error);
 		}
+	};
+
+	const handleThemeToggle = () => {
+		toggleTheme();
+		setIsDropdownVisible(false);
 	};
 
 	return (
@@ -38,6 +45,17 @@ export default function AvatarDropdown() {
 			{isDropdownVisible && (
 				<View style={styles.dropdown}>
 					<View style={styles.triangle} />
+					<Pressable style={styles.dropdownItem} onPress={handleThemeToggle}>
+						<Ionicons
+							name={theme === "dark" ? "sunny-outline" : "moon-outline"}
+							size={20}
+							color="#666"
+						/>
+						<Text style={styles.themeToggleText}>
+							{theme === "dark" ? "Light" : "Dark"}
+						</Text>
+					</Pressable>
+					<View style={styles.separator} />
 					<Pressable style={styles.dropdownItem} onPress={handleSignOut}>
 						<Ionicons name="log-out-outline" size={20} color="#dc3545" />
 						<Text style={styles.dropdownText}>Sign Out</Text>
@@ -117,5 +135,15 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: "#dc3545",
 		fontWeight: "500",
+	},
+	themeToggleText: {
+		fontSize: 16,
+		color: "#495057",
+		fontWeight: "500",
+	},
+	separator: {
+		height: 1,
+		backgroundColor: "#e1e5e9",
+		marginVertical: 4,
 	},
 });

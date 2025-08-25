@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -12,40 +11,18 @@ export const ThemeContext = createContext({
 	toggleTheme: () => {},
 });
 
-const THEME_STORAGE_KEY = "@app_theme";
-
 export function ThemeProvider({ children }: PropsWithChildren) {
 	const systemColorScheme = useColorScheme();
-	const [theme, setTheme] = useState("light");
+	const [theme, setTheme] = useState(systemColorScheme || "light");
 
-	const loadSavedTheme = async () => {
-		try {
-			const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-			if (savedTheme) {
-				setTheme(savedTheme);
-			} else {
-				// Use system theme as default if no saved theme
-				setTheme(systemColorScheme || "light");
-			}
-		} catch (error) {
-			console.error("Failed to load theme:", error);
-		}
+	const toggleTheme = () => {
+		setTheme(theme === "light" ? "dark" : "light");
 	};
 
-	const toggleTheme = async () => {
-		const newTheme = theme === "light" ? "dark" : "light";
-		setTheme(newTheme);
-		try {
-			await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
-		} catch (error) {
-			console.error("Failed to save theme:", error);
-		}
-	};
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: loadSavedTheme is refreshed every time
+	// Update theme when system theme changes
 	useEffect(() => {
-		loadSavedTheme();
-	}, []);
+		setTheme(systemColorScheme || "light");
+	}, [systemColorScheme]);
 
 	return (
 		<ThemeContext.Provider value={{ theme, toggleTheme }}>
