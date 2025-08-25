@@ -13,7 +13,7 @@
     javascript.bun.enable = true;
     javascript.bun.install.enable = true;
   };
-  packages = with pkgs; [google-cloud-sdk eas-cli];
+  packages = with pkgs; [claude-code google-cloud-sdk eas-cli];
 
   git-hooks.default_stages = [
     "pre-push"

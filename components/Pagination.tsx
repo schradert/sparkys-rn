@@ -1,24 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-interface BasicPaginationProps<T> {
+interface PaginationProps<T> {
 	data: T[];
 	renderItem: ({ item }: { item: T }) => React.ReactElement;
+	keyExtractor: (item: T) => string;
 	emptyText?: string;
 	itemsPerPage?: number;
 	maxVisiblePages?: number;
-	keyExtractor?: (item: T) => string;
 }
 
 export default function Pagination<T>({
 	data,
 	renderItem,
+	keyExtractor,
 	emptyText = "No items",
 	itemsPerPage = 10,
 	maxVisiblePages = 5,
-	keyExtractor = (item: any) => item.id?.toString() || Math.random().toString(),
-}: BasicPaginationProps<T>) {
+}: PaginationProps<T>) {
 	const [currentPage, setCurrentPage] = useState(1);
 
 	const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -55,6 +55,9 @@ export default function Pagination<T>({
 		);
 	}
 
+	// TODO data.length?
+	useEffect(() => setCurrentPage(1), []);
+
 	return (
 		<View style={styles.container}>
 			<FlatList
@@ -84,7 +87,10 @@ export default function Pagination<T>({
 
 				{pageNumbers.map((page, index) =>
 					page === "..." ? (
-						<View key={`ellipsis-${index}`} style={styles.ellipsis}>
+						<View
+							key={`ellipsis-${index < pageNumbers.length / 2 ? "start" : "end"}`}
+							style={styles.ellipsis}
+						>
 							<Text style={styles.ellipsisText}>...</Text>
 						</View>
 					) : (
