@@ -3,10 +3,13 @@
 	"main": "expo-router/entry",
 	"version": "1.0.0",
 	"scripts": {
-		"dev": "APP_VARIANT=development bunx expo start"
+		"dev": "APP_VARIANT=development bunx expo start",
+		"android": "expo run:android",
+		"ios": "expo run:ios"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^14.1.0",
+		"@react-native-google-signin/google-signin": "^15.0.0",
 		"@react-navigation/bottom-tabs": "^7.3.10",
 		"@react-navigation/elements": "^2.3.8",
 		"@react-navigation/native": "^7.1.6",
