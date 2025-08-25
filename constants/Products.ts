@@ -5,14 +5,6 @@ export const DEFAULT_FIELD_OPTIONS = {
 		"Bubble Balloons",
 		"Modeling Balloons",
 	],
-	occasion: [
-		"Birthday",
-		"Wedding",
-		"Baby Shower",
-		"Anniversary",
-		"Graduation",
-		"Holiday",
-	],
 	color: [
 		"Red",
 		"Blue",
@@ -28,6 +20,17 @@ export const DEFAULT_FIELD_OPTIONS = {
 	manufacturer: ["Qualatex", "Anagram", "Betallic", "CTI", "Convergram"],
 	size: ['9"', '11"', '16"', '18"', '36"', '40"'],
 	texture: ["Matte", "Pearl", "Chrome", "Metallic", "Transparent"],
+	bagQuantity: ["50", "100", "20"],
+	shape: ["Round", "Heart", "Star"],
+	distributor: ["Default Distributor"],
+	occasion: [
+		"Birthday",
+		"Wedding",
+		"Baby Shower",
+		"Anniversary",
+		"Graduation",
+		"Holiday",
+	],
 } as const;
 
 export let PRODUCT_FIELD_OPTIONS = { ...DEFAULT_FIELD_OPTIONS };
@@ -55,6 +58,8 @@ export type ProductSheet = {
 	texture: string;
 	quantity: number;
 	bag_quantity: number;
+	shape: string;
+	distributor: string;
 	image_url?: string;
 };
 
@@ -69,6 +74,8 @@ export type Product = {
 	texture: string;
 	quantity: number;
 	bagQuantity: number;
+	shape: string;
+	distributor: string;
 	imageUrl?: string;
 };
 
@@ -84,6 +91,8 @@ export function convertSheetToProduct(sheet: ProductSheet): Product {
 		texture: sheet.texture,
 		quantity: sheet.quantity,
 		bagQuantity: sheet.bag_quantity,
+		shape: sheet.shape,
+		distributor: sheet.distributor,
 		imageUrl: sheet.image_url,
 	};
 }
@@ -100,6 +109,8 @@ export function convertProductToSheet(product: Product): ProductSheet {
 		texture: product.texture,
 		quantity: product.quantity,
 		bag_quantity: product.bagQuantity,
+		shape: product.shape,
+		distributor: product.distributor,
 		image_url: product.imageUrl,
 	};
 }

@@ -74,6 +74,10 @@ export default function MetadataDetail() {
 	}
 
 	function formatCategoryTitle(category: string): string {
+		if (category === "manufacturer") return "Brand";
+		if (category === "bagQuantity") return "Bag Quantity";
+		if (category === "productType") return "Product Type";
+
 		return (
 			category.charAt(0).toUpperCase() +
 			category.slice(1).replace(/([A-Z])/g, " $1")

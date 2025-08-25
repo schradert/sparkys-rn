@@ -170,6 +170,8 @@ export class GoogleSheetsService {
 					texture: row[resolvedColumns.texture] || "",
 					quantity: parseInt(row[resolvedColumns.quantity] || "0", 10),
 					bag_quantity: parseInt(row[resolvedColumns.bag_quantity] || "50", 10),
+					shape: row[resolvedColumns.shape] || "",
+					distributor: row[resolvedColumns.distributor] || "",
 					image_url: undefined,
 				};
 
@@ -195,6 +197,7 @@ export class GoogleSheetsService {
 				shapes,
 				textures,
 				distributors,
+				bagQuantities,
 				products,
 			] = await Promise.all([
 				this.getMetadataValues("product_types", accessToken),
@@ -204,18 +207,25 @@ export class GoogleSheetsService {
 				this.getMetadataValues("shapes", accessToken),
 				this.getMetadataValues("textures", accessToken),
 				this.getMetadataValues("distributors", accessToken),
+				this.getMetadataValues("bag_quantities", accessToken),
 				this.getProductData(accessToken),
 			]);
+
+			const uniqueSizes = [
+				...new Set(products.map((p) => p.size).filter(Boolean)),
+			].sort();
 
 			return {
 				metadata: {
 					productType: productTypes,
-					occasion: occasions,
 					color: colors,
 					manufacturer: brands,
-					size: shapes,
+					size: uniqueSizes,
 					texture: textures,
+					bagQuantity: bagQuantities,
+					shape: shapes,
 					distributor: distributors,
+					occasion: occasions,
 				},
 				products,
 			};
