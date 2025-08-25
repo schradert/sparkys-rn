@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+	Alert,
 	LayoutAnimation,
 	Modal,
 	Platform,
@@ -8,6 +9,7 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	UIManager,
 	View,
 } from "react-native";
@@ -52,6 +54,13 @@ interface CollapsibleFilterSectionProps {
 	options: string[];
 	selectedValues: string[];
 	onSelectionChange: (values: string[]) => void;
+}
+
+interface CollapsibleRadioSectionProps {
+	title: string;
+	options: string[];
+	selectedValue: string;
+	onSelectionChange: (value: string) => void;
 }
 
 function CollapsibleFilterSection({
@@ -115,6 +124,63 @@ function CollapsibleFilterSection({
 	);
 }
 
+function CollapsibleRadioSection({
+	title,
+	options,
+	selectedValue,
+	onSelectionChange,
+}: CollapsibleRadioSectionProps) {
+	const [isExpanded, setIsExpanded] = useState<boolean>(false);
+
+	function toggleExpansion(): void {
+		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+		setIsExpanded(!isExpanded);
+	}
+
+	function handlePillPress(value: string): void {
+		onSelectionChange(value);
+		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+		setIsExpanded(false);
+	}
+
+	const hasSelection = selectedValue !== "";
+
+	return (
+		<View style={styles.filterSection}>
+			<Pressable style={styles.filterHeader} onPress={toggleExpansion}>
+				<Text style={styles.filterHeaderText}>{title}</Text>
+				<View style={styles.headerRight}>
+					{!isExpanded && hasSelection && (
+						<View style={[styles.pill, styles.pillSelected]}>
+							<Text style={[styles.pillText, styles.pillTextSelected]}>
+								{selectedValue}
+							</Text>
+						</View>
+					)}
+					<Ionicons
+						name={isExpanded ? "chevron-down" : "chevron-forward"}
+						size={16}
+						color="#666"
+					/>
+				</View>
+			</Pressable>
+
+			{isExpanded && (
+				<View style={styles.pillContainer}>
+					{options.map((option) => (
+						<PillCheckbox
+							key={option}
+							label={option}
+							selected={selectedValue === option}
+							onPress={() => handlePillPress(option)}
+						/>
+					))}
+				</View>
+			)}
+		</View>
+	);
+}
+
 function ProductCard({ item }: { item: Product }) {
 	const product = item;
 	return (
@@ -155,7 +221,6 @@ function ProductCard({ item }: { item: Product }) {
 }
 
 export default function Inventory() {
-	const products = BALLOON_PRODUCTS;
 	const defaultFilters: FieldFilters = {
 		productType: [],
 		occasion: [],
@@ -164,19 +229,33 @@ export default function Inventory() {
 		size: [],
 		texture: [],
 	};
+	const emptyProduct: Omit<Product, "id"> = {
+		name: "",
+		price: 0,
+		productType: PRODUCT_FIELD_OPTIONS.productType[0],
+		occasion: PRODUCT_FIELD_OPTIONS.occasion[0],
+		color: PRODUCT_FIELD_OPTIONS.color[0],
+		manufacturer: PRODUCT_FIELD_OPTIONS.manufacturer[0],
+		size: PRODUCT_FIELD_OPTIONS.size[0],
+		texture: PRODUCT_FIELD_OPTIONS.texture[0],
+	};
 
 	const [filters, setFilters] = useState<FieldFilters>(defaultFilters);
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+	const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+	const [products, setProducts] = useState<Product[]>(BALLOON_PRODUCTS);
+	const [newProduct, setNewProduct] = useState(emptyProduct);
 
-	const filteredProducts = products.filter((product) => {
-		if (!filters) return true;
+	const filteredProducts =
+		products?.filter((product) => {
+			if (!filters) return true;
 
-		return Object.entries(filters).every(([key, selectedValues]) => {
-			if (!selectedValues || selectedValues.length === 0) return true;
-			const productValue = product[key as Field] as string;
-			return selectedValues.includes(productValue);
-		});
-	});
+			return Object.entries(filters).every(([key, selectedValues]) => {
+				if (!selectedValues || selectedValues.length === 0) return true;
+				const productValue = product[key as Field] as string;
+				return selectedValues.includes(productValue);
+			});
+		}) || [];
 
 	function clearAllFilters(): void {
 		setFilters(defaultFilters);
@@ -201,11 +280,55 @@ export default function Inventory() {
 		0,
 	);
 
+	function resetNewProductForm(): void {
+		setNewProduct(emptyProduct);
+	}
+
+	function handleAddProduct(): void {
+		if (!newProduct.name.trim() || newProduct.price <= 0) {
+			Alert.alert("Error", "Please enter both name and price");
+			return;
+		}
+
+		if (Number.isNaN(newProduct.price) || newProduct.price <= 0) {
+			Alert.alert("Error", "Please enter a valid price");
+			return;
+		}
+
+		// TODO replace with SKU
+		const newId = Math.max(...products.map((p) => p.id)) + 1;
+		const productToAdd: Product = {
+			id: newId,
+			name: newProduct.name.trim(),
+			price: newProduct.price,
+			productType: newProduct.productType,
+			occasion: newProduct.occasion,
+			color: newProduct.color,
+			manufacturer: newProduct.manufacturer,
+			size: newProduct.size,
+			texture: newProduct.texture,
+		};
+
+		setProducts((prev) => [...prev, productToAdd]);
+		setIsAddModalVisible(false);
+		resetNewProductForm();
+		Alert.alert(
+			"Success",
+			`"${productToAdd.name}" has been added to inventory!`,
+		);
+	}
+
 	return (
 		<View style={styles.container}>
 			<View style={styles.headerContainer}>
 				<Text style={styles.title}>Inventory</Text>
 				<View style={styles.headerActions}>
+					<Pressable
+						onPress={() => setIsAddModalVisible(true)}
+						style={styles.addButton}
+					>
+						<Ionicons name="add" size={24} color="white" />
+					</Pressable>
 					{totalSelections > 0 && (
 						<View style={styles.filterBadge}>
 							<Text style={styles.filterBadgeText}>{totalSelections}</Text>
@@ -270,6 +393,93 @@ export default function Inventory() {
 					</ScrollView>
 				</View>
 			</Modal>
+
+			<Modal
+				visible={isAddModalVisible}
+				animationType="slide"
+				presentationStyle="pageSheet"
+				onRequestClose={() => setIsAddModalVisible(false)}
+			>
+				<View style={styles.modalContainer}>
+					<View style={styles.modalHeader}>
+						<Text style={styles.modalTitle}>Add New Product</Text>
+						<View style={styles.modalHeaderActions}>
+							<Pressable onPress={handleAddProduct} style={styles.saveButton}>
+								<Ionicons name="checkmark" size={24} color="white" />
+							</Pressable>
+							<Pressable
+								onPress={() => {
+									setIsAddModalVisible(false);
+									resetNewProductForm();
+								}}
+								style={styles.closeButton}
+							>
+								<Ionicons name="close" size={24} color="#6c757d" />
+							</Pressable>
+						</View>
+					</View>
+
+					<ScrollView
+						style={styles.formScrollView}
+						showsVerticalScrollIndicator={false}
+					>
+						<View style={styles.formSection}>
+							<Text style={styles.sectionTitle}>Basic Information</Text>
+
+							<View style={styles.inputGroup}>
+								<Text style={styles.inputLabel}>Product Name *</Text>
+								<TextInput
+									style={styles.textInput}
+									value={newProduct.name}
+									onChangeText={(text) =>
+										setNewProduct((prev) => ({ ...prev, name: text }))
+									}
+									placeholder="Enter product name"
+									placeholderTextColor="#6c757d"
+								/>
+							</View>
+
+							<View style={styles.inputGroup}>
+								<Text style={styles.inputLabel}>Price *</Text>
+								<TextInput
+									style={styles.textInput}
+									value={
+										newProduct.price === 0 ? "" : newProduct.price.toString()
+									}
+									onChangeText={(text) => {
+										const numValue = text === "" ? 0 : parseFloat(text);
+										setNewProduct((prev) => ({
+											...prev,
+											price: Number.isNaN(numValue) ? 0 : numValue,
+										}));
+									}}
+									placeholder="0.00"
+									placeholderTextColor="#6c757d"
+									keyboardType="decimal-pad"
+								/>
+							</View>
+						</View>
+
+						<View style={styles.formSection}>
+							<Text style={styles.sectionTitle}>Product Details</Text>
+
+							{Object.entries(PRODUCT_FIELD_OPTIONS).map(([field, options]) => (
+								<CollapsibleRadioSection
+									key={field}
+									title={formatCategoryTitle(field)}
+									options={options}
+									selectedValue={
+										newProduct[field as keyof typeof newProduct] as string
+									}
+									onSelectionChange={(value) =>
+										setNewProduct((prev) => ({ ...prev, [field]: value }))
+									}
+								/>
+							))}
+						</View>
+					</ScrollView>
+				</View>
+			</Modal>
 		</View>
 	);
 }
@@ -296,6 +506,15 @@ const styles = StyleSheet.create({
 	},
 	headerActions: {
 		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+	},
+	addButton: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "#007bff",
+		justifyContent: "center",
 		alignItems: "center",
 	},
 	filterButton: {
@@ -360,6 +579,14 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		fontWeight: "600",
 	},
+	saveButton: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		backgroundColor: "#007bff",
+		justifyContent: "center",
+		alignItems: "center",
+	},
 	closeButton: {
 		width: 36,
 		height: 36,
@@ -390,6 +617,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		padding: 16,
 		backgroundColor: "white",
+	},
+	headerRight: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
 	filterHeaderText: {
 		fontSize: 16,
@@ -487,6 +719,63 @@ const styles = StyleSheet.create({
 	detailValue: {
 		fontSize: 13,
 		color: "#495057",
+		fontWeight: "600",
+	},
+	formScrollView: {
+		flex: 1,
+		paddingHorizontal: 16,
+	},
+	formSection: {
+		marginBottom: 24,
+	},
+	sectionTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#1a1a1a",
+		marginBottom: 16,
+	},
+	inputGroup: {
+		marginBottom: 16,
+	},
+	inputLabel: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: "#495057",
+		marginBottom: 8,
+	},
+	textInput: {
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		borderRadius: 8,
+		padding: 12,
+		fontSize: 16,
+		backgroundColor: "white",
+		color: "#495057",
+	},
+	optionScroll: {
+		flexGrow: 0,
+	},
+	optionButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 20,
+		borderWidth: 1.5,
+		borderColor: "#dee2e6",
+		backgroundColor: "white",
+		marginRight: 8,
+		marginBottom: 8,
+	},
+	optionButtonSelected: {
+		backgroundColor: "#007bff",
+		borderColor: "#007bff",
+	},
+	optionButtonText: {
+		color: "#495057",
+		fontSize: 14,
+		fontWeight: "500",
+	},
+	optionButtonTextSelected: {
+		color: "white",
 		fontWeight: "600",
 	},
 });
