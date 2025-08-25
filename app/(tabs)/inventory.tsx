@@ -15,6 +15,7 @@ import {
 	UIManager,
 	View,
 } from "react-native";
+import AvatarDropdown from "@/components/AvatarDropdown";
 import Pagination from "@/components/Pagination";
 import {
 	type Field,
@@ -526,6 +527,7 @@ export default function Inventory() {
 							<Ionicons name="options-outline" size={24} color="#007bff" />
 						</Pressable>
 					)}
+					<AvatarDropdown />
 				</View>
 			</View>
 
