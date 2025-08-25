@@ -7,7 +7,7 @@ export default function RootLayout() {
 		<SafeAreaProvider>
 			<Stack screenOptions={{ headerShown: false }}>
 				<Stack.Screen name="login" />
-				<Stack.Screen name="(tabs)" />
+				<Stack.Screen name="inventory" />
 				<Stack.Screen name="product/[id]" />
 				<Stack.Screen name="metadata/[...params]" />
 			</Stack>

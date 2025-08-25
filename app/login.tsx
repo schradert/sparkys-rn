@@ -20,7 +20,7 @@ export default function Login() {
 		setIsSigningIn(false);
 
 		if (result.success) {
-			router.replace("/(tabs)");
+			router.replace("/inventory");
 		} else {
 			Alert.alert("Sign In Failed", result.error || "Something went wrong");
 		}

@@ -10,7 +10,7 @@ export default function Index() {
 		const timer = setTimeout(() => {
 			if (!isLoading) {
 				if (isSignedIn) {
-					router.replace("/(tabs)");
+					router.replace("/inventory");
 				} else {
 					router.replace("/login");
 				}

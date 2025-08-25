@@ -15,6 +15,7 @@ import {
 	UIManager,
 	View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import Pagination from "@/components/Pagination";
 import {
@@ -493,7 +494,7 @@ export default function Inventory() {
 	}
 
 	return (
-		<View style={styles.container}>
+		<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
 			<View style={styles.headerContainer}>
 				<Pressable
 					onPress={() => setIsViewDropdownVisible(!isViewDropdownVisible)}
@@ -764,7 +765,7 @@ export default function Inventory() {
 					/>
 				</View>
 			</Modal>
-		</View>
+		</SafeAreaView>
 	);
 }
 
