@@ -13,11 +13,8 @@ import {
 	UIManager,
 	View,
 } from "react-native";
-import {
-	BALLOON_PRODUCTS,
-	PRODUCT_FIELD_OPTIONS,
-	type Product,
-} from "@/constants/Products";
+import { PRODUCT_FIELD_OPTIONS, type Product } from "@/constants/Products";
+import { getProductById, updateProduct } from "@/store/products";
 
 if (
 	Platform.OS === "android" &&
@@ -103,9 +100,8 @@ function CollapsibleRadioSection({
 
 export default function ProductDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
-
-	const product = BALLOON_PRODUCTS.find((p) => p.id === id);
-	const [editedProduct, setEditedProduct] = useState<Product>(product);
+	const product = getProductById(id as string);
+	const [editedProduct, setEditedProduct] = useState<Product>({ ...product! });
 
 	if (!product) {
 		return (
@@ -131,6 +127,7 @@ export default function ProductDetail() {
 	}
 
 	function handleSave() {
+		updateProduct(editedProduct.id, editedProduct);
 		Alert.alert("Save", "Product saved successfully!");
 		router.back();
 	}

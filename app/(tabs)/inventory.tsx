@@ -17,12 +17,12 @@ import {
 } from "react-native";
 import Pagination from "@/components/Pagination";
 import {
-	BALLOON_PRODUCTS,
 	type Field,
 	type FieldFilters,
 	PRODUCT_FIELD_OPTIONS,
 	type Product,
 } from "@/constants/Products";
+import { addProduct, getAllProducts, getProductById } from "@/store/products";
 
 type ViewMode =
 	| "products"
@@ -293,7 +293,7 @@ export default function Inventory() {
 	const [isScannerVisible, setIsScannerVisible] = useState(false);
 	const [isViewDropdownVisible, setIsViewDropdownVisible] = useState(false);
 	const [currentView, setCurrentView] = useState<ViewMode>("products");
-	const [products, setProducts] = useState<Product[]>(BALLOON_PRODUCTS);
+	const [products, setProducts] = useState<Product[]>(getAllProducts());
 	const [newProduct, setNewProduct] = useState(emptyProduct);
 	const [scannedBarcode, setScannedBarcode] = useState("");
 	const [newMetadataValue, setNewMetadataValue] = useState("");
@@ -414,7 +414,13 @@ export default function Inventory() {
 	function handleBarcodeScanned(data: string): void {
 		setScannedBarcode(data);
 		setIsScannerVisible(false);
-		setIsAddModalVisible(true);
+
+		const existingProduct = getProductById(data);
+		if (existingProduct) {
+			router.push(`/product/${data}`);
+		} else {
+			setIsAddModalVisible(true);
+		}
 	}
 
 	function handleAddButtonPress(): void {
@@ -457,11 +463,6 @@ export default function Inventory() {
 			return;
 		}
 
-		if (products.find((p) => p.id === scannedBarcode)) {
-			Alert.alert("Error", "A product with this barcode already exists");
-			return;
-		}
-
 		if (Number.isNaN(newProduct.quantity) || newProduct.quantity <= 0) {
 			Alert.alert("Error", "Please enter a valid quantity");
 			return;
@@ -471,6 +472,7 @@ export default function Inventory() {
 			id: scannedBarcode,
 			name: newProduct.name.trim(),
 			quantity: newProduct.quantity,
+			bagQuantity: 50,
 			productType: newProduct.productType,
 			occasion: newProduct.occasion,
 			color: newProduct.color,
@@ -479,7 +481,8 @@ export default function Inventory() {
 			texture: newProduct.texture,
 		};
 
-		setProducts((prev) => [...prev, productToAdd]);
+		addProduct(productToAdd);
+		setProducts(getAllProducts());
 		setIsAddModalVisible(false);
 		resetNewProductForm();
 		Alert.alert(
