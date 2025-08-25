@@ -23,6 +23,25 @@ import {
 	type Product,
 } from "@/constants/Products";
 
+type ViewMode =
+	| "products"
+	| "productTypes"
+	| "occasions"
+	| "colors"
+	| "sizes"
+	| "manufacturers"
+	| "textures";
+
+const VIEW_OPTIONS = [
+	{ key: "products" as ViewMode, label: "Products" },
+	{ key: "productTypes" as ViewMode, label: "Product Types" },
+	{ key: "occasions" as ViewMode, label: "Occasions" },
+	{ key: "colors" as ViewMode, label: "Colors" },
+	{ key: "sizes" as ViewMode, label: "Sizes" },
+	{ key: "manufacturers" as ViewMode, label: "Manufacturers" },
+	{ key: "textures" as ViewMode, label: "Textures" },
+];
+
 // Enable LayoutAnimation on Android
 if (
 	Platform.OS === "android" &&
@@ -221,6 +240,16 @@ function ProductCard({ item }: { item: Product }) {
 	);
 }
 
+function MetadataCard({ item }: { item: string }) {
+	return (
+		<View style={styles.card}>
+			<View style={styles.cardHeader}>
+				<Text style={styles.productName}>{item}</Text>
+			</View>
+		</View>
+	);
+}
+
 export default function Inventory() {
 	const defaultFilters: FieldFilters = {
 		productType: [],
@@ -247,20 +276,58 @@ export default function Inventory() {
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 	const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 	const [isScannerVisible, setIsScannerVisible] = useState(false);
+	const [isViewDropdownVisible, setIsViewDropdownVisible] = useState(false);
+	const [currentView, setCurrentView] = useState<ViewMode>("products");
 	const [products, setProducts] = useState<Product[]>(BALLOON_PRODUCTS);
 	const [newProduct, setNewProduct] = useState(emptyProduct);
 	const [scannedBarcode, setScannedBarcode] = useState("");
+	const [newMetadataValue, setNewMetadataValue] = useState("");
 
-	const filteredProducts =
-		products?.filter((product) => {
-			if (!filters) return true;
+	function getCurrentData() {
+		switch (currentView) {
+			case "products":
+				return (
+					products?.filter((product) => {
+						if (!filters) return true;
+						return Object.entries(filters).every(([key, selectedValues]) => {
+							if (!selectedValues || selectedValues.length === 0) return true;
+							const productValue = product[key as Field] as string;
+							return selectedValues.includes(productValue);
+						});
+					}) || []
+				);
+			case "productTypes":
+				return PRODUCT_FIELD_OPTIONS.productType;
+			case "occasions":
+				return PRODUCT_FIELD_OPTIONS.occasion;
+			case "colors":
+				return PRODUCT_FIELD_OPTIONS.color;
+			case "sizes":
+				return PRODUCT_FIELD_OPTIONS.size;
+			case "manufacturers":
+				return PRODUCT_FIELD_OPTIONS.manufacturer;
+			case "textures":
+				return PRODUCT_FIELD_OPTIONS.texture;
+			default:
+				return [];
+		}
+	}
 
-			return Object.entries(filters).every(([key, selectedValues]) => {
-				if (!selectedValues || selectedValues.length === 0) return true;
-				const productValue = product[key as Field] as string;
-				return selectedValues.includes(productValue);
-			});
-		}) || [];
+	function getCurrentRenderItem() {
+		return currentView === "products"
+			? ProductCard
+			: ({ item }: { item: string }) => <MetadataCard item={item} />;
+	}
+
+	function getCurrentKeyExtractor() {
+		return currentView === "products"
+			? (item: Product) => item.id
+			: (item: string) => item;
+	}
+
+	const currentData = getCurrentData();
+	const currentRenderItem = getCurrentRenderItem();
+	const currentKeyExtractor = getCurrentKeyExtractor();
 
 	function clearAllFilters(): void {
 		setFilters(defaultFilters);
@@ -288,6 +355,43 @@ export default function Inventory() {
 	function resetNewProductForm(): void {
 		setNewProduct(emptyProduct);
 		setScannedBarcode("");
+		setNewMetadataValue("");
+	}
+
+	function handleAddMetadata(): void {
+		if (!newMetadataValue.trim()) {
+			Alert.alert("Error", "Please enter a value");
+			return;
+		}
+
+		const trimmedValue = newMetadataValue.trim();
+		const fieldKey =
+			currentView === "productTypes"
+				? "productType"
+				: currentView === "occasions"
+					? "occasion"
+					: currentView === "colors"
+						? "color"
+						: currentView === "sizes"
+							? "size"
+							: currentView === "manufacturers"
+								? "manufacturer"
+								: currentView === "textures"
+									? "texture"
+									: null;
+
+		if (!fieldKey) return;
+
+		const existingValues = PRODUCT_FIELD_OPTIONS[fieldKey];
+		if (existingValues.includes(trimmedValue)) {
+			Alert.alert("Error", "This value already exists");
+			return;
+		}
+
+		PRODUCT_FIELD_OPTIONS[fieldKey].push(trimmedValue);
+		setIsAddModalVisible(false);
+		resetNewProductForm();
+		Alert.alert("Success", `"${trimmedValue}" has been added!`);
 	}
 
 	function handleBarcodeScanned(data: string): void {
@@ -296,21 +400,34 @@ export default function Inventory() {
 		setIsAddModalVisible(true);
 	}
 
-	function handleOpenScanner(): void {
-		if (!permission) {
-			requestPermission();
-			return;
+	function handleAddButtonPress(): void {
+		if (currentView === "products") {
+			if (!permission) {
+				requestPermission();
+				return;
+			}
+			if (!permission.granted) {
+				Alert.alert(
+					"Camera Permission",
+					"We need camera permission to scan barcodes",
+					[{ text: "Cancel" }, { text: "Grant", onPress: requestPermission }],
+				);
+				return;
+			}
+			setIsScannerVisible(true);
+		} else {
+			setIsAddModalVisible(true);
 		}
-		if (!permission.granted) {
-			Alert.alert(
-				"Camera Permission",
-				"We need camera permission to scan barcodes",
-				[{ text: "Cancel" }, { text: "Grant", onPress: requestPermission }],
-			);
-			return;
-		}
-		setIsScannerVisible(true);
 	}
+
+	function handleViewChange(viewMode: ViewMode): void {
+		setCurrentView(viewMode);
+		setIsViewDropdownVisible(false);
+	}
+
+	const currentViewLabel =
+		VIEW_OPTIONS.find((option) => option.key === currentView)?.label ||
+		"Products";
 
 	function handleAddProduct(): void {
 		if (!newProduct.name.trim() || newProduct.quantity <= 0) {
@@ -357,29 +474,69 @@ export default function Inventory() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.headerContainer}>
-				<Text style={styles.title}>Inventory</Text>
+				<Pressable
+					onPress={() => setIsViewDropdownVisible(!isViewDropdownVisible)}
+					style={styles.titleButton}
+				>
+					<Text style={styles.title}>{currentViewLabel}</Text>
+					<Ionicons
+						name={isViewDropdownVisible ? "chevron-up" : "chevron-down"}
+						size={20}
+						color="#1a1a1a"
+					/>
+				</Pressable>
 				<View style={styles.headerActions}>
-					<Pressable onPress={handleOpenScanner} style={styles.addButton}>
-						<Ionicons name="barcode-outline" size={24} color="white" />
+					<Pressable onPress={handleAddButtonPress} style={styles.addButton}>
+						<Ionicons
+							name={currentView === "products" ? "barcode-outline" : "add"}
+							size={24}
+							color="white"
+						/>
 					</Pressable>
-					{totalSelections > 0 && (
+					{currentView === "products" && totalSelections > 0 && (
 						<View style={styles.filterBadge}>
 							<Text style={styles.filterBadgeText}>{totalSelections}</Text>
 						</View>
 					)}
-					<Pressable
-						onPress={() => setIsFilterModalVisible(true)}
-						style={styles.filterButton}
-					>
-						<Ionicons name="options-outline" size={24} color="#007bff" />
-					</Pressable>
+					{currentView === "products" && (
+						<Pressable
+							onPress={() => setIsFilterModalVisible(true)}
+							style={styles.filterButton}
+						>
+							<Ionicons name="options-outline" size={24} color="#007bff" />
+						</Pressable>
+					)}
 				</View>
 			</View>
 
+			{isViewDropdownVisible && (
+				<View style={styles.dropdown}>
+					{VIEW_OPTIONS.map((option) => (
+						<Pressable
+							key={option.key}
+							onPress={() => handleViewChange(option.key)}
+							style={[
+								styles.dropdownItem,
+								currentView === option.key && styles.dropdownItemActive,
+							]}
+						>
+							<Text
+								style={[
+									styles.dropdownText,
+									currentView === option.key && styles.dropdownTextActive,
+								]}
+							>
+								{option.label}
+							</Text>
+						</Pressable>
+					))}
+				</View>
+			)}
+
 			<Pagination
-				data={filteredProducts}
-				renderItem={ProductCard}
-				keyExtractor={(item) => item.id}
+				data={currentData}
+				renderItem={currentRenderItem as any}
+				keyExtractor={currentKeyExtractor as any}
 			/>
 
 			<Modal
@@ -435,9 +592,20 @@ export default function Inventory() {
 			>
 				<View style={styles.modalContainer}>
 					<View style={styles.modalHeader}>
-						<Text style={styles.modalTitle}>Add New Product</Text>
+						<Text style={styles.modalTitle}>
+							{currentView === "products"
+								? "Add New Product"
+								: `Add New ${currentViewLabel.slice(0, -1)}`}
+						</Text>
 						<View style={styles.modalHeaderActions}>
-							<Pressable onPress={handleAddProduct} style={styles.saveButton}>
+							<Pressable
+								onPress={
+									currentView === "products"
+										? handleAddProduct
+										: handleAddMetadata
+								}
+								style={styles.saveButton}
+							>
 								<Ionicons name="checkmark" size={24} color="white" />
 							</Pressable>
 							<Pressable
@@ -456,73 +624,97 @@ export default function Inventory() {
 						style={styles.formScrollView}
 						showsVerticalScrollIndicator={false}
 					>
-						<View style={styles.formSection}>
-							<Text style={styles.sectionTitle}>Basic Information</Text>
+						{currentView === "products" ? (
+							<>
+								<View style={styles.formSection}>
+									<Text style={styles.sectionTitle}>Basic Information</Text>
 
-							<View style={styles.inputGroup}>
-								<Text style={styles.inputLabel}>Barcode *</Text>
-								<TextInput
-									style={[styles.textInput, styles.disabledInput]}
-									value={scannedBarcode}
-									placeholder="Scan a barcode to populate"
-									placeholderTextColor="#6c757d"
-									editable={false}
-								/>
+									<View style={styles.inputGroup}>
+										<Text style={styles.inputLabel}>Barcode *</Text>
+										<TextInput
+											style={[styles.textInput, styles.disabledInput]}
+											value={scannedBarcode}
+											placeholder="Scan a barcode to populate"
+											placeholderTextColor="#6c757d"
+											editable={false}
+										/>
+									</View>
+
+									<View style={styles.inputGroup}>
+										<Text style={styles.inputLabel}>Product Name *</Text>
+										<TextInput
+											style={styles.textInput}
+											value={newProduct.name}
+											onChangeText={(text) =>
+												setNewProduct((prev) => ({ ...prev, name: text }))
+											}
+											placeholder="Enter product name"
+											placeholderTextColor="#6c757d"
+										/>
+									</View>
+
+									<View style={styles.inputGroup}>
+										<Text style={styles.inputLabel}>Quantity *</Text>
+										<TextInput
+											style={styles.textInput}
+											value={
+												newProduct.quantity === 0
+													? ""
+													: newProduct.quantity.toString()
+											}
+											onChangeText={(text) => {
+												const numValue = text === "" ? 0 : parseInt(text, 10);
+												setNewProduct((prev) => ({
+													...prev,
+													quantity: Number.isNaN(numValue) ? 0 : numValue,
+												}));
+											}}
+											placeholder="0"
+											placeholderTextColor="#6c757d"
+											keyboardType="number-pad"
+										/>
+									</View>
+								</View>
+
+								<View style={styles.formSection}>
+									<Text style={styles.sectionTitle}>Product Details</Text>
+
+									{Object.entries(PRODUCT_FIELD_OPTIONS).map(
+										([field, options]) => (
+											<CollapsibleRadioSection
+												key={field}
+												title={formatCategoryTitle(field)}
+												options={options}
+												selectedValue={
+													newProduct[field as keyof typeof newProduct] as string
+												}
+												onSelectionChange={(value) =>
+													setNewProduct((prev) => ({ ...prev, [field]: value }))
+												}
+											/>
+										),
+									)}
+								</View>
+							</>
+						) : (
+							<View style={styles.formSection}>
+								<Text style={styles.sectionTitle}>Add New Value</Text>
+
+								<View style={styles.inputGroup}>
+									<Text style={styles.inputLabel}>
+										{currentViewLabel.slice(0, -1)} Name *
+									</Text>
+									<TextInput
+										style={styles.textInput}
+										value={newMetadataValue}
+										onChangeText={setNewMetadataValue}
+										placeholder={`Enter ${currentViewLabel.slice(0, -1).toLowerCase()} name`}
+										placeholderTextColor="#6c757d"
+										autoFocus
+									/>
+								</View>
 							</View>
-
-							<View style={styles.inputGroup}>
-								<Text style={styles.inputLabel}>Product Name *</Text>
-								<TextInput
-									style={styles.textInput}
-									value={newProduct.name}
-									onChangeText={(text) =>
-										setNewProduct((prev) => ({ ...prev, name: text }))
-									}
-									placeholder="Enter product name"
-									placeholderTextColor="#6c757d"
-								/>
-							</View>
-
-							<View style={styles.inputGroup}>
-								<Text style={styles.inputLabel}>Quantity *</Text>
-								<TextInput
-									style={styles.textInput}
-									value={
-										newProduct.quantity === 0
-											? ""
-											: newProduct.quantity.toString()
-									}
-									onChangeText={(text) => {
-										const numValue = text === "" ? 0 : parseInt(text, 10);
-										setNewProduct((prev) => ({
-											...prev,
-											quantity: Number.isNaN(numValue) ? 0 : numValue,
-										}));
-									}}
-									placeholder="0"
-									placeholderTextColor="#6c757d"
-									keyboardType="number-pad"
-								/>
-							</View>
-						</View>
-
-						<View style={styles.formSection}>
-							<Text style={styles.sectionTitle}>Product Details</Text>
-
-							{Object.entries(PRODUCT_FIELD_OPTIONS).map(([field, options]) => (
-								<CollapsibleRadioSection
-									key={field}
-									title={formatCategoryTitle(field)}
-									options={options}
-									selectedValue={
-										newProduct[field as keyof typeof newProduct] as string
-									}
-									onSelectionChange={(value) =>
-										setNewProduct((prev) => ({ ...prev, [field]: value }))
-									}
-								/>
-							))}
-						</View>
+						)}
 					</ScrollView>
 				</View>
 			</Modal>
@@ -569,10 +761,42 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: "#e1e5e9",
 	},
+	titleButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
 	title: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "#1a1a1a",
+	},
+	dropdown: {
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e1e5e9",
+		elevation: 2,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+	},
+	dropdownItem: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: "#f1f3f4",
+	},
+	dropdownItemActive: {
+		backgroundColor: "#f8f9fa",
+	},
+	dropdownText: {
+		fontSize: 16,
+		color: "#495057",
+	},
+	dropdownTextActive: {
+		color: "#007bff",
+		fontWeight: "600",
 	},
 	headerActions: {
 		flexDirection: "row",
