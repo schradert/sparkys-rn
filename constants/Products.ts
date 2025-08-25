@@ -45,7 +45,7 @@ export type Product = {
 	manufacturer: string;
 	size: string;
 	texture: string;
-	price: number;
+	quantity: number;
 	imageUrl?: string;
 };
 
@@ -59,7 +59,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '11"',
 		texture: "Matte",
-		price: 2.99,
+		quantity: 18,
 	},
 	{
 		id: "8901234567891",
@@ -70,7 +70,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '40"',
 		texture: "Metallic",
-		price: 12.99,
+		quantity: 71,
 	},
 	{
 		id: "8901234567892",
@@ -81,7 +81,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '36"',
 		texture: "Pearl",
-		price: 8.99,
+		quantity: 82,
 	},
 	{
 		id: "8901234567893",
@@ -92,7 +92,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '18"',
 		texture: "Matte",
-		price: 6.99,
+		quantity: 26,
 	},
 	{
 		id: "8901234567894",
@@ -103,7 +103,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '16"',
 		texture: "Chrome",
-		price: 4.99,
+		quantity: 33,
 	},
 	{
 		id: "8901234500006",
@@ -114,7 +114,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '18"',
 		texture: "Metallic",
-		price: 7.99,
+		quantity: 54,
 	},
 	{
 		id: "8901234500007",
@@ -125,7 +125,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '9"',
 		texture: "Matte",
-		price: 3.99,
+		quantity: 34,
 	},
 	{
 		id: "8901234500008",
@@ -136,7 +136,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '18"',
 		texture: "Transparent",
-		price: 15.99,
+		quantity: 11,
 	},
 	{
 		id: "8901234500009",
@@ -147,7 +147,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '16"',
 		texture: "Matte",
-		price: 5.99,
+		quantity: 66,
 	},
 	{
 		id: "8901234500010",
@@ -158,7 +158,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '11"',
 		texture: "Pearl",
-		price: 3.49,
+		quantity: 68,
 	},
 	{
 		id: "8901234500011",
@@ -169,7 +169,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '36"',
 		texture: "Chrome",
-		price: 11.99,
+		quantity: 100,
 	},
 	{
 		id: "8901234500012",
@@ -180,7 +180,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '16"',
 		texture: "Pearl",
-		price: 4.25,
+		quantity: 40,
 	},
 	{
 		id: "8901234500013",
@@ -191,7 +191,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '9"',
 		texture: "Matte",
-		price: 6.99,
+		quantity: 90,
 	},
 	{
 		id: "8901234500014",
@@ -202,7 +202,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '18"',
 		texture: "Metallic",
-		price: 9.99,
+		quantity: 59,
 	},
 	{
 		id: "8901234500015",
@@ -213,7 +213,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '11"',
 		texture: "Pearl",
-		price: 2.75,
+		quantity: 40,
 	},
 	{
 		id: "8901234500016",
@@ -224,7 +224,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '18"',
 		texture: "Matte",
-		price: 8.25,
+		quantity: 27,
 	},
 	{
 		id: "8901234500017",
@@ -235,7 +235,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '16"',
 		texture: "Pearl",
-		price: 5.5,
+		quantity: 33,
 	},
 	{
 		id: "8901234500018",
@@ -246,7 +246,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '40"',
 		texture: "Chrome",
-		price: 14.99,
+		quantity: 50,
 	},
 	{
 		id: "8901234500019",
@@ -257,7 +257,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '9"',
 		texture: "Matte",
-		price: 4.5,
+		quantity: 88,
 	},
 	{
 		id: "8901234500020",
@@ -268,7 +268,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '11"',
 		texture: "Chrome",
-		price: 3.99,
+		quantity: 18,
 	},
 	{
 		id: "8901234500021",
@@ -279,7 +279,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '18"',
 		texture: "Metallic",
-		price: 7.75,
+		quantity: 80,
 	},
 	{
 		id: "8901234500022",
@@ -290,7 +290,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '16"',
 		texture: "Matte",
-		price: 4.99,
+		quantity: 53,
 	},
 	{
 		id: "8901234500023",
@@ -301,7 +301,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '36"',
 		texture: "Chrome",
-		price: 13.5,
+		quantity: 82,
 	},
 	{
 		id: "8901234500024",
@@ -312,7 +312,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '9"',
 		texture: "Matte",
-		price: 5.25,
+		quantity: 69,
 	},
 	{
 		id: "8901234500025",
@@ -323,7 +323,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '18"',
 		texture: "Transparent",
-		price: 18.99,
+		quantity: 20,
 	},
 	{
 		id: "8901234500026",
@@ -334,7 +334,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '16"',
 		texture: "Matte",
-		price: 6.5,
+		quantity: 72,
 	},
 	{
 		id: "8901234500027",
@@ -345,7 +345,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '11"',
 		texture: "Pearl",
-		price: 3.75,
+		quantity: 64,
 	},
 	{
 		id: "8901234500028",
@@ -356,7 +356,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '16"',
 		texture: "Chrome",
-		price: 4.25,
+		quantity: 56,
 	},
 	{
 		id: "8901234500029",
@@ -367,7 +367,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '11"',
 		texture: "Matte",
-		price: 2.99,
+		quantity: 71,
 	},
 	{
 		id: "8901234500030",
@@ -378,7 +378,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '18"',
 		texture: "Metallic",
-		price: 8.99,
+		quantity: 52,
 	},
 	{
 		id: "8901234500031",
@@ -389,7 +389,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '9"',
 		texture: "Matte",
-		price: 4.75,
+		quantity: 59,
 	},
 	{
 		id: "8901234500032",
@@ -400,7 +400,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '36"',
 		texture: "Pearl",
-		price: 10.5,
+		quantity: 8,
 	},
 	{
 		id: "8901234500033",
@@ -411,7 +411,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '16"',
 		texture: "Matte",
-		price: 5.99,
+		quantity: 64,
 	},
 	{
 		id: "8901234500034",
@@ -422,7 +422,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '40"',
 		texture: "Chrome",
-		price: 16.99,
+		quantity: 10,
 	},
 	{
 		id: "8901234500035",
@@ -433,7 +433,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '11"',
 		texture: "Pearl",
-		price: 3.25,
+		quantity: 35,
 	},
 	{
 		id: "8901234500036",
@@ -444,7 +444,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '18"',
 		texture: "Metallic",
-		price: 7.5,
+		quantity: 16,
 	},
 	{
 		id: "8901234500037",
@@ -455,7 +455,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '9"',
 		texture: "Matte",
-		price: 5.5,
+		quantity: 87,
 	},
 	{
 		id: "8901234500038",
@@ -466,7 +466,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '16"',
 		texture: "Matte",
-		price: 4.5,
+		quantity: 82,
 	},
 	{
 		id: "8901234500039",
@@ -477,7 +477,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '11"',
 		texture: "Chrome",
-		price: 3.99,
+		quantity: 9,
 	},
 	{
 		id: "8901234500040",
@@ -488,7 +488,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '18"',
 		texture: "Pearl",
-		price: 8.25,
+		quantity: 19,
 	},
 	{
 		id: "8901234500041",
@@ -499,7 +499,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '16"',
 		texture: "Pearl",
-		price: 4.75,
+		quantity: 72,
 	},
 	{
 		id: "8901234500042",
@@ -510,7 +510,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '18"',
 		texture: "Transparent",
-		price: 22.99,
+		quantity: 35,
 	},
 	{
 		id: "8901234500043",
@@ -521,7 +521,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '18"',
 		texture: "Matte",
-		price: 6.99,
+		quantity: 47,
 	},
 	{
 		id: "8901234500044",
@@ -532,7 +532,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '9"',
 		texture: "Matte",
-		price: 4.99,
+		quantity: 68,
 	},
 	{
 		id: "8901234500045",
@@ -543,7 +543,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '11"',
 		texture: "Metallic",
-		price: 3.5,
+		quantity: 24,
 	},
 	{
 		id: "8901234500046",
@@ -554,7 +554,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Qualatex",
 		size: '16"',
 		texture: "Chrome",
-		price: 7.25,
+		quantity: 30,
 	},
 	{
 		id: "8901234500047",
@@ -565,7 +565,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Betallic",
 		size: '9"',
 		texture: "Matte",
-		price: 6.25,
+		quantity: 23,
 	},
 	{
 		id: "8901234500048",
@@ -576,7 +576,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Convergram",
 		size: '18"',
 		texture: "Transparent",
-		price: 19.99,
+		quantity: 11,
 	},
 	{
 		id: "8901234500049",
@@ -587,7 +587,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "Anagram",
 		size: '16"',
 		texture: "Pearl",
-		price: 4.99,
+		quantity: 10,
 	},
 	{
 		id: "8901234500050",
@@ -598,6 +598,6 @@ export const BALLOON_PRODUCTS: Product[] = [
 		manufacturer: "CTI",
 		size: '36"',
 		texture: "Matte",
-		price: 12.75,
+		quantity: 41,
 	},
 ];

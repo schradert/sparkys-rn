@@ -188,7 +188,7 @@ function ProductCard({ item }: { item: Product }) {
 		<View style={styles.card}>
 			<View style={styles.cardHeader}>
 				<Text style={styles.productName}>{product.name}</Text>
-				<Text style={styles.price}>${product.price}</Text>
+				<Text style={styles.price}>{product.quantity}</Text>
 			</View>
 
 			<View style={styles.details}>
@@ -232,7 +232,7 @@ export default function Inventory() {
 	};
 	const emptyProduct: Omit<Product, "id"> = {
 		name: "",
-		price: 0,
+		quantity: 0,
 		productType: PRODUCT_FIELD_OPTIONS.productType[0],
 		occasion: PRODUCT_FIELD_OPTIONS.occasion[0],
 		color: PRODUCT_FIELD_OPTIONS.color[0],
@@ -313,8 +313,8 @@ export default function Inventory() {
 	}
 
 	function handleAddProduct(): void {
-		if (!newProduct.name.trim() || newProduct.price <= 0) {
-			Alert.alert("Error", "Please enter both name and price");
+		if (!newProduct.name.trim() || newProduct.quantity <= 0) {
+			Alert.alert("Error", "Please enter both name and quantity");
 			return;
 		}
 
@@ -328,15 +328,15 @@ export default function Inventory() {
 			return;
 		}
 
-		if (Number.isNaN(newProduct.price) || newProduct.price <= 0) {
-			Alert.alert("Error", "Please enter a valid price");
+		if (Number.isNaN(newProduct.quantity) || newProduct.quantity <= 0) {
+			Alert.alert("Error", "Please enter a valid quantity");
 			return;
 		}
 
 		const productToAdd: Product = {
 			id: scannedBarcode,
 			name: newProduct.name.trim(),
-			price: newProduct.price,
+			quantity: newProduct.quantity,
 			productType: newProduct.productType,
 			occasion: newProduct.occasion,
 			color: newProduct.color,
@@ -484,22 +484,24 @@ export default function Inventory() {
 							</View>
 
 							<View style={styles.inputGroup}>
-								<Text style={styles.inputLabel}>Price *</Text>
+								<Text style={styles.inputLabel}>Quantity *</Text>
 								<TextInput
 									style={styles.textInput}
 									value={
-										newProduct.price === 0 ? "" : newProduct.price.toString()
+										newProduct.quantity === 0
+											? ""
+											: newProduct.quantity.toString()
 									}
 									onChangeText={(text) => {
-										const numValue = text === "" ? 0 : parseFloat(text);
+										const numValue = text === "" ? 0 : parseInt(text, 10);
 										setNewProduct((prev) => ({
 											...prev,
-											price: Number.isNaN(numValue) ? 0 : numValue,
+											quantity: Number.isNaN(numValue) ? 0 : numValue,
 										}));
 									}}
-									placeholder="0.00"
+									placeholder="0"
 									placeholderTextColor="#6c757d"
-									keyboardType="decimal-pad"
+									keyboardType="number-pad"
 								/>
 							</View>
 						</View>
