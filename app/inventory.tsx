@@ -31,20 +31,26 @@ import { addProduct, getAllProducts, getProductById } from "@/store/products";
 type ViewMode =
 	| "products"
 	| "productTypes"
-	| "occasions"
 	| "colors"
-	| "sizes"
 	| "manufacturers"
-	| "textures";
+	| "sizes"
+	| "textures"
+	| "bagQuantities"
+	| "shapes"
+	| "distributors"
+	| "occasions";
 
 const VIEW_OPTIONS = [
 	{ key: "products" as ViewMode, label: "Products" },
 	{ key: "productTypes" as ViewMode, label: "Product Types" },
-	{ key: "occasions" as ViewMode, label: "Occasions" },
 	{ key: "colors" as ViewMode, label: "Colors" },
+	{ key: "manufacturers" as ViewMode, label: "Brands" },
 	{ key: "sizes" as ViewMode, label: "Sizes" },
-	{ key: "manufacturers" as ViewMode, label: "Manufacturers" },
 	{ key: "textures" as ViewMode, label: "Textures" },
+	{ key: "bagQuantities" as ViewMode, label: "Bag Quantities" },
+	{ key: "shapes" as ViewMode, label: "Shapes" },
+	{ key: "distributors" as ViewMode, label: "Distributors" },
+	{ key: "occasions" as ViewMode, label: "Occasions" },
 ];
 
 // Enable LayoutAnimation on Android
@@ -224,24 +230,36 @@ function ProductCard({ item }: { item: Product }) {
 					<Text style={styles.detailValue}>{product.productType}</Text>
 				</View>
 				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Occasion:</Text>
-					<Text style={styles.detailValue}>{product.occasion}</Text>
-				</View>
-				<View style={styles.detailRow}>
 					<Text style={styles.detailLabel}>Color:</Text>
 					<Text style={styles.detailValue}>{product.color}</Text>
+				</View>
+				<View style={styles.detailRow}>
+					<Text style={styles.detailLabel}>Brand:</Text>
+					<Text style={styles.detailValue}>{product.manufacturer}</Text>
 				</View>
 				<View style={styles.detailRow}>
 					<Text style={styles.detailLabel}>Size:</Text>
 					<Text style={styles.detailValue}>{product.size}</Text>
 				</View>
 				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Manufacturer:</Text>
-					<Text style={styles.detailValue}>{product.manufacturer}</Text>
-				</View>
-				<View style={styles.detailRow}>
 					<Text style={styles.detailLabel}>Texture:</Text>
 					<Text style={styles.detailValue}>{product.texture}</Text>
+				</View>
+				<View style={styles.detailRow}>
+					<Text style={styles.detailLabel}>Bag Qty:</Text>
+					<Text style={styles.detailValue}>{product.bagQuantity}</Text>
+				</View>
+				<View style={styles.detailRow}>
+					<Text style={styles.detailLabel}>Shape:</Text>
+					<Text style={styles.detailValue}>{product.shape}</Text>
+				</View>
+				<View style={styles.detailRow}>
+					<Text style={styles.detailLabel}>Distributor:</Text>
+					<Text style={styles.detailValue}>{product.distributor}</Text>
+				</View>
+				<View style={styles.detailRow}>
+					<Text style={styles.detailLabel}>Occasion:</Text>
+					<Text style={styles.detailValue}>{product.occasion}</Text>
 				</View>
 			</View>
 		</Pressable>
@@ -278,21 +296,27 @@ export default function Inventory() {
 
 	const defaultFilters: FieldFilters = {
 		productType: [],
-		occasion: [],
 		color: [],
 		manufacturer: [],
 		size: [],
 		texture: [],
+		bagQuantity: [],
+		shape: [],
+		distributor: [],
+		occasion: [],
 	};
 	const emptyProduct: Omit<Product, "id"> = {
 		name: "",
 		quantity: 0,
 		productType: PRODUCT_FIELD_OPTIONS.productType[0] || "",
-		occasion: PRODUCT_FIELD_OPTIONS.occasion[0] || "",
 		color: PRODUCT_FIELD_OPTIONS.color[0] || "",
 		manufacturer: PRODUCT_FIELD_OPTIONS.manufacturer[0] || "",
 		size: PRODUCT_FIELD_OPTIONS.size[0] || "",
 		texture: PRODUCT_FIELD_OPTIONS.texture[0] || "",
+		bagQuantity: parseInt(PRODUCT_FIELD_OPTIONS.bagQuantity[0] || "50", 10),
+		shape: PRODUCT_FIELD_OPTIONS.shape[0] || "",
+		distributor: PRODUCT_FIELD_OPTIONS.distributor[0] || "",
+		occasion: PRODUCT_FIELD_OPTIONS.occasion[0] || "",
 	};
 
 	const [permission, requestPermission] = useCameraPermissions();
@@ -327,16 +351,22 @@ export default function Inventory() {
 				);
 			case "productTypes":
 				return PRODUCT_FIELD_OPTIONS.productType;
-			case "occasions":
-				return PRODUCT_FIELD_OPTIONS.occasion;
 			case "colors":
 				return PRODUCT_FIELD_OPTIONS.color;
-			case "sizes":
-				return PRODUCT_FIELD_OPTIONS.size;
 			case "manufacturers":
 				return PRODUCT_FIELD_OPTIONS.manufacturer;
+			case "sizes":
+				return PRODUCT_FIELD_OPTIONS.size;
 			case "textures":
 				return PRODUCT_FIELD_OPTIONS.texture;
+			case "bagQuantities":
+				return PRODUCT_FIELD_OPTIONS.bagQuantity;
+			case "shapes":
+				return PRODUCT_FIELD_OPTIONS.shape;
+			case "distributors":
+				return PRODUCT_FIELD_OPTIONS.distributor;
+			case "occasions":
+				return PRODUCT_FIELD_OPTIONS.occasion;
 			default:
 				return [];
 		}
@@ -372,6 +402,10 @@ export default function Inventory() {
 	}
 
 	function formatCategoryTitle(category: string): string {
+		if (category === "manufacturer") return "Brand";
+		if (category === "bagQuantity") return "Bag Quantity";
+		if (category === "productType") return "Product Type";
+
 		return (
 			category.charAt(0).toUpperCase() +
 			category.slice(1).replace(/([A-Z])/g, " $1")
@@ -399,17 +433,23 @@ export default function Inventory() {
 		const fieldKey =
 			currentView === "productTypes"
 				? "productType"
-				: currentView === "occasions"
-					? "occasion"
-					: currentView === "colors"
-						? "color"
+				: currentView === "colors"
+					? "color"
+					: currentView === "manufacturers"
+						? "manufacturer"
 						: currentView === "sizes"
 							? "size"
-							: currentView === "manufacturers"
-								? "manufacturer"
-								: currentView === "textures"
-									? "texture"
-									: null;
+							: currentView === "textures"
+								? "texture"
+								: currentView === "bagQuantities"
+									? "bagQuantity"
+									: currentView === "shapes"
+										? "shape"
+										: currentView === "distributors"
+											? "distributor"
+											: currentView === "occasions"
+												? "occasion"
+												: null;
 
 		if (!fieldKey) return;
 
