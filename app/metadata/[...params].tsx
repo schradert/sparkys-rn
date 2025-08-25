@@ -9,6 +9,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
 
 export default function MetadataDetail() {
@@ -20,7 +21,7 @@ export default function MetadataDetail() {
 
 	if (!params || params.length < 2) {
 		return (
-			<View style={styles.container}>
+			<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
 				<View style={styles.header}>
 					<Pressable onPress={() => router.back()} style={styles.backButton}>
 						<Ionicons name="arrow-back" size={24} color="#007bff" />
@@ -30,7 +31,7 @@ export default function MetadataDetail() {
 				<View style={styles.errorContainer}>
 					<Text style={styles.errorText}>Invalid metadata route</Text>
 				</View>
-			</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -39,7 +40,7 @@ export default function MetadataDetail() {
 
 	if (!fieldKey) {
 		return (
-			<View style={styles.container}>
+			<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
 				<View style={styles.header}>
 					<Pressable onPress={() => router.back()} style={styles.backButton}>
 						<Ionicons name="arrow-back" size={24} color="#007bff" />
@@ -49,7 +50,7 @@ export default function MetadataDetail() {
 				<View style={styles.errorContainer}>
 					<Text style={styles.errorText}>Invalid metadata category</Text>
 				</View>
-			</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -136,7 +137,7 @@ export default function MetadataDetail() {
 	}
 
 	return (
-		<View style={styles.container}>
+		<SafeAreaView style={styles.container} edges={["top", "bottom"]}>
 			<View style={styles.header}>
 				<Pressable onPress={() => router.back()} style={styles.backButton}>
 					<Ionicons name="arrow-back" size={24} color="#007bff" />
@@ -175,7 +176,7 @@ export default function MetadataDetail() {
 					</Pressable>
 				</View>
 			</View>
-		</View>
+		</SafeAreaView>
 	);
 }
 
@@ -190,7 +191,6 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
 		paddingVertical: 12,
-		paddingTop: 60,
 		backgroundColor: "white",
 		borderBottomWidth: 1,
 		borderBottomColor: "#e1e5e9",
