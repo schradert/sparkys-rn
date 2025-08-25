@@ -515,18 +515,20 @@ export default function Inventory() {
 							color="white"
 						/>
 					</Pressable>
-					{currentView === "products" && totalSelections > 0 && (
-						<View style={styles.filterBadge}>
-							<Text style={styles.filterBadgeText}>{totalSelections}</Text>
-						</View>
-					)}
 					{currentView === "products" && (
-						<Pressable
-							onPress={() => setIsFilterModalVisible(true)}
-							style={styles.filterButton}
-						>
-							<Ionicons name="options-outline" size={24} color="#007bff" />
-						</Pressable>
+						<View style={styles.filterButtonContainer}>
+							<Pressable
+								onPress={() => setIsFilterModalVisible(true)}
+								style={styles.filterButton}
+							>
+								<Ionicons name="options-outline" size={24} color="#007bff" />
+							</Pressable>
+							{totalSelections > 0 && (
+								<View style={styles.filterBadge}>
+									<Text style={styles.filterBadgeText}>{totalSelections}</Text>
+								</View>
+							)}
+						</View>
 					)}
 					<AvatarDropdown />
 				</View>
@@ -825,6 +827,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
+	},
+	filterButtonContainer: {
+		position: "relative",
 	},
 	addButton: {
 		width: 44,
