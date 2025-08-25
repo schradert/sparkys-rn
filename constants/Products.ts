@@ -46,6 +46,7 @@ export type Product = {
 	size: string;
 	texture: string;
 	quantity: number;
+	bagQuantity: number;
 	imageUrl?: string;
 };
 
@@ -60,6 +61,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Matte",
 		quantity: 18,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234567891",
@@ -71,6 +73,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '40"',
 		texture: "Metallic",
 		quantity: 71,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234567892",
@@ -82,6 +85,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '36"',
 		texture: "Pearl",
 		quantity: 82,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234567893",
@@ -93,6 +97,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Matte",
 		quantity: 26,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234567894",
@@ -104,6 +109,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Chrome",
 		quantity: 33,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500006",
@@ -115,6 +121,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Metallic",
 		quantity: 54,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500007",
@@ -126,6 +133,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 34,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500008",
@@ -137,6 +145,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Transparent",
 		quantity: 11,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500009",
@@ -148,6 +157,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Matte",
 		quantity: 66,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500010",
@@ -159,6 +169,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Pearl",
 		quantity: 68,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500011",
@@ -170,6 +181,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '36"',
 		texture: "Chrome",
 		quantity: 100,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500012",
@@ -181,6 +193,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Pearl",
 		quantity: 40,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500013",
@@ -192,6 +205,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 90,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500014",
@@ -203,6 +217,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Metallic",
 		quantity: 59,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500015",
@@ -214,6 +229,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Pearl",
 		quantity: 40,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500016",
@@ -225,6 +241,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Matte",
 		quantity: 27,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500017",
@@ -236,6 +253,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Pearl",
 		quantity: 33,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500018",
@@ -247,6 +265,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '40"',
 		texture: "Chrome",
 		quantity: 50,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500019",
@@ -258,6 +277,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 88,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500020",
@@ -269,6 +289,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Chrome",
 		quantity: 18,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500021",
@@ -280,6 +301,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Metallic",
 		quantity: 80,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500022",
@@ -291,6 +313,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Matte",
 		quantity: 53,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500023",
@@ -302,6 +325,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '36"',
 		texture: "Chrome",
 		quantity: 82,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500024",
@@ -313,6 +337,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 69,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500025",
@@ -324,6 +349,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Transparent",
 		quantity: 20,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500026",
@@ -335,6 +361,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Matte",
 		quantity: 72,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500027",
@@ -346,6 +373,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Pearl",
 		quantity: 64,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500028",
@@ -357,6 +385,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Chrome",
 		quantity: 56,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500029",
@@ -368,6 +397,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Matte",
 		quantity: 71,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500030",
@@ -379,6 +409,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Metallic",
 		quantity: 52,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500031",
@@ -390,6 +421,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 59,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500032",
@@ -401,6 +433,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '36"',
 		texture: "Pearl",
 		quantity: 8,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500033",
@@ -412,6 +445,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Matte",
 		quantity: 64,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500034",
@@ -423,6 +457,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '40"',
 		texture: "Chrome",
 		quantity: 10,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500035",
@@ -434,6 +469,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Pearl",
 		quantity: 35,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500036",
@@ -445,6 +481,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Metallic",
 		quantity: 16,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500037",
@@ -456,6 +493,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 87,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500038",
@@ -467,6 +505,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Matte",
 		quantity: 82,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500039",
@@ -478,6 +517,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Chrome",
 		quantity: 9,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500040",
@@ -489,6 +529,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Pearl",
 		quantity: 19,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500041",
@@ -500,6 +541,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Pearl",
 		quantity: 72,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500042",
@@ -511,6 +553,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Transparent",
 		quantity: 35,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500043",
@@ -522,6 +565,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Matte",
 		quantity: 47,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500044",
@@ -533,6 +577,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 68,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500045",
@@ -544,6 +589,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '11"',
 		texture: "Metallic",
 		quantity: 24,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500046",
@@ -555,6 +601,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Chrome",
 		quantity: 30,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500047",
@@ -566,6 +613,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '9"',
 		texture: "Matte",
 		quantity: 23,
+		bagQuantity: 50,
 	},
 	{
 		id: "8901234500048",
@@ -577,6 +625,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '18"',
 		texture: "Transparent",
 		quantity: 11,
+		bagQuantity: 20,
 	},
 	{
 		id: "8901234500049",
@@ -588,6 +637,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '16"',
 		texture: "Pearl",
 		quantity: 10,
+		bagQuantity: 100,
 	},
 	{
 		id: "8901234500050",
@@ -599,5 +649,6 @@ export const BALLOON_PRODUCTS: Product[] = [
 		size: '36"',
 		texture: "Matte",
 		quantity: 41,
+		bagQuantity: 20,
 	},
 ];

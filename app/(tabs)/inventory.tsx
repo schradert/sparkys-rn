@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
 	Alert,
@@ -204,7 +205,10 @@ function CollapsibleRadioSection({
 function ProductCard({ item }: { item: Product }) {
 	const product = item;
 	return (
-		<View style={styles.card}>
+		<Pressable
+			style={styles.card}
+			onPress={() => router.push(`/product/${product.id}`)}
+		>
 			<View style={styles.cardHeader}>
 				<Text style={styles.productName}>{product.name}</Text>
 				<Text style={styles.price}>{product.quantity}</Text>
@@ -236,17 +240,28 @@ function ProductCard({ item }: { item: Product }) {
 					<Text style={styles.detailValue}>{product.texture}</Text>
 				</View>
 			</View>
-		</View>
+		</Pressable>
 	);
 }
 
-function MetadataCard({ item }: { item: string }) {
+function MetadataCard({
+	item,
+	viewMode,
+}: {
+	item: string;
+	viewMode: ViewMode;
+}) {
 	return (
-		<View style={styles.card}>
+		<Pressable
+			style={styles.card}
+			onPress={() =>
+				router.push(`/metadata/${viewMode}/${encodeURIComponent(item)}`)
+			}
+		>
 			<View style={styles.cardHeader}>
 				<Text style={styles.productName}>{item}</Text>
 			</View>
-		</View>
+		</Pressable>
 	);
 }
 
@@ -316,7 +331,9 @@ export default function Inventory() {
 	function getCurrentRenderItem() {
 		return currentView === "products"
 			? ProductCard
-			: ({ item }: { item: string }) => <MetadataCard item={item} />;
+			: ({ item }: { item: string }) => (
+					<MetadataCard item={item} viewMode={currentView} />
+				);
 	}
 
 	function getCurrentKeyExtractor() {
@@ -535,8 +552,8 @@ export default function Inventory() {
 
 			<Pagination
 				data={currentData}
-				renderItem={currentRenderItem as any}
-				keyExtractor={currentKeyExtractor as any}
+				renderItem={currentRenderItem}
+				keyExtractor={currentKeyExtractor}
 			/>
 
 			<Modal
