@@ -1,5 +1,6 @@
 import {
 	GoogleSignin,
+	isSuccessResponse,
 	type User,
 } from "@react-native-google-signin/google-signin";
 import { useEffect, useState } from "react";
@@ -37,26 +38,15 @@ GoogleSignin.configure({
 	scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-const initializeAuth = async () => {
-	try {
-		const isSignedIn = await GoogleSignin.isSignedIn();
-
-		if (isSignedIn) {
-			const user = await GoogleSignin.getCurrentUser();
-			updateAuthState({
-				user,
-				isSignedIn: true,
-				isLoading: false,
-			});
-		} else {
-			updateAuthState({
-				user: null,
-				isSignedIn: false,
-				isLoading: false,
-			});
-		}
-	} catch (error) {
-		console.error("Auth initialization error:", error);
+const initializeAuth = () => {
+	const user = GoogleSignin.getCurrentUser();
+	if (user) {
+		updateAuthState({
+			user,
+			isSignedIn: true,
+			isLoading: false,
+		});
+	} else {
 		updateAuthState({
 			user: null,
 			isSignedIn: false,
@@ -67,33 +57,40 @@ const initializeAuth = async () => {
 
 initializeAuth();
 
-const signIn = async (): Promise<{ success: boolean; error?: string }> => {
+async function signIn(): Promise<{ success: boolean; error?: string }> {
 	try {
 		updateAuthState({ isLoading: true });
 
 		await GoogleSignin.hasPlayServices();
-		const user = await GoogleSignin.signIn();
+		const response = await GoogleSignin.signIn();
 
-		updateAuthState({
-			user,
-			isSignedIn: true,
-			isLoading: false,
-		});
-
-		return { success: true };
-	} catch (error) {
-		console.error("Sign in error:", error);
+		if (isSuccessResponse(response)) {
+			updateAuthState({
+				user: response.data,
+				isSignedIn: true,
+				isLoading: false,
+			});
+			return { success: true };
+		} else {
+			// Cancelled
+			updateAuthState({
+				user: null,
+				isSignedIn: false,
+				isLoading: false,
+			});
+			return { success: false };
+		}
+	} catch (error: any) {
 		updateAuthState({
 			user: null,
 			isSignedIn: false,
 			isLoading: false,
 		});
-
 		return { success: false, error: error.message || "Sign in failed" };
 	}
-};
+}
 
-const signOut = async (): Promise<void> => {
+async function signOut(): Promise<void> {
 	try {
 		await GoogleSignin.signOut();
 		updateAuthState({
@@ -104,9 +101,9 @@ const signOut = async (): Promise<void> => {
 	} catch (error) {
 		console.error("Sign out error:", error);
 	}
-};
+}
 
-const getAccessToken = async (): Promise<string | null> => {
+async function getAccessToken(): Promise<string | null> {
 	try {
 		const tokens = await GoogleSignin.getTokens();
 		return tokens.accessToken;
@@ -114,7 +111,7 @@ const getAccessToken = async (): Promise<string | null> => {
 		console.error("Get access token error:", error);
 		return null;
 	}
-};
+}
 
 export function useAuth() {
 	const [, forceUpdate] = useState({});
