@@ -26,12 +26,38 @@ let globalSheetsState: SheetsDataState = {
 };
 
 let sheetsSubscribers: Array<() => void> = [];
+let metadataChangeSubscribers: Array<
+	(change: { fieldKey: string; oldValue: string; newValue: string }) => void
+> = [];
 
 function subscribeToSheetsData(callback: () => void) {
 	sheetsSubscribers.push(callback);
 	return () => {
 		sheetsSubscribers = sheetsSubscribers.filter((sub) => sub !== callback);
 	};
+}
+
+function subscribeToMetadataChanges(
+	callback: (change: {
+		fieldKey: string;
+		oldValue: string;
+		newValue: string;
+	}) => void,
+) {
+	metadataChangeSubscribers.push(callback);
+	return () => {
+		metadataChangeSubscribers = metadataChangeSubscribers.filter(
+			(sub) => sub !== callback,
+		);
+	};
+}
+
+function notifyMetadataChange(change: {
+	fieldKey: string;
+	oldValue: string;
+	newValue: string;
+}) {
+	metadataChangeSubscribers.forEach((callback) => callback(change));
 }
 
 function updateSheetsState(newState: Partial<SheetsDataState>) {
@@ -164,7 +190,11 @@ async function updateMetadataInSheet(
 	oldName: string,
 	newName: string,
 	accessToken: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{
+	success: boolean;
+	error?: string;
+	metadataChangeInfo?: { fieldKey: string; oldValue: string; newValue: string };
+}> {
 	try {
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.updateMetadataItem(
@@ -176,13 +206,53 @@ async function updateMetadataInSheet(
 
 		await refreshSheetsData(accessToken);
 
-		return { success: true };
+		// Notify subscribers of the metadata change
+		const fieldKey = getFieldKeyForSheetName(sheetName);
+		if (fieldKey) {
+			notifyMetadataChange({
+				fieldKey,
+				oldValue: oldName,
+				newValue: newName,
+			});
+		}
+
+		return {
+			success: true,
+			metadataChangeInfo: {
+				fieldKey: fieldKey || "",
+				oldValue: oldName,
+				newValue: newName,
+			},
+		};
 	} catch (error: any) {
 		console.error("Error updating metadata in sheet:", error);
 		return {
 			success: false,
 			error: error.message || "Failed to update metadata",
 		};
+	}
+}
+
+function getFieldKeyForSheetName(sheetName: string): string | null {
+	switch (sheetName) {
+		case "product_types":
+			return "productType";
+		case "colors":
+			return "color";
+		case "brands":
+			return "manufacturer";
+		case "textures":
+			return "texture";
+		case "shapes":
+			return "shape";
+		case "distributors":
+			return "distributor";
+		case "occasions":
+			return "occasion";
+		case "bag_quantities":
+			return "bagQuantity";
+		default:
+			return null;
 	}
 }
 
@@ -304,5 +374,6 @@ export function useSheetsData() {
 		addProduct,
 		updateMetadata,
 		updateProduct,
+		subscribeToMetadataChanges,
 	};
 }
