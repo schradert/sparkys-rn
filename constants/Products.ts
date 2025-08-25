@@ -37,7 +37,7 @@ export type FieldFilters = {
 };
 
 export type Product = {
-	id: number;
+	id: string;
 	name: string;
 	productType: string;
 	occasion: string;
@@ -51,7 +51,7 @@ export type Product = {
 
 export const BALLOON_PRODUCTS: Product[] = [
 	{
-		id: 1,
+		id: "8901234567890",
 		name: "Red Heart Birthday Balloon",
 		productType: "Latex Balloons",
 		occasion: "Birthday",
@@ -62,7 +62,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 2.99,
 	},
 	{
-		id: 2,
+		id: "8901234567891",
 		name: "Gold Wedding Foil Number",
 		productType: "Foil Balloons",
 		occasion: "Wedding",
@@ -73,7 +73,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 12.99,
 	},
 	{
-		id: 3,
+		id: "8901234567892",
 		name: "Pink Baby Shower Elephant",
 		productType: "Foil Balloons",
 		occasion: "Baby Shower",
@@ -84,7 +84,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 8.99,
 	},
 	{
-		id: 4,
+		id: "8901234567893",
 		name: "Blue Graduation Cap",
 		productType: "Foil Balloons",
 		occasion: "Graduation",
@@ -95,7 +95,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 6.99,
 	},
 	{
-		id: 5,
+		id: "8901234567894",
 		name: "Silver Anniversary Stars",
 		productType: "Latex Balloons",
 		occasion: "Anniversary",
@@ -106,7 +106,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.99,
 	},
 	{
-		id: 6,
+		id: "8901234500006",
 		name: "Christmas Tree Holiday Balloon",
 		productType: "Foil Balloons",
 		occasion: "Holiday",
@@ -117,7 +117,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 7.99,
 	},
 	{
-		id: 7,
+		id: "8901234500007",
 		name: "Purple Modeling Balloon Pack",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -128,7 +128,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.99,
 	},
 	{
-		id: 8,
+		id: "8901234500008",
 		name: "Clear Bubble Wedding Balloon",
 		productType: "Bubble Balloons",
 		occasion: "Wedding",
@@ -139,7 +139,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 15.99,
 	},
 	{
-		id: 9,
+		id: "8901234500009",
 		name: "Orange Halloween Pumpkin",
 		productType: "Foil Balloons",
 		occasion: "Holiday",
@@ -150,7 +150,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 5.99,
 	},
 	{
-		id: 10,
+		id: "8901234500010",
 		name: "Black Graduation 2024",
 		productType: "Latex Balloons",
 		occasion: "Graduation",
@@ -161,7 +161,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.49,
 	},
 	{
-		id: 11,
+		id: "8901234500011",
 		name: "Rose Gold Baby Girl",
 		productType: "Foil Balloons",
 		occasion: "Baby Shower",
@@ -172,7 +172,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 11.99,
 	},
 	{
-		id: 12,
+		id: "8901234500012",
 		name: "Red Valentine Heart",
 		productType: "Latex Balloons",
 		occasion: "Anniversary",
@@ -183,7 +183,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.25,
 	},
 	{
-		id: 13,
+		id: "8901234500013",
 		name: "Blue Modeling Animal Kit",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -194,7 +194,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 6.99,
 	},
 	{
-		id: 14,
+		id: "8901234500014",
 		name: "Gold 50th Anniversary",
 		productType: "Foil Balloons",
 		occasion: "Anniversary",
@@ -205,7 +205,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 9.99,
 	},
 	{
-		id: 15,
+		id: "8901234500015",
 		name: "Pink Princess Birthday",
 		productType: "Latex Balloons",
 		occasion: "Birthday",
@@ -216,7 +216,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 2.75,
 	},
 	{
-		id: 16,
+		id: "8901234500016",
 		name: "Green Christmas Wreath",
 		productType: "Foil Balloons",
 		occasion: "Holiday",
@@ -227,7 +227,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 8.25,
 	},
 	{
-		id: 17,
+		id: "8901234500017",
 		name: "White Wedding Doves",
 		productType: "Latex Balloons",
 		occasion: "Wedding",
@@ -238,7 +238,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 5.5,
 	},
 	{
-		id: 18,
+		id: "8901234500018",
 		name: "Purple Graduation 2025",
 		productType: "Foil Balloons",
 		occasion: "Graduation",
@@ -249,7 +249,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 14.99,
 	},
 	{
-		id: 19,
+		id: "8901234500019",
 		name: "Orange Tiger Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -260,7 +260,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.5,
 	},
 	{
-		id: 20,
+		id: "8901234500020",
 		name: "Silver New Year 2025",
 		productType: "Latex Balloons",
 		occasion: "Holiday",
@@ -271,7 +271,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.99,
 	},
 	{
-		id: 21,
+		id: "8901234500021",
 		name: "Blue Baby Boy Footprints",
 		productType: "Foil Balloons",
 		occasion: "Baby Shower",
@@ -282,7 +282,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 7.75,
 	},
 	{
-		id: 22,
+		id: "8901234500022",
 		name: "Red Fire Truck Birthday",
 		productType: "Latex Balloons",
 		occasion: "Birthday",
@@ -293,7 +293,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.99,
 	},
 	{
-		id: 23,
+		id: "8901234500023",
 		name: "Gold Wedding Rings",
 		productType: "Foil Balloons",
 		occasion: "Wedding",
@@ -304,7 +304,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 13.5,
 	},
 	{
-		id: 24,
+		id: "8901234500024",
 		name: "Green Dinosaur Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -315,7 +315,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 5.25,
 	},
 	{
-		id: 25,
+		id: "8901234500025",
 		name: "Pink Unicorn Bubble",
 		productType: "Bubble Balloons",
 		occasion: "Birthday",
@@ -326,7 +326,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 18.99,
 	},
 	{
-		id: 26,
+		id: "8901234500026",
 		name: "Black Halloween Bat",
 		productType: "Foil Balloons",
 		occasion: "Holiday",
@@ -337,7 +337,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 6.5,
 	},
 	{
-		id: 27,
+		id: "8901234500027",
 		name: "White Dove Wedding",
 		productType: "Latex Balloons",
 		occasion: "Wedding",
@@ -348,7 +348,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.75,
 	},
 	{
-		id: 28,
+		id: "8901234500028",
 		name: "Purple Congrats Grad",
 		productType: "Latex Balloons",
 		occasion: "Graduation",
@@ -359,7 +359,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.25,
 	},
 	{
-		id: 29,
+		id: "8901234500029",
 		name: "Orange Pumpkin Halloween",
 		productType: "Latex Balloons",
 		occasion: "Holiday",
@@ -370,7 +370,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 2.99,
 	},
 	{
-		id: 30,
+		id: "8901234500030",
 		name: "Silver 25th Anniversary",
 		productType: "Foil Balloons",
 		occasion: "Anniversary",
@@ -381,7 +381,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 8.99,
 	},
 	{
-		id: 31,
+		id: "8901234500031",
 		name: "Blue Shark Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -392,7 +392,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.75,
 	},
 	{
-		id: 32,
+		id: "8901234500032",
 		name: "Pink Baby Girl Bottle",
 		productType: "Foil Balloons",
 		occasion: "Baby Shower",
@@ -403,7 +403,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 10.5,
 	},
 	{
-		id: 33,
+		id: "8901234500033",
 		name: "Red Christmas Santa",
 		productType: "Latex Balloons",
 		occasion: "Holiday",
@@ -414,7 +414,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 5.99,
 	},
 	{
-		id: 34,
+		id: "8901234500034",
 		name: "Gold Star Graduation",
 		productType: "Foil Balloons",
 		occasion: "Graduation",
@@ -425,7 +425,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 16.99,
 	},
 	{
-		id: 35,
+		id: "8901234500035",
 		name: "Green Lucky Shamrock",
 		productType: "Latex Balloons",
 		occasion: "Holiday",
@@ -436,7 +436,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.25,
 	},
 	{
-		id: 36,
+		id: "8901234500036",
 		name: "White Angel Wings",
 		productType: "Foil Balloons",
 		occasion: "Anniversary",
@@ -447,7 +447,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 7.5,
 	},
 	{
-		id: 37,
+		id: "8901234500037",
 		name: "Purple Butterfly Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -458,7 +458,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 5.5,
 	},
 	{
-		id: 38,
+		id: "8901234500038",
 		name: "Orange Basketball Sports",
 		productType: "Latex Balloons",
 		occasion: "Birthday",
@@ -469,7 +469,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.5,
 	},
 	{
-		id: 39,
+		id: "8901234500039",
 		name: "Black Elegant Anniversary",
 		productType: "Latex Balloons",
 		occasion: "Anniversary",
@@ -480,7 +480,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.99,
 	},
 	{
-		id: 40,
+		id: "8901234500040",
 		name: "Blue Baby Boy Rattle",
 		productType: "Foil Balloons",
 		occasion: "Baby Shower",
@@ -491,7 +491,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 8.25,
 	},
 	{
-		id: 41,
+		id: "8901234500041",
 		name: "Pink Flower Power",
 		productType: "Latex Balloons",
 		occasion: "Birthday",
@@ -502,7 +502,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.75,
 	},
 	{
-		id: 42,
+		id: "8901234500042",
 		name: "Silver Sparkle Wedding",
 		productType: "Bubble Balloons",
 		occasion: "Wedding",
@@ -513,7 +513,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 22.99,
 	},
 	{
-		id: 43,
+		id: "8901234500043",
 		name: "Red Apple Teacher",
 		productType: "Foil Balloons",
 		occasion: "Graduation",
@@ -524,7 +524,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 6.99,
 	},
 	{
-		id: 44,
+		id: "8901234500044",
 		name: "Green Cactus Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -535,7 +535,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.99,
 	},
 	{
-		id: 45,
+		id: "8901234500045",
 		name: "Gold Turkey Thanksgiving",
 		productType: "Latex Balloons",
 		occasion: "Holiday",
@@ -546,7 +546,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 3.5,
 	},
 	{
-		id: 46,
+		id: "8901234500046",
 		name: "White Snowflake Winter",
 		productType: "Foil Balloons",
 		occasion: "Holiday",
@@ -557,7 +557,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 7.25,
 	},
 	{
-		id: 47,
+		id: "8901234500047",
 		name: "Purple Dragon Modeling",
 		productType: "Modeling Balloons",
 		occasion: "Birthday",
@@ -568,7 +568,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 6.25,
 	},
 	{
-		id: 48,
+		id: "8901234500048",
 		name: "Blue Ocean Bubble",
 		productType: "Bubble Balloons",
 		occasion: "Birthday",
@@ -579,7 +579,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 19.99,
 	},
 	{
-		id: 49,
+		id: "8901234500049",
 		name: "Orange Sunset Anniversary",
 		productType: "Latex Balloons",
 		occasion: "Anniversary",
@@ -590,7 +590,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		price: 4.99,
 	},
 	{
-		id: 50,
+		id: "8901234500050",
 		name: "Black Tuxedo Wedding",
 		productType: "Foil Balloons",
 		occasion: "Wedding",

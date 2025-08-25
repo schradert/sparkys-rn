@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import {
 	Alert,
@@ -240,11 +241,15 @@ export default function Inventory() {
 		texture: PRODUCT_FIELD_OPTIONS.texture[0],
 	};
 
+	const [permission, requestPermission] = useCameraPermissions();
+
 	const [filters, setFilters] = useState<FieldFilters>(defaultFilters);
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 	const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+	const [isScannerVisible, setIsScannerVisible] = useState(false);
 	const [products, setProducts] = useState<Product[]>(BALLOON_PRODUCTS);
 	const [newProduct, setNewProduct] = useState(emptyProduct);
+	const [scannedBarcode, setScannedBarcode] = useState("");
 
 	const filteredProducts =
 		products?.filter((product) => {
@@ -282,6 +287,29 @@ export default function Inventory() {
 
 	function resetNewProductForm(): void {
 		setNewProduct(emptyProduct);
+		setScannedBarcode("");
+	}
+
+	function handleBarcodeScanned(data: string): void {
+		setScannedBarcode(data);
+		setIsScannerVisible(false);
+		setIsAddModalVisible(true);
+	}
+
+	function handleOpenScanner(): void {
+		if (!permission) {
+			requestPermission();
+			return;
+		}
+		if (!permission.granted) {
+			Alert.alert(
+				"Camera Permission",
+				"We need camera permission to scan barcodes",
+				[{ text: "Cancel" }, { text: "Grant", onPress: requestPermission }],
+			);
+			return;
+		}
+		setIsScannerVisible(true);
 	}
 
 	function handleAddProduct(): void {
@@ -290,15 +318,23 @@ export default function Inventory() {
 			return;
 		}
 
+		if (!scannedBarcode.trim()) {
+			Alert.alert("Error", "Please scan a barcode first");
+			return;
+		}
+
+		if (products.find((p) => p.id === scannedBarcode)) {
+			Alert.alert("Error", "A product with this barcode already exists");
+			return;
+		}
+
 		if (Number.isNaN(newProduct.price) || newProduct.price <= 0) {
 			Alert.alert("Error", "Please enter a valid price");
 			return;
 		}
 
-		// TODO replace with SKU
-		const newId = Math.max(...products.map((p) => p.id)) + 1;
 		const productToAdd: Product = {
-			id: newId,
+			id: scannedBarcode,
 			name: newProduct.name.trim(),
 			price: newProduct.price,
 			productType: newProduct.productType,
@@ -323,11 +359,8 @@ export default function Inventory() {
 			<View style={styles.headerContainer}>
 				<Text style={styles.title}>Inventory</Text>
 				<View style={styles.headerActions}>
-					<Pressable
-						onPress={() => setIsAddModalVisible(true)}
-						style={styles.addButton}
-					>
-						<Ionicons name="add" size={24} color="white" />
+					<Pressable onPress={handleOpenScanner} style={styles.addButton}>
+						<Ionicons name="barcode-outline" size={24} color="white" />
 					</Pressable>
 					{totalSelections > 0 && (
 						<View style={styles.filterBadge}>
@@ -346,7 +379,7 @@ export default function Inventory() {
 			<Pagination
 				data={filteredProducts}
 				renderItem={ProductCard}
-				keyExtractor={(item) => item.id.toString()}
+				keyExtractor={(item) => item.id}
 			/>
 
 			<Modal
@@ -427,6 +460,17 @@ export default function Inventory() {
 							<Text style={styles.sectionTitle}>Basic Information</Text>
 
 							<View style={styles.inputGroup}>
+								<Text style={styles.inputLabel}>Barcode *</Text>
+								<TextInput
+									style={[styles.textInput, styles.disabledInput]}
+									value={scannedBarcode}
+									placeholder="Scan a barcode to populate"
+									placeholderTextColor="#6c757d"
+									editable={false}
+								/>
+							</View>
+
+							<View style={styles.inputGroup}>
 								<Text style={styles.inputLabel}>Product Name *</Text>
 								<TextInput
 									style={styles.textInput}
@@ -478,6 +522,30 @@ export default function Inventory() {
 							))}
 						</View>
 					</ScrollView>
+				</View>
+			</Modal>
+
+			<Modal
+				visible={isScannerVisible}
+				animationType="slide"
+				presentationStyle="fullScreen"
+				onRequestClose={() => setIsScannerVisible(false)}
+			>
+				<View style={styles.scannerContainer}>
+					<View style={styles.scannerHeader}>
+						<Text style={styles.scannerTitle}>Scan Barcode</Text>
+						<Pressable
+							onPress={() => setIsScannerVisible(false)}
+							style={styles.closeButton}
+						>
+							<Ionicons name="close" size={24} color="white" />
+						</Pressable>
+					</View>
+					<CameraView
+						style={styles.camera}
+						barcodeScannerSettings={{ barcodeTypes: ["ean13"] }}
+						onBarcodeScanned={({ data }) => handleBarcodeScanned(data)}
+					/>
 				</View>
 			</Modal>
 		</View>
@@ -752,6 +820,10 @@ const styles = StyleSheet.create({
 		backgroundColor: "white",
 		color: "#495057",
 	},
+	disabledInput: {
+		backgroundColor: "#f8f9fa",
+		color: "#6c757d",
+	},
 	optionScroll: {
 		flexGrow: 0,
 	},
@@ -777,5 +849,26 @@ const styles = StyleSheet.create({
 	optionButtonTextSelected: {
 		color: "white",
 		fontWeight: "600",
+	},
+	scannerContainer: {
+		flex: 1,
+		backgroundColor: "#000",
+	},
+	scannerHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingTop: 60,
+		paddingBottom: 16,
+		backgroundColor: "rgba(0, 0, 0, 0.8)",
+	},
+	scannerTitle: {
+		fontSize: 20,
+		fontWeight: "bold",
+		color: "white",
+	},
+	camera: {
+		flex: 1,
 	},
 });
