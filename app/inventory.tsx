@@ -215,6 +215,68 @@ function CollapsibleRadioSection({
 
 function ProductCard({ item }: { item: Product }) {
 	const product = item;
+
+	const getIconForMetadata = (field: string): string => {
+		switch (field) {
+			case "productType":
+				return "shapes-outline";
+			case "color":
+				return "color-palette-outline";
+			case "manufacturer":
+				return "business-outline";
+			case "size":
+				return "resize-outline";
+			case "texture":
+				return "hand-left-outline";
+			case "bagQuantity":
+				return "bag-outline";
+			case "shape":
+				return "diamond-outline";
+			case "distributor":
+				return "storefront-outline";
+			case "occasion":
+				return "calendar-outline";
+			default:
+				return "information-circle-outline";
+		}
+	};
+
+	const metadataItems = [
+		{
+			field: "productType",
+			value: product.productType,
+			icon: getIconForMetadata("productType"),
+		},
+		{ field: "color", value: product.color, icon: getIconForMetadata("color") },
+		{
+			field: "manufacturer",
+			value: product.manufacturer,
+			icon: getIconForMetadata("manufacturer"),
+		},
+		{ field: "size", value: product.size, icon: getIconForMetadata("size") },
+		{
+			field: "texture",
+			value: product.texture,
+			icon: getIconForMetadata("texture"),
+		},
+		{
+			field: "bagQuantity",
+			value: product.bagQuantity?.toString(),
+			icon: getIconForMetadata("bagQuantity"),
+		},
+		{ field: "shape", value: product.shape, icon: getIconForMetadata("shape") },
+		{
+			field: "distributor",
+			value: product.distributor,
+			icon: getIconForMetadata("distributor"),
+		},
+		{
+			field: "occasion",
+			value: product.occasion,
+			icon: getIconForMetadata("occasion"),
+		},
+	].filter((item) => item.value && item.value.trim() !== "");
+
 	return (
 		<Pressable
 			style={styles.card}
@@ -225,43 +287,15 @@ function ProductCard({ item }: { item: Product }) {
 				<Text style={styles.price}>{product.quantity}</Text>
 			</View>
 
-			<View style={styles.details}>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Type:</Text>
-					<Text style={styles.detailValue}>{product.productType}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Color:</Text>
-					<Text style={styles.detailValue}>{product.color}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Brand:</Text>
-					<Text style={styles.detailValue}>{product.manufacturer}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Size:</Text>
-					<Text style={styles.detailValue}>{product.size}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Texture:</Text>
-					<Text style={styles.detailValue}>{product.texture}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Bag Qty:</Text>
-					<Text style={styles.detailValue}>{product.bagQuantity}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Shape:</Text>
-					<Text style={styles.detailValue}>{product.shape}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Distributor:</Text>
-					<Text style={styles.detailValue}>{product.distributor}</Text>
-				</View>
-				<View style={styles.detailRow}>
-					<Text style={styles.detailLabel}>Occasion:</Text>
-					<Text style={styles.detailValue}>{product.occasion}</Text>
-				</View>
+			<View style={styles.metadataGrid}>
+				{metadataItems.map((item, index) => (
+					<View key={item.field} style={styles.metadataItem}>
+						<Ionicons name={item.icon as any} size={16} color="#666" />
+						<Text style={styles.metadataValue} numberOfLines={1}>
+							{item.value}
+						</Text>
+					</View>
+				))}
 			</View>
 		</Pressable>
 	);
@@ -1170,23 +1204,29 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#007bff",
 	},
-	details: {
+	metadataGrid: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+		marginTop: 4,
+	},
+	metadataItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#f8f9fa",
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 6,
+		flex: 0,
+		minWidth: "30%",
+		maxWidth: "32%",
 		gap: 4,
 	},
-	detailRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-	},
-	detailLabel: {
-		fontSize: 13,
-		color: "#6c757d",
-		fontWeight: "500",
-	},
-	detailValue: {
-		fontSize: 13,
+	metadataValue: {
+		fontSize: 11,
 		color: "#495057",
-		fontWeight: "600",
+		fontWeight: "500",
+		flex: 1,
 	},
 	formScrollView: {
 		flex: 1,
