@@ -41,6 +41,31 @@ function updateSheetsState(newState: Partial<SheetsDataState>) {
 
 const { SPREADSHEET_ID } = SHEETS_CONFIG;
 
+function getSheetNameForMetadata(viewMode: string): string | null {
+	switch (viewMode) {
+		case "productTypes":
+			return "product_types";
+		case "colors":
+			return "colors";
+		case "manufacturers":
+			return "brands";
+		case "sizes":
+			return null; // No sizes sheet, generated from products
+		case "textures":
+			return "textures";
+		case "bagQuantities":
+			return "bag_quantities";
+		case "shapes":
+			return "shapes";
+		case "distributors":
+			return "distributors";
+		case "occasions":
+			return "occasions";
+		default:
+			return null;
+	}
+}
+
 async function loadSheetsData(
 	accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
@@ -99,6 +124,41 @@ async function refreshSheetsData(accessToken: string): Promise<void> {
 	}
 }
 
+async function addMetadataToSheet(
+	sheetName: string,
+	name: string,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.addMetadataItem(sheetName, name, accessToken);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error adding metadata to sheet:", error);
+		return { success: false, error: error.message || "Failed to add item" };
+	}
+}
+
+async function addProductToSheet(
+	product: ProductSheet,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.addProduct(product, accessToken);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error adding product to sheet:", error);
+		return { success: false, error: error.message || "Failed to add product" };
+	}
+}
+
 export function useSheetsData() {
 	const [, forceUpdate] = useState({});
 	const { getAccessToken, isSignedIn } = useAuth();
@@ -140,9 +200,31 @@ export function useSheetsData() {
 		await refreshSheetsData(accessToken);
 	};
 
+	const addMetadata = async (sheetName: string, name: string) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await addMetadataToSheet(sheetName, name, accessToken);
+	};
+
+	const addProduct = async (product: ProductSheet) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await addProductToSheet(product, accessToken);
+	};
+
 	return {
 		...globalSheetsState,
 		refresh,
 		loadInitialData,
+		addMetadata,
+		addProduct,
 	};
 }

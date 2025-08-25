@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import Pagination from "@/components/Pagination";
 import {
+	convertProductToSheet,
 	type Field,
 	type FieldFilters,
 	PRODUCT_FIELD_OPTIONS,
@@ -292,6 +293,8 @@ export default function Inventory() {
 		isLoading: sheetsLoading,
 		error: sheetsError,
 		refresh,
+		addMetadata,
+		addProduct: addProductToSheets,
 	} = useSheetsData();
 
 	const defaultFilters: FieldFilters = {
@@ -423,7 +426,32 @@ export default function Inventory() {
 		setNewMetadataValue("");
 	}
 
-	function handleAddMetadata(): void {
+	function getSheetNameForMetadata(viewMode: string): string | null {
+		switch (viewMode) {
+			case "productTypes":
+				return "product_types";
+			case "colors":
+				return "colors";
+			case "manufacturers":
+				return "brands";
+			case "sizes":
+				return null;
+			case "textures":
+				return "textures";
+			case "bagQuantities":
+				return "bag_quantities";
+			case "shapes":
+				return "shapes";
+			case "distributors":
+				return "distributors";
+			case "occasions":
+				return "occasions";
+			default:
+				return null;
+		}
+	}
+
+	async function handleAddMetadata(): Promise<void> {
 		if (!newMetadataValue.trim()) {
 			Alert.alert("Error", "Please enter a value");
 			return;
@@ -459,10 +487,24 @@ export default function Inventory() {
 			return;
 		}
 
-		PRODUCT_FIELD_OPTIONS[fieldKey].push(trimmedValue);
-		setIsAddModalVisible(false);
-		resetNewProductForm();
-		Alert.alert("Success", `"${trimmedValue}" has been added!`);
+		const sheetName = getSheetNameForMetadata(currentView);
+		if (!sheetName) {
+			Alert.alert("Error", "Cannot add items to this category");
+			return;
+		}
+
+		try {
+			const result = await addMetadata(sheetName, trimmedValue);
+			if (result.success) {
+				setIsAddModalVisible(false);
+				resetNewProductForm();
+				Alert.alert("Success", `"${trimmedValue}" has been added!`);
+			} else {
+				Alert.alert("Error", result.error || "Failed to add item");
+			}
+		} catch (error) {
+			Alert.alert("Error", "Failed to add item to spreadsheet");
+		}
 	}
 
 	function handleBarcodeScanned(data: string): void {
@@ -506,7 +548,7 @@ export default function Inventory() {
 		VIEW_OPTIONS.find((option) => option.key === currentView)?.label ||
 		"Products";
 
-	function handleAddProduct(): void {
+	async function handleAddProduct(): Promise<void> {
 		if (!newProduct.name.trim() || newProduct.quantity <= 0) {
 			Alert.alert("Error", "Please enter both name and quantity");
 			return;
@@ -526,23 +568,34 @@ export default function Inventory() {
 			id: scannedBarcode,
 			name: newProduct.name.trim(),
 			quantity: newProduct.quantity,
-			bagQuantity: 50,
+			bagQuantity: newProduct.bagQuantity,
 			productType: newProduct.productType,
 			occasion: newProduct.occasion,
 			color: newProduct.color,
 			manufacturer: newProduct.manufacturer,
 			size: newProduct.size,
 			texture: newProduct.texture,
+			shape: newProduct.shape,
+			distributor: newProduct.distributor,
 		};
 
-		addProduct(productToAdd);
-		setProductsState(getAllProducts());
-		setIsAddModalVisible(false);
-		resetNewProductForm();
-		Alert.alert(
-			"Success",
-			`"${productToAdd.name}" has been added to inventory!`,
-		);
+		try {
+			const productSheet = convertProductToSheet(productToAdd);
+			const result = await addProductToSheets(productSheet);
+
+			if (result.success) {
+				setIsAddModalVisible(false);
+				resetNewProductForm();
+				Alert.alert(
+					"Success",
+					`"${productToAdd.name}" has been added to inventory!`,
+				);
+			} else {
+				Alert.alert("Error", result.error || "Failed to add product");
+			}
+		} catch (error) {
+			Alert.alert("Error", "Failed to add product to spreadsheet");
+		}
 	}
 
 	return (
