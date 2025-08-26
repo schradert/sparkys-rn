@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{lib, pkgs, ...}: {
   android = {
     enable = true;
     reactNative.enable = true;
@@ -13,7 +13,10 @@
     javascript.bun.enable = true;
     javascript.bun.install.enable = true;
   };
-  packages = with pkgs; [claude-code google-cloud-sdk eas-cli];
+  packages = with pkgs; lib.mkMerge [
+    [claude-code google-cloud-sdk eas-cli]
+    (lib.mkIf pkgs.stdenv.isDarwin [cocoapods fastlane])
+  ];
 
   git-hooks.default_stages = [
     "pre-push"
