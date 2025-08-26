@@ -14,6 +14,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import { Colors } from "@/constants/Colors";
 import {
 	convertProductToSheet,
@@ -29,81 +30,6 @@ if (
 	UIManager.setLayoutAnimationEnabledExperimental
 ) {
 	UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-interface CollapsibleRadioSectionProps {
-	title: string;
-	options: string[];
-	selectedValue: string;
-	onSelectionChange: (value: string) => void;
-}
-
-function CollapsibleRadioSection({
-	title,
-	options,
-	selectedValue,
-	onSelectionChange,
-}: CollapsibleRadioSectionProps) {
-	const [isExpanded, setIsExpanded] = useState<boolean>(false);
-
-	function toggleExpansion(): void {
-		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-		setIsExpanded(!isExpanded);
-	}
-
-	function handlePillPress(value: string): void {
-		onSelectionChange(value);
-		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-		setIsExpanded(false);
-	}
-
-	const hasSelection = selectedValue !== "";
-
-	return (
-		<View style={styles.filterSection}>
-			<Pressable style={styles.filterHeader} onPress={toggleExpansion}>
-				<Text style={styles.filterHeaderText}>{title}</Text>
-				<View style={styles.headerRight}>
-					{!isExpanded && hasSelection && (
-						<View style={[styles.pill, styles.pillSelected]}>
-							<Text style={[styles.pillText, styles.pillTextSelected]}>
-								{selectedValue}
-							</Text>
-						</View>
-					)}
-					<Ionicons
-						name={isExpanded ? "chevron-down" : "chevron-forward"}
-						size={16}
-						color="#666"
-					/>
-				</View>
-			</Pressable>
-
-			{isExpanded && (
-				<View style={styles.pillContainer}>
-					{options.map((option) => (
-						<Pressable
-							key={option}
-							style={[
-								styles.pill,
-								selectedValue === option && styles.pillSelected,
-							]}
-							onPress={() => handlePillPress(option)}
-						>
-							<Text
-								style={[
-									styles.pillText,
-									selectedValue === option && styles.pillTextSelected,
-								]}
-							>
-								{option}
-							</Text>
-						</Pressable>
-					))}
-				</View>
-			)}
-		</View>
-	);
 }
 
 export default function ProductDetail() {
