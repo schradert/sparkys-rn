@@ -18,7 +18,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
+import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import Pagination from "@/components/Pagination";
+import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import {
 	convertProductToSheet,
@@ -64,37 +66,11 @@ if (
 	UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-interface PillCheckboxProps {
-	label: string;
-	selected: boolean;
-	onPress: () => void;
-}
-
-function PillCheckbox({ label, selected, onPress }: PillCheckboxProps) {
-	return (
-		<Pressable
-			style={[styles.pill, selected && styles.pillSelected]}
-			onPress={onPress}
-		>
-			<Text style={[styles.pillText, selected && styles.pillTextSelected]}>
-				{label}
-			</Text>
-		</Pressable>
-	);
-}
-
 interface CollapsibleFilterSectionProps {
 	title: string;
 	options: string[];
 	selectedValues: string[];
 	onSelectionChange: (values: string[]) => void;
-}
-
-interface CollapsibleRadioSectionProps {
-	title: string;
-	options: string[];
-	selectedValue: string;
-	onSelectionChange: (value: string) => void;
 }
 
 function CollapsibleFilterSection({
@@ -104,6 +80,8 @@ function CollapsibleFilterSection({
 	onSelectionChange,
 }: CollapsibleFilterSectionProps) {
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 
 	function toggleExpansion(): void {
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -123,20 +101,30 @@ function CollapsibleFilterSection({
 	const hasSelections = selectedValues.length > 0;
 
 	return (
-		<View style={styles.filterSection}>
-			<Pressable style={styles.filterHeader} onPress={toggleExpansion}>
-				<Text style={styles.filterHeaderText}>
+		<View
+			style={[styles.filterSection, { backgroundColor: colors.cardBackground }]}
+		>
+			<Pressable
+				style={[
+					styles.filterHeader,
+					{ backgroundColor: colors.cardBackground },
+				]}
+				onPress={toggleExpansion}
+			>
+				<Text style={[styles.filterHeaderText, { color: colors.text }]}>
 					{title} {hasSelections && `(${selectedValues.length})`}
 				</Text>
 				<Ionicons
 					name={isExpanded ? "chevron-down" : "chevron-forward"}
 					size={16}
-					color="#666"
+					color={colors.icon}
 				/>
 			</Pressable>
 
 			{(isExpanded || hasSelections) && (
-				<View style={styles.pillContainer}>
+				<View
+					style={[styles.pillContainer, { backgroundColor: colors.surface }]}
+				>
 					{displayOptions.map((option) => (
 						<PillCheckbox
 							key={option}
@@ -146,69 +134,20 @@ function CollapsibleFilterSection({
 						/>
 					))}
 					{!isExpanded && hasSelections && (
-						<Pressable style={styles.expandPill} onPress={toggleExpansion}>
-							<Text style={styles.expandText}>
+						<Pressable
+							style={[
+								styles.expandPill,
+								{ backgroundColor: colors.surface, borderColor: colors.border },
+							]}
+							onPress={toggleExpansion}
+						>
+							<Text
+								style={[styles.expandText, { color: colors.textSecondary }]}
+							>
 								+{options.length - selectedValues.length} more
 							</Text>
 						</Pressable>
 					)}
-				</View>
-			)}
-		</View>
-	);
-}
-
-function CollapsibleRadioSection({
-	title,
-	options,
-	selectedValue,
-	onSelectionChange,
-}: CollapsibleRadioSectionProps) {
-	const [isExpanded, setIsExpanded] = useState<boolean>(false);
-
-	function toggleExpansion(): void {
-		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-		setIsExpanded(!isExpanded);
-	}
-
-	function handlePillPress(value: string): void {
-		onSelectionChange(value);
-		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-		setIsExpanded(false);
-	}
-
-	const hasSelection = selectedValue !== "";
-
-	return (
-		<View style={styles.filterSection}>
-			<Pressable style={styles.filterHeader} onPress={toggleExpansion}>
-				<Text style={styles.filterHeaderText}>{title}</Text>
-				<View style={styles.headerRight}>
-					{!isExpanded && hasSelection && (
-						<View style={[styles.pill, styles.pillSelected]}>
-							<Text style={[styles.pillText, styles.pillTextSelected]}>
-								{selectedValue}
-							</Text>
-						</View>
-					)}
-					<Ionicons
-						name={isExpanded ? "chevron-down" : "chevron-forward"}
-						size={16}
-						color="#666"
-					/>
-				</View>
-			</Pressable>
-
-			{isExpanded && (
-				<View style={styles.pillContainer}>
-					{options.map((option) => (
-						<PillCheckbox
-							key={option}
-							label={option}
-							selected={selectedValue === option}
-							onPress={() => handlePillPress(option)}
-						/>
-					))}
 				</View>
 			)}
 		</View>
@@ -313,7 +252,7 @@ function ProductCard({
 			</Pressable>
 
 			<View style={styles.metadataGrid}>
-				{metadataItems.map((item, index) => {
+				{metadataItems.map((item) => {
 					const isSelected = isMetadataSelected(item.field, item.value!);
 					return (
 						<Pressable
@@ -772,9 +711,9 @@ export default function Inventory() {
 						<View style={styles.filterButtonContainer}>
 							<Pressable
 								onPress={() => setIsFilterModalVisible(true)}
-								style={styles.filterButton}
+								style={styles.addButton}
 							>
-								<Ionicons name="options-outline" size={24} color="#007bff" />
+								<Ionicons name="options-outline" size={24} color="white" />
 							</Pressable>
 							{totalSelections > 0 && (
 								<View style={styles.filterBadge}>
@@ -871,20 +810,44 @@ export default function Inventory() {
 				presentationStyle="pageSheet"
 				onRequestClose={() => setIsFilterModalVisible(false)}
 			>
-				<View style={styles.modalContainer}>
-					<View style={styles.modalHeader}>
-						<Text style={styles.modalTitle}>Filter Inventory</Text>
+				<View
+					style={[
+						styles.modalContainer,
+						{ backgroundColor: colors.background },
+					]}
+				>
+					<View
+						style={[
+							styles.modalHeader,
+							{
+								backgroundColor: colors.cardBackground,
+								borderBottomColor: colors.borderLight,
+							},
+						]}
+					>
+						<Text style={[styles.modalTitle, { color: colors.text }]}>
+							Filter Inventory
+						</Text>
 						<View style={styles.modalHeaderActions}>
 							{totalSelections > 0 && (
-								<Pressable onPress={clearAllFilters} style={styles.clearButton}>
+								<Pressable
+									onPress={clearAllFilters}
+									style={[
+										styles.clearButton,
+										{ backgroundColor: colors.error },
+									]}
+								>
 									<Text style={styles.clearText}>Clear All</Text>
 								</Pressable>
 							)}
 							<Pressable
 								onPress={() => setIsFilterModalVisible(false)}
-								style={styles.closeButton}
+								style={[
+									styles.closeButton,
+									{ backgroundColor: colors.surface },
+								]}
 							>
-								<Ionicons name="close" size={24} color="#6c757d" />
+								<Ionicons name="close" size={24} color={colors.textSecondary} />
 							</Pressable>
 						</View>
 					</View>
@@ -1260,23 +1223,9 @@ const styles = StyleSheet.create({
 		paddingTop: 0,
 		backgroundColor: "#f8f9fa",
 	},
-	pill: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		borderColor: "#dee2e6",
-		backgroundColor: "white",
-		margin: 4,
-	},
 	pillSelected: {
 		backgroundColor: "#007bff",
 		borderColor: "#007bff",
-	},
-	pillText: {
-		color: "#495057",
-		fontSize: 14,
-		fontWeight: "500",
 	},
 	pillTextSelected: {
 		color: "white",
@@ -1478,5 +1427,19 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontSize: 14,
 		fontWeight: "600",
+	},
+	pill: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 20,
+		borderWidth: 1.5,
+		borderColor: "#dee2e6",
+		backgroundColor: "white",
+		margin: 4,
+	},
+	pillText: {
+		color: "#495057",
+		fontSize: 14,
+		fontWeight: "500",
 	},
 });

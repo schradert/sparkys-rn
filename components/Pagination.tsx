@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Colors } from "@/constants/Colors";
+import { useTheme } from "@/hooks/useTheme";
 
 interface PaginationProps<T> {
 	data: T[];
@@ -20,6 +22,8 @@ export default function Pagination<T>({
 	maxVisiblePages = 5,
 }: PaginationProps<T>) {
 	const [currentPage, setCurrentPage] = useState(1);
+	const { theme } = useTheme();
+	const colors = Colors[theme];
 
 	const totalPages = Math.ceil(data.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
@@ -50,7 +54,9 @@ export default function Pagination<T>({
 	function renderEmpty() {
 		return (
 			<View style={styles.emptyContainer}>
-				<Text style={styles.emptyText}>{emptyText}</Text>
+				<Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+					{emptyText}
+				</Text>
 			</View>
 		);
 	}
@@ -59,7 +65,7 @@ export default function Pagination<T>({
 	useEffect(() => setCurrentPage(1), [data.length]);
 
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
 			<FlatList
 				data={currentData}
 				renderItem={renderItem}
@@ -69,19 +75,30 @@ export default function Pagination<T>({
 				contentContainerStyle={styles.listContainer}
 			/>
 
-			<View style={styles.paginationContainer}>
+			<View
+				style={[
+					styles.paginationContainer,
+					{
+						backgroundColor: colors.cardBackground,
+						borderTopColor: colors.borderLight,
+					},
+				]}
+			>
 				<Pressable
 					disabled={isFirstPage}
 					onPress={() => setCurrentPage(currentPage - 1)}
 					style={[
 						styles.paginationButton,
-						isFirstPage && styles.paginationButtonDisabled,
+						{
+							backgroundColor: isFirstPage ? colors.surface : colors.surface,
+							borderColor: isFirstPage ? colors.borderLight : colors.border,
+						},
 					]}
 				>
 					<Ionicons
 						name="chevron-back"
 						size={16}
-						color={isFirstPage ? "#adb5bd" : "#007bff"}
+						color={isFirstPage ? colors.textMuted : colors.primary}
 					/>
 				</Pressable>
 
@@ -91,7 +108,11 @@ export default function Pagination<T>({
 							key={`ellipsis-${index < pageNumbers.length / 2 ? "start" : "end"}`}
 							style={styles.ellipsis}
 						>
-							<Text style={styles.ellipsisText}>...</Text>
+							<Text
+								style={[styles.ellipsisText, { color: colors.textSecondary }]}
+							>
+								...
+							</Text>
 						</View>
 					) : (
 						<Pressable
@@ -99,13 +120,21 @@ export default function Pagination<T>({
 							onPress={() => setCurrentPage(page as number)}
 							style={[
 								styles.pageNumberButton,
-								currentPage === page && styles.pageNumberButtonActive,
+								{
+									backgroundColor:
+										currentPage === page ? colors.primary : colors.surface,
+									borderColor:
+										currentPage === page ? colors.primary : colors.border,
+								},
 							]}
 						>
 							<Text
 								style={[
 									styles.pageNumberText,
-									currentPage === page && styles.pageNumberTextActive,
+									{
+										color:
+											currentPage === page ? "white" : colors.textSecondary,
+									},
 								]}
 							>
 								{page}
@@ -119,13 +148,16 @@ export default function Pagination<T>({
 					onPress={() => setCurrentPage(currentPage + 1)}
 					style={[
 						styles.paginationButton,
-						isLastPage && styles.paginationButtonDisabled,
+						{
+							backgroundColor: isLastPage ? colors.surface : colors.surface,
+							borderColor: isLastPage ? colors.borderLight : colors.border,
+						},
 					]}
 				>
 					<Ionicons
 						name="chevron-forward"
 						size={16}
-						color={isLastPage ? "#adb5bd" : "#007bff"}
+						color={isLastPage ? colors.textMuted : colors.primary}
 					/>
 				</Pressable>
 			</View>
