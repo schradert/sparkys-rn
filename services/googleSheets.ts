@@ -1,4 +1,7 @@
-import type { ProductSheet } from "@/constants/Products";
+import type {
+	ExternalProductSheet,
+	InternalProductSheet,
+} from "@/constants/Products";
 
 interface SheetsResponse {
 	range: string;
@@ -187,38 +190,117 @@ export class GoogleSheetsService {
 		return products;
 	}
 
+	async getInternalProductData(accessToken: string): Promise<any[]> {
+		console.log("Fetching internal_products sheet...");
+		const data = await this.getSheetData("internal_products", accessToken);
+		console.log("Internal products sheet data:", data);
+		if (!data || data.length < 2) {
+			console.log("No internal products data found or insufficient rows");
+			return [];
+		}
+
+		const headers = data[0];
+		const values = data;
+
+		const products: any[] = [];
+
+		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products
+		for (let i = 1; i < values.length; i++) {
+			const row = values[i];
+			if (!row[0] || row[0].trim() === "") continue;
+
+			const product: any = {
+				sparkys_product_name: row[0] || "",
+				product_type: row[1] || "",
+				sparkys_color: row[2] || "",
+				texture: row[3] || "",
+				shape: row[4] || "",
+				occasions: row[5] || "", // comma-separated
+				products: row[6] || "", // comma-separated barcodes
+			};
+			console.log("Parsed internal product:", product);
+
+			products.push(product);
+		}
+
+		console.log("Returning", products.length, "internal products");
+		return products;
+	}
+
+	async getExternalProductData(accessToken: string): Promise<any[]> {
+		console.log("Fetching external_products sheet...");
+		const data = await this.getSheetData("external_products", accessToken);
+		console.log("External products sheet data:", data);
+		if (!data || data.length < 2) {
+			console.log("No external products data found or insufficient rows");
+			return [];
+		}
+
+		const headers = data[0];
+		const values = data;
+
+		const products: any[] = [];
+
+		// Header: unique_id_sku, manufacturer_color, brand, size, bag_quantity, distributors, quantity
+		for (let i = 1; i < values.length; i++) {
+			const row = values[i];
+			if (!row[0] || row[0].trim() === "") continue;
+
+			const product: any = {
+				unique_id_sku: row[0] || "",
+				manufacturer_color: row[1] || "",
+				brand: row[2] || "",
+				size: row[3] || "",
+				bag_quantity: parseInt(row[4] || "0", 10),
+				distributors: row[5] || "", // comma-separated
+				quantity: parseInt(row[6] || "0", 10),
+			};
+			console.log("Parsed external product:", product);
+
+			products.push(product);
+		}
+
+		console.log("Returning", products.length, "external products");
+		return products;
+	}
+
 	async getAllSheetsData(accessToken: string) {
 		try {
 			const [
 				productTypes,
 				occasions,
-				colors,
+				manufacturerColors,
+				sparkyColors,
 				brands,
 				shapes,
 				textures,
 				distributors,
 				bagQuantities,
-				products,
+				internalProducts,
+				externalProducts,
 			] = await Promise.all([
 				this.getMetadataValues("product_types", accessToken),
 				this.getMetadataValues("occasions", accessToken),
-				this.getMetadataValues("colors", accessToken),
+				this.getMetadataValues("manufacturer_colors", accessToken),
+				this.getMetadataValues("sparkys_colors", accessToken),
 				this.getMetadataValues("brands", accessToken),
 				this.getMetadataValues("shapes", accessToken),
 				this.getMetadataValues("textures", accessToken),
 				this.getMetadataValues("distributors", accessToken),
 				this.getMetadataValues("bag_quantities", accessToken),
-				this.getProductData(accessToken),
+				this.getInternalProductData(accessToken),
+				this.getExternalProductData(accessToken),
 			]);
 
 			const uniqueSizes = [
-				...new Set(products.map((p) => p.size).filter(Boolean)),
+				...new Set(externalProducts.map((p) => p.size).filter(Boolean)),
 			].sort();
 
 			return {
 				metadata: {
 					productType: productTypes,
-					color: colors,
+					manufacturer_color: manufacturerColors,
+					sparkys_color: sparkyColors,
 					manufacturer: brands,
 					size: uniqueSizes,
 					texture: textures,
@@ -227,7 +309,8 @@ export class GoogleSheetsService {
 					distributor: distributors,
 					occasion: occasions,
 				},
-				products,
+				internalProducts,
+				externalProducts,
 			};
 		} catch (error) {
 			console.error("Error fetching sheets data:", error);

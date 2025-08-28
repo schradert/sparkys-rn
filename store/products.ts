@@ -1,26 +1,77 @@
-import type { Product } from "@/constants/Products";
+import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 
-let products: Product[] = [];
+// Store for internal products (user-defined groupings)
+let internalProducts: InternalProduct[] = [];
 
-export function getAllProducts(): Product[] {
-	return products;
+// Store for external products (manufacturer products with barcodes)
+let externalProducts: ExternalProduct[] = [];
+
+// Internal Products Management
+export function getAllInternalProducts(): InternalProduct[] {
+	return internalProducts;
 }
 
-export function getProductById(id: string): Product | undefined {
-	return products.find((p) => p.id === id);
+export function getInternalProductByName(
+	name: string,
+): InternalProduct | undefined {
+	return internalProducts.find((p) => p.sparkys_product_name === name);
 }
 
-export function addProduct(product: Product): void {
-	products = [...products, product];
+export function addInternalProduct(product: InternalProduct): void {
+	internalProducts = [...internalProducts, product];
 }
 
-export function updateProduct(id: string, updatedProduct: Product): void {
-	const index = products.findIndex((p) => p.id === id);
+export function updateInternalProduct(
+	name: string,
+	updatedProduct: InternalProduct,
+): void {
+	const index = internalProducts.findIndex(
+		(p) => p.sparkys_product_name === name,
+	);
 	if (index !== -1) {
-		products[index] = updatedProduct;
+		internalProducts[index] = updatedProduct;
 	}
 }
 
-export function setProducts(newProducts: Product[]): void {
-	products = [...newProducts];
+export function setInternalProducts(newProducts: InternalProduct[]): void {
+	console.log("Setting internal products:", newProducts);
+	internalProducts = [...newProducts];
+}
+
+// External Products Management
+export function getAllExternalProducts(): ExternalProduct[] {
+	return externalProducts;
+}
+
+export function getExternalProductBySku(
+	sku: string,
+): ExternalProduct | undefined {
+	return externalProducts.find((p) => p.unique_id_sku === sku);
+}
+
+export function getExternalProductsForInternal(
+	internalProduct: InternalProduct,
+): ExternalProduct[] {
+	return externalProducts.filter((p) =>
+		internalProduct.products.includes(p.unique_id_sku),
+	);
+}
+
+export function addExternalProduct(product: ExternalProduct): void {
+	externalProducts = [...externalProducts, product];
+}
+
+export function updateExternalProduct(
+	sku: string,
+	updatedProduct: ExternalProduct,
+): void {
+	const index = externalProducts.findIndex((p) => p.unique_id_sku === sku);
+	if (index !== -1) {
+		externalProducts[index] = updatedProduct;
+	}
+}
+
+export function setExternalProducts(newProducts: ExternalProduct[]): void {
+	console.log("Setting external products:", newProducts);
+	externalProducts = [...newProducts];
 }
