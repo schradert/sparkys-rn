@@ -8,17 +8,25 @@
 			"developmentClient": true,
 			"distribution": "internal",
 			"env": {
-				"APP_VARIANT": "development"
+				"APP_VARIANT": "development",
+				"EXPO_PUBLIC_SPREADSHEET_ID": "1V4r_IT3XQB5hxIkX0iO6p1ASqgtz4MrfAGXq0QW8pzE"
 			}
 		},
 		"preview": {
 			"distribution": "internal",
+			"android": {
+				"buildType": "apk"
+			},
 			"env": {
-				"APP_VARIANT": "preview"
+				"APP_VARIANT": "preview",
+				"EXPO_PUBLIC_SPREADSHEET_ID": "11HdaY0ZoqDAPA7-fYAKl0GSp54mUMOAuTYVV4B91pwI"
 			}
 		},
 		"production": {
-			"autoIncrement": true
+			"autoIncrement": true,
+			"env": {
+				"EXPO_PUBLIC_SPREADSHEET_ID": "11HdaY0ZoqDAPA7-fYAKl0GSp54mUMOAuTYVV4B91pwI"
+			}
 		},
 		"ios-simulator": {
 			"extends": "development",

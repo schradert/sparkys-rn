@@ -5,7 +5,20 @@ export const DEFAULT_FIELD_OPTIONS = {
 		"Bubble Balloons",
 		"Modeling Balloons",
 	],
-	color: [
+	// Separate color fields for internal vs external products
+	manufacturer_color: [
+		"Flaming Red",
+		"Ocean Blue",
+		"Rose Pink",
+		"Metallic Gold",
+		"Chrome Silver",
+		"Forest Green",
+		"Royal Purple",
+		"Sunset Orange",
+		"Jet Black",
+		"Pearl White",
+	],
+	sparkys_color: [
 		"Red",
 		"Blue",
 		"Pink",
@@ -47,72 +60,153 @@ export type FieldFilters = {
 	[K in Field]: string[];
 };
 
-export type ProductSheet = {
-	id: string;
-	name: string;
+// Updated field options that include the new color fields
+export const INTERNAL_PRODUCT_FIELDS = [
+	"product_type",
+	"texture",
+	"shape",
+	"occasions",
+	"sparkys_color",
+] as const;
+
+export const EXTERNAL_PRODUCT_FIELDS = [
+	"manufacturer_color",
+	"brand",
+	"size",
+	"bag_quantity",
+	"distributors",
+] as const;
+
+export type InternalProductField = (typeof INTERNAL_PRODUCT_FIELDS)[number];
+export type ExternalProductField = (typeof EXTERNAL_PRODUCT_FIELDS)[number];
+
+export interface InternalProduct {
+	sparkys_product_name: string; // unique identifier
 	product_type: string;
-	occasion: string;
-	color: string;
-	manufacturer: string;
-	size: string;
+	sparkys_color: string;
 	texture: string;
-	quantity: number;
+	shape: string;
+	occasions: string[]; // multiple occasions
+	products: string[]; // comma-separated list of barcodes
+}
+
+export interface ExternalProduct {
+	unique_id_sku: string; // barcode - unique identifier
+	manufacturer_color: string;
+	brand: string;
+	size: string;
 	bag_quantity: number;
-	shape: string;
-	distributor: string;
-	image_url?: string;
-};
-
-export type Product = {
-	id: string;
-	name: string;
-	productType: string;
-	occasion: string;
-	color: string;
-	manufacturer: string;
-	size: string;
-	texture: string;
+	distributors: string[]; // multiple distributors
 	quantity: number;
-	bagQuantity: number;
-	shape: string;
-	distributor: string;
-	imageUrl?: string;
-};
+}
 
-export function convertSheetToProduct(sheet: ProductSheet): Product {
+// Spreadsheet representations with comma-separated arrays
+export interface InternalProductSheet {
+	sparkys_product_name: string;
+	product_type: string;
+	sparkys_color: string;
+	texture: string;
+	shape: string;
+	occasions: string; // comma-separated
+	products: string; // comma-separated barcodes
+}
+
+export interface ExternalProductSheet {
+	unique_id_sku: string;
+	manufacturer_color: string;
+	brand: string;
+	size: string;
+	bag_quantity: number;
+	distributors: string; // comma-separated
+	quantity: number;
+}
+
+// Utility functions for parsing comma-separated values
+export function parseCommaSeparated(value: string): string[] {
+	if (!value || value.trim() === "") return [];
+	return value.split(",").map((item) => item.trim().replace(/^"|"$/g, ""));
+}
+
+export function formatCommaSeparated(values: string[]): string {
+	return values
+		.map((value) => (value.includes(",") ? `"${value}"` : value))
+		.join(",");
+}
+
+// Convert between sheet and app models
+export function convertInternalProductSheetToModel(
+	sheet: InternalProductSheet,
+): InternalProduct {
 	return {
-		id: sheet.id,
-		name: sheet.name,
-		productType: sheet.product_type,
-		occasion: sheet.occasion,
-		color: sheet.color,
-		manufacturer: sheet.manufacturer,
-		size: sheet.size,
+		sparkys_product_name: sheet.sparkys_product_name,
+		product_type: sheet.product_type,
+		sparkys_color: sheet.sparkys_color,
 		texture: sheet.texture,
-		quantity: sheet.quantity,
-		bagQuantity: sheet.bag_quantity,
 		shape: sheet.shape,
-		distributor: sheet.distributor,
-		imageUrl: sheet.image_url,
+		occasions: parseCommaSeparated(sheet.occasions),
+		products: parseCommaSeparated(sheet.products),
 	};
 }
 
-export function convertProductToSheet(product: Product): ProductSheet {
+export function convertInternalProductModelToSheet(
+	internal: InternalProduct,
+): InternalProductSheet {
 	return {
-		id: product.id,
-		name: product.name,
-		product_type: product.productType,
-		occasion: product.occasion,
-		color: product.color,
-		manufacturer: product.manufacturer,
-		size: product.size,
-		texture: product.texture,
-		quantity: product.quantity,
-		bag_quantity: product.bagQuantity,
-		shape: product.shape,
-		distributor: product.distributor,
-		image_url: product.imageUrl,
+		sparkys_product_name: internal.sparkys_product_name,
+		product_type: internal.product_type,
+		sparkys_color: internal.sparkys_color,
+		texture: internal.texture,
+		shape: internal.shape,
+		occasions: formatCommaSeparated(internal.occasions),
+		products: formatCommaSeparated(internal.products),
 	};
+}
+
+export function convertExternalProductSheetToModel(
+	sheet: ExternalProductSheet,
+): ExternalProduct {
+	return {
+		unique_id_sku: sheet.unique_id_sku,
+		manufacturer_color: sheet.manufacturer_color,
+		brand: sheet.brand,
+		size: sheet.size,
+		bag_quantity: sheet.bag_quantity,
+		distributors: parseCommaSeparated(sheet.distributors),
+		quantity: sheet.quantity,
+	};
+}
+
+export function convertExternalProductModelToSheet(
+	external: ExternalProduct,
+): ExternalProductSheet {
+	return {
+		unique_id_sku: external.unique_id_sku,
+		manufacturer_color: external.manufacturer_color,
+		brand: external.brand,
+		size: external.size,
+		bag_quantity: external.bag_quantity,
+		distributors: formatCommaSeparated(external.distributors),
+		quantity: external.quantity,
+	};
+}
+
+export function getInternalProductTotalQuantity(
+	internalProduct: InternalProduct,
+	externalProducts: ExternalProduct[],
+): number {
+	return externalProducts
+		.filter((ext) => internalProduct.products.includes(ext.unique_id_sku))
+		.reduce((total, ext) => total + ext.quantity, 0);
+}
+
+// Helper to get external products for an internal product
+export function getExternalProductsForInternal(
+	internalProduct: InternalProduct,
+	externalProducts: ExternalProduct[],
+): ExternalProduct[] {
+	return externalProducts.filter((ext) =>
+		internalProduct.products.includes(ext.unique_id_sku),
+	);
 }
 
 export const BALLOON_PRODUCTS: Product[] = [

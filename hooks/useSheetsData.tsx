@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { SHEETS_CONFIG } from "@/config/sheets";
 import {
-	convertSheetToProduct,
-	type Product,
-	type ProductSheet,
+	convertExternalProductSheetToModel,
+	convertInternalProductSheetToModel,
+	type ExternalProduct,
+	type InternalProduct,
 	updateFieldOptions,
 } from "@/constants/Products";
 import { GoogleSheetsService } from "@/services/googleSheets";
-import { setProducts } from "@/store/products";
+import { setExternalProducts, setInternalProducts } from "@/store/products";
 import { useAuth } from "./useAuth";
 
 interface SheetsDataState {
-	products: Product[];
+	internalProducts: InternalProduct[];
+	externalProducts: ExternalProduct[];
 	isLoading: boolean;
 	error: string | null;
 	lastUpdated: Date | null;
 }
 
 let globalSheetsState: SheetsDataState = {
-	products: [],
+	internalProducts: [],
+	externalProducts: [],
 	isLoading: false,
 	error: null,
 	lastUpdated: null,
@@ -65,7 +67,9 @@ function updateSheetsState(newState: Partial<SheetsDataState>) {
 	sheetsSubscribers.forEach((callback) => callback());
 }
 
-const { SPREADSHEET_ID } = SHEETS_CONFIG;
+// FIXME make dynamic (why isn't eas.json passing it?)
+// const SPREADSHEET_ID = process.env.EXPO_PUBLIC_SPREADSHEET_ID;
+const SPREADSHEET_ID = "1V4r_IT3XQB5hxIkX0iO6p1ASqgtz4MrfAGXq0QW8pzE";
 
 function getSheetNameForMetadata(viewMode: string): string | null {
 	switch (viewMode) {
@@ -96,11 +100,10 @@ async function loadSheetsData(
 	accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		if (SPREADSHEET_ID === "1YourSpreadsheetIdHere" || !SPREADSHEET_ID) {
+		if (!SPREADSHEET_ID)
 			throw new Error(
-				"Please configure your spreadsheet ID in config/sheets.ts",
+				"Please set EXPO_PUBLIC_SPREADSHEET_ID to database sheet ID.",
 			);
-		}
 
 		console.log("Loading sheets data with spreadsheet ID:", SPREADSHEET_ID);
 		console.log("Access token length:", accessToken?.length);
@@ -112,18 +115,38 @@ async function loadSheetsData(
 		const data = await sheetsService.getAllSheetsData(accessToken);
 
 		console.log("Received data:", {
-			productCount: data.products.length,
+			internalProductCount: data.internalProducts?.length || 0,
+			externalProductCount: data.externalProducts?.length || 0,
 			metadata: Object.keys(data.metadata),
+			data,
 		});
 
 		updateFieldOptions(data.metadata);
 
-		const products = data.products.map(convertSheetToProduct);
+		// Convert raw sheet data to app models
+		const internalProducts = (data.internalProducts || []).map(
+			convertInternalProductSheetToModel,
+		);
+		const externalProducts = (data.externalProducts || []).map(
+			convertExternalProductSheetToModel,
+		);
 
-		setProducts(products);
+		console.log("Converted products:", {
+			internalProducts,
+			externalProducts,
+			internalProductsWithBarcodes: internalProducts.map((ip) => ({
+				name: ip.sparkys_product_name,
+				barcodes: ip.products,
+			})),
+			externalProductSkus: externalProducts.map((ep) => ep.unique_id_sku),
+		});
+
+		setInternalProducts(internalProducts);
+		setExternalProducts(externalProducts);
 
 		updateSheetsState({
-			products,
+			internalProducts,
+			externalProducts,
 			isLoading: false,
 			error: null,
 			lastUpdated: new Date(),

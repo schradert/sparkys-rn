@@ -19,22 +19,25 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
+import InternalProductCard from "@/components/InternalProductCard";
 import Pagination from "@/components/Pagination";
 import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import {
-	convertProductToSheet,
-	type Field,
-	type FieldFilters,
+	type ExternalProduct,
+	type InternalProduct,
 	PRODUCT_FIELD_OPTIONS,
-	type Product,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
-import { addProduct, getAllProducts, getProductById } from "@/store/products";
+import {
+	getAllExternalProducts,
+	getAllInternalProducts,
+	getExternalProductBySku,
+} from "@/store/products";
 
 type ViewMode =
-	| "products"
+	| "products" // Internal products (hierarchical view)
 	| "productTypes"
 	| "colors"
 	| "manufacturers"
@@ -57,6 +60,22 @@ const VIEW_OPTIONS = [
 	{ key: "distributors" as ViewMode, label: "Distributors" },
 	{ key: "occasions" as ViewMode, label: "Occasions" },
 ];
+
+// Filter types for internal and external products
+type InternalFilters = {
+	product_type: string[];
+	texture: string[];
+	shape: string[];
+	occasions: string[];
+	sparkys_color: string[];
+};
+
+type ExternalFilters = {
+	manufacturer_color: string[];
+	brand: string[];
+	size: string[];
+	distributors: string[];
+};
 
 // Enable LayoutAnimation on Android
 if (
@@ -326,46 +345,81 @@ export default function Inventory() {
 		subscribeToMetadataChanges,
 	} = useSheetsData();
 
-	const defaultFilters: FieldFilters = {
-		productType: [],
-		color: [],
-		manufacturer: [],
-		size: [],
+	// Separate filters for internal and external products
+	const defaultInternalFilters: InternalFilters = {
+		product_type: [],
 		texture: [],
-		bagQuantity: [],
 		shape: [],
-		distributor: [],
-		occasion: [],
+		occasions: [],
+		sparkys_color: [],
 	};
-	const emptyProduct: Omit<Product, "id"> = {
-		name: "",
-		quantity: 0,
-		productType: PRODUCT_FIELD_OPTIONS.productType[0] || "",
-		color: PRODUCT_FIELD_OPTIONS.color[0] || "",
-		manufacturer: PRODUCT_FIELD_OPTIONS.manufacturer[0] || "",
-		size: PRODUCT_FIELD_OPTIONS.size[0] || "",
-		texture: PRODUCT_FIELD_OPTIONS.texture[0] || "",
-		bagQuantity: parseInt(PRODUCT_FIELD_OPTIONS.bagQuantity[0] || "50", 10),
-		shape: PRODUCT_FIELD_OPTIONS.shape[0] || "",
-		distributor: PRODUCT_FIELD_OPTIONS.distributor[0] || "",
-		occasion: PRODUCT_FIELD_OPTIONS.occasion[0] || "",
+
+	const defaultExternalFilters: ExternalFilters = {
+		manufacturer_color: [],
+		brand: [],
+		size: [],
+		distributors: [],
 	};
 
 	const [permission, requestPermission] = useCameraPermissions();
 
-	const [filters, setFilters] = useState<FieldFilters>(defaultFilters);
+	// New state for internal/external products
+	const [internalFilters, setInternalFilters] = useState<InternalFilters>(
+		defaultInternalFilters,
+	);
+	const [externalFilters, setExternalFilters] = useState<ExternalFilters>(
+		defaultExternalFilters,
+	);
+	const [internalProducts, setInternalProductsState] = useState<
+		InternalProduct[]
+	>(getAllInternalProducts());
+	const [externalProducts, setExternalProductsState] = useState<
+		ExternalProduct[]
+	>(getAllExternalProducts());
+
+	// UI state
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 	const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 	const [isScannerVisible, setIsScannerVisible] = useState(false);
 	const [isViewDropdownVisible, setIsViewDropdownVisible] = useState(false);
 	const [currentView, setCurrentView] = useState<ViewMode>("products");
-	const [products, setProductsState] = useState<Product[]>(getAllProducts());
-	const [newProduct, setNewProduct] = useState(emptyProduct);
 	const [scannedBarcode, setScannedBarcode] = useState("");
 	const [newMetadataValue, setNewMetadataValue] = useState("");
 
+	// Internal Product Form State
+	const [newInternalProduct, setNewInternalProduct] = useState({
+		sparkys_product_name: "",
+		product_type: "",
+		sparkys_color: "",
+		texture: "",
+		shape: "",
+		occasions: [] as string[],
+		products: [] as string[],
+	});
+
+	// External Product Form State
+	const [newExternalProduct, setNewExternalProduct] = useState({
+		unique_id_sku: "",
+		manufacturer_color: "",
+		brand: "",
+		size: "",
+		bag_quantity: 50,
+		distributors: [] as string[],
+		quantity: 0,
+	});
+
 	useEffect(() => {
-		setProductsState(getAllProducts());
+		// Update product data from store
+		const internalData = getAllInternalProducts();
+		const externalData = getAllExternalProducts();
+		console.log("Loading products from store:", {
+			internalCount: internalData?.length || 0,
+			externalCount: externalData?.length || 0,
+			internalData,
+			externalData,
+		});
+		setInternalProductsState(internalData);
+		setExternalProductsState(externalData);
 	}, [sheetsLoading]);
 
 	// Subscribe to metadata changes to update filters
@@ -394,20 +448,66 @@ export default function Inventory() {
 	function getCurrentData() {
 		switch (currentView) {
 			case "products":
+				// Return filtered internal products for hierarchical view
 				return (
-					products?.filter((product) => {
-						if (!filters) return true;
-						return Object.entries(filters).every(([key, selectedValues]) => {
-							if (!selectedValues || selectedValues.length === 0) return true;
-							const productValue = product[key as Field] as string;
-							return selectedValues.includes(productValue);
+					internalProducts?.filter((internalProduct) => {
+						// Apply internal product filters
+						const matchesInternal = Object.entries(internalFilters).every(
+							([key, selectedValues]) => {
+								if (!selectedValues || selectedValues.length === 0) return true;
+								if (key === "occasions") {
+									// For occasions array, check if any selected occasion is in the product's occasions
+									return selectedValues.some((selectedValue) =>
+										internalProduct.occasions.includes(selectedValue),
+									);
+								}
+								const productValue = internalProduct[
+									key as keyof InternalProduct
+								] as string;
+								return selectedValues.includes(productValue);
+							},
+						);
+
+						if (!matchesInternal) return false;
+
+						// If external filters are applied, check if any related external products match
+						const hasExternalFilters = Object.values(externalFilters).some(
+							(arr) => arr.length > 0,
+						);
+						if (!hasExternalFilters) return true;
+
+						const relatedExternals = externalProducts.filter((ext) =>
+							internalProduct.products.includes(ext.unique_id_sku),
+						);
+
+						return relatedExternals.some((externalProduct) => {
+							return Object.entries(externalFilters).every(
+								([key, selectedValues]) => {
+									if (!selectedValues || selectedValues.length === 0)
+										return true;
+									if (key === "distributors") {
+										return selectedValues.some((selectedValue) =>
+											externalProduct.distributors.includes(selectedValue),
+										);
+									}
+									const productValue = externalProduct[
+										key as keyof ExternalProduct
+									] as string;
+									return selectedValues.includes(productValue);
+								},
+							);
 						});
 					}) || []
 				);
 			case "productTypes":
 				return PRODUCT_FIELD_OPTIONS.productType;
-			case "colors":
-				return PRODUCT_FIELD_OPTIONS.color;
+			case "colors": {
+				// Combine both manufacturer and sparkys colors
+				const manufacturerColors =
+					PRODUCT_FIELD_OPTIONS.manufacturer_color || [];
+				const sparkysColors = PRODUCT_FIELD_OPTIONS.sparkys_color || [];
+				return [...new Set([...manufacturerColors, ...sparkysColors])].sort();
+			}
 			case "manufacturers":
 				return PRODUCT_FIELD_OPTIONS.manufacturer;
 			case "sizes":
@@ -429,13 +529,24 @@ export default function Inventory() {
 
 	function getCurrentRenderItem() {
 		return currentView === "products"
-			? ({ item }: { item: Product }) => (
-					<ProductCard
-						item={item}
-						filters={filters}
-						onFilterToggle={handleFilterToggle}
-					/>
-				)
+			? ({ item }: { item: InternalProduct }) => {
+					console.log("Rendering InternalProductCard with item:", item);
+					console.log(
+						"External products count:",
+						externalProducts?.length || 0,
+					);
+					return (
+						<InternalProductCard
+							internalProduct={item}
+							externalProducts={externalProducts || []}
+							onMetadataPress={handleMetadataPress}
+							selectedFilters={{
+								internal: internalFilters,
+								external: externalFilters,
+							}}
+						/>
+					);
+				}
 			: ({ item }: { item: string }) => (
 					<MetadataCard item={item} viewMode={currentView} />
 				);
@@ -443,8 +554,48 @@ export default function Inventory() {
 
 	function getCurrentKeyExtractor() {
 		return currentView === "products"
-			? (item: Product) => item.id
+			? (item: InternalProduct) => item.sparkys_product_name
 			: (item: string) => item;
+	}
+
+	// Handle metadata press for both internal and external products
+	function handleMetadataPress(field: string, value: string): void {
+		// Determine if this is an internal or external field and update appropriate filters
+		if (
+			[
+				"product_type",
+				"texture",
+				"shape",
+				"occasions",
+				"sparkys_color",
+			].includes(field)
+		) {
+			setInternalFilters((prev) => {
+				const currentValues = prev[field as keyof InternalFilters] || [];
+				const isSelected = currentValues.includes(value);
+				const newValues = isSelected
+					? currentValues.filter((v) => v !== value)
+					: [...currentValues, value];
+				return {
+					...prev,
+					[field]: newValues,
+				};
+			});
+		} else if (
+			["manufacturer_color", "brand", "size", "distributors"].includes(field)
+		) {
+			setExternalFilters((prev) => {
+				const currentValues = prev[field as keyof ExternalFilters] || [];
+				const isSelected = currentValues.includes(value);
+				const newValues = isSelected
+					? currentValues.filter((v) => v !== value)
+					: [...currentValues, value];
+				return {
+					...prev,
+					[field]: newValues,
+				};
+			});
+		}
 	}
 
 	const currentData = getCurrentData();
@@ -452,11 +603,25 @@ export default function Inventory() {
 	const currentKeyExtractor = getCurrentKeyExtractor();
 
 	function clearAllFilters(): void {
-		setFilters(defaultFilters);
+		setInternalFilters(defaultInternalFilters);
+		setExternalFilters(defaultExternalFilters);
 	}
 
-	function handleFilterChange(category: Field, values: string[]): void {
-		setFilters((prev) => ({
+	function handleInternalFilterChange(
+		category: keyof InternalFilters,
+		values: string[],
+	): void {
+		setInternalFilters((prev) => ({
+			...prev,
+			[category]: values,
+		}));
+	}
+
+	function handleExternalFilterChange(
+		category: keyof ExternalFilters,
+		values: string[],
+	): void {
+		setExternalFilters((prev) => ({
 			...prev,
 			[category]: values,
 		}));
@@ -479,25 +644,72 @@ export default function Inventory() {
 	}
 
 	function formatCategoryTitle(category: string): string {
-		if (category === "manufacturer") return "Brand";
-		if (category === "bagQuantity") return "Bag Quantity";
-		if (category === "productType") return "Product Type";
-
-		return (
-			category.charAt(0).toUpperCase() +
-			category.slice(1).replace(/([A-Z])/g, " $1")
-		);
+		switch (category) {
+			case "product_type":
+				return "Type";
+			case "sparkys_color":
+				return "Color";
+			case "manufacturer_color":
+				return "Color";
+			case "bag_quantity":
+				return "Bag Quantity";
+			case "manufacturer":
+				return "Brand";
+			case "bagQuantity":
+				return "Bag Quantity";
+			case "productType":
+				return "Product Type";
+			case "brand":
+				return "Brand";
+			case "occasions":
+				return "Occasions";
+			case "distributors":
+				return "Distributors";
+			case "texture":
+				return "Texture";
+			case "shape":
+				return "Shape";
+			case "size":
+				return "Size";
+			default:
+				return (
+					category.charAt(0).toUpperCase() +
+					category.slice(1).replace(/([A-Z])/g, " $1")
+				);
+		}
 	}
 
-	const totalSelections = Object.values(filters).reduce(
-		(sum, arr) => sum + (arr?.length || 0),
-		0,
-	);
+	const totalSelections =
+		Object.values(internalFilters).reduce(
+			(sum, arr) => sum + (arr?.length || 0),
+			0,
+		) +
+		Object.values(externalFilters).reduce(
+			(sum, arr) => sum + (arr?.length || 0),
+			0,
+		);
 
 	function resetNewProductForm(): void {
-		setNewProduct(emptyProduct);
 		setScannedBarcode("");
 		setNewMetadataValue("");
+		setNewInternalProduct({
+			sparkys_product_name: "",
+			product_type: "",
+			sparkys_color: "",
+			texture: "",
+			shape: "",
+			occasions: [],
+			products: [],
+		});
+		setNewExternalProduct({
+			unique_id_sku: "",
+			manufacturer_color: "",
+			brand: "",
+			size: "",
+			bag_quantity: 50,
+			distributors: [],
+			quantity: 0,
+		});
 	}
 
 	function getSheetNameForMetadata(viewMode: string): string | null {
@@ -585,16 +797,23 @@ export default function Inventory() {
 		setScannedBarcode(data);
 		setIsScannerVisible(false);
 
-		const existingProduct = getProductById(data);
-		if (existingProduct) {
-			router.push(`/product/${data}`);
+		// Check if external product exists
+		const existingExternal = getExternalProductBySku(data);
+		if (existingExternal) {
+			router.push(`/external-product/${data}`);
 		} else {
+			// Pre-populate external product form with scanned barcode
+			setNewExternalProduct((prev) => ({
+				...prev,
+				unique_id_sku: data,
+			}));
 			setIsAddModalVisible(true);
 		}
 	}
 
 	function handleAddButtonPress(): void {
 		if (currentView === "products") {
+			// Barcode scanner always creates external products
 			if (!permission) {
 				requestPermission();
 				return;
@@ -613,6 +832,10 @@ export default function Inventory() {
 		}
 	}
 
+	function handleAddInternalProduct(): void {
+		setIsAddModalVisible(true);
+	}
+
 	function handleViewChange(viewMode: ViewMode): void {
 		setCurrentView(viewMode);
 		setIsViewDropdownVisible(false);
@@ -622,53 +845,73 @@ export default function Inventory() {
 		VIEW_OPTIONS.find((option) => option.key === currentView)?.label ||
 		"Products";
 
-	async function handleAddProduct(): Promise<void> {
-		if (!newProduct.name.trim() || newProduct.quantity <= 0) {
-			Alert.alert("Error", "Please enter both name and quantity");
+	async function handleAddInternalProductSubmit(): Promise<void> {
+		if (!newInternalProduct.sparkys_product_name.trim()) {
+			Alert.alert("Error", "Please enter a product name");
 			return;
 		}
 
-		if (!scannedBarcode.trim()) {
+		if (!newInternalProduct.product_type) {
+			Alert.alert("Error", "Please select a product type");
+			return;
+		}
+
+		if (!newInternalProduct.sparkys_color) {
+			Alert.alert("Error", "Please select a color");
+			return;
+		}
+
+		try {
+			// TODO: Add internal product to spreadsheet
+			// For now, just show success message
+			setIsAddModalVisible(false);
+			resetNewProductForm();
+			Alert.alert(
+				"Success",
+				`Internal product "${newInternalProduct.sparkys_product_name}" has been created!`,
+			);
+		} catch (error) {
+			Alert.alert("Error", "Failed to add internal product to spreadsheet");
+		}
+	}
+
+	async function handleAddExternalProductSubmit(): Promise<void> {
+		if (!newExternalProduct.unique_id_sku.trim()) {
 			Alert.alert("Error", "Please scan a barcode first");
 			return;
 		}
 
-		if (Number.isNaN(newProduct.quantity) || newProduct.quantity <= 0) {
+		if (!newExternalProduct.manufacturer_color) {
+			Alert.alert("Error", "Please select a manufacturer color");
+			return;
+		}
+
+		if (!newExternalProduct.brand) {
+			Alert.alert("Error", "Please select a brand");
+			return;
+		}
+
+		if (!newExternalProduct.size) {
+			Alert.alert("Error", "Please select a size");
+			return;
+		}
+
+		if (newExternalProduct.quantity < 0) {
 			Alert.alert("Error", "Please enter a valid quantity");
 			return;
 		}
 
-		const productToAdd: Product = {
-			id: scannedBarcode,
-			name: newProduct.name.trim(),
-			quantity: newProduct.quantity,
-			bagQuantity: newProduct.bagQuantity,
-			productType: newProduct.productType,
-			occasion: newProduct.occasion,
-			color: newProduct.color,
-			manufacturer: newProduct.manufacturer,
-			size: newProduct.size,
-			texture: newProduct.texture,
-			shape: newProduct.shape,
-			distributor: newProduct.distributor,
-		};
-
 		try {
-			const productSheet = convertProductToSheet(productToAdd);
-			const result = await addProductToSheets(productSheet);
-
-			if (result.success) {
-				setIsAddModalVisible(false);
-				resetNewProductForm();
-				Alert.alert(
-					"Success",
-					`"${productToAdd.name}" has been added to inventory!`,
-				);
-			} else {
-				Alert.alert("Error", result.error || "Failed to add product");
-			}
+			// TODO: Add external product to spreadsheet
+			// For now, just show success message
+			setIsAddModalVisible(false);
+			resetNewProductForm();
+			Alert.alert(
+				"Success",
+				`External product with SKU "${newExternalProduct.unique_id_sku}" has been added!`,
+			);
 		} catch (error) {
-			Alert.alert("Error", "Failed to add product to spreadsheet");
+			Alert.alert("Error", "Failed to add external product to spreadsheet");
 		}
 	}
 
@@ -700,6 +943,14 @@ export default function Inventory() {
 					/>
 				</Pressable>
 				<View style={styles.headerActions}>
+					{currentView === "products" && (
+						<Pressable
+							onPress={handleAddInternalProduct}
+							style={styles.addButton}
+						>
+							<Ionicons name="add" size={24} color="white" />
+						</Pressable>
+					)}
 					<Pressable onPress={handleAddButtonPress} style={styles.addButton}>
 						<Ionicons
 							name={currentView === "products" ? "barcode-outline" : "add"}
@@ -856,19 +1107,58 @@ export default function Inventory() {
 						style={styles.modalScrollView}
 						showsVerticalScrollIndicator={false}
 					>
-						{Object.entries(PRODUCT_FIELD_OPTIONS).map(
-							([category, options]) => (
-								<CollapsibleFilterSection
-									key={category}
-									title={formatCategoryTitle(category)}
-									options={options}
-									selectedValues={filters[category as Field] || []}
-									onSelectionChange={(values) =>
-										handleFilterChange(category as Field, values)
-									}
-								/>
-							),
-						)}
+						{/* Internal Product Filters */}
+						<Text style={[styles.filterSectionTitle, { color: colors.text }]}>
+							Sparky's
+						</Text>
+						{Object.entries({
+							product_type: PRODUCT_FIELD_OPTIONS.productType,
+							sparkys_color: PRODUCT_FIELD_OPTIONS.sparkys_color,
+							texture: PRODUCT_FIELD_OPTIONS.texture,
+							shape: PRODUCT_FIELD_OPTIONS.shape,
+							occasions: PRODUCT_FIELD_OPTIONS.occasion,
+						}).map(([category, options]) => (
+							<CollapsibleFilterSection
+								key={category}
+								title={formatCategoryTitle(category)}
+								options={options}
+								selectedValues={
+									internalFilters[category as keyof InternalFilters] || []
+								}
+								onSelectionChange={(values) =>
+									handleInternalFilterChange(
+										category as keyof InternalFilters,
+										values,
+									)
+								}
+							/>
+						))}
+
+						{/* External Product Filters */}
+						<Text style={[styles.filterSectionTitle, { color: colors.text }]}>
+							Manufacturers'
+						</Text>
+						{Object.entries({
+							manufacturer_color: PRODUCT_FIELD_OPTIONS.manufacturer_color,
+							brand: PRODUCT_FIELD_OPTIONS.manufacturer,
+							size: PRODUCT_FIELD_OPTIONS.size,
+							distributors: PRODUCT_FIELD_OPTIONS.distributor,
+						}).map(([category, options]) => (
+							<CollapsibleFilterSection
+								key={category}
+								title={formatCategoryTitle(category)}
+								options={options}
+								selectedValues={
+									externalFilters[category as keyof ExternalFilters] || []
+								}
+								onSelectionChange={(values) =>
+									handleExternalFilterChange(
+										category as keyof ExternalFilters,
+										values,
+									)
+								}
+							/>
+						))}
 					</ScrollView>
 				</View>
 			</Modal>
@@ -879,21 +1169,40 @@ export default function Inventory() {
 				presentationStyle="pageSheet"
 				onRequestClose={() => setIsAddModalVisible(false)}
 			>
-				<View style={styles.modalContainer}>
-					<View style={styles.modalHeader}>
-						<Text style={styles.modalTitle}>
+				<View
+					style={[
+						styles.modalContainer,
+						{ backgroundColor: colors.background },
+					]}
+				>
+					<View
+						style={[
+							styles.modalHeader,
+							{
+								backgroundColor: colors.cardBackground,
+								borderBottomColor: colors.borderLight,
+							},
+						]}
+					>
+						<Text style={[styles.modalTitle, { color: colors.text }]}>
 							{currentView === "products"
 								? "Add New Product"
 								: `Add New ${currentViewLabel.slice(0, -1)}`}
 						</Text>
 						<View style={styles.modalHeaderActions}>
 							<Pressable
-								onPress={
-									currentView === "products"
-										? handleAddProduct
-										: handleAddMetadata
-								}
-								style={styles.saveButton}
+								onPress={() => {
+									if (currentView === "products") {
+										if (scannedBarcode) {
+											handleAddExternalProductSubmit();
+										} else {
+											handleAddInternalProductSubmit();
+										}
+									} else {
+										handleAddMetadata();
+									}
+								}}
+								style={[styles.saveButton, { backgroundColor: colors.primary }]}
 							>
 								<Ionicons name="checkmark" size={24} color="white" />
 							</Pressable>
@@ -902,9 +1211,12 @@ export default function Inventory() {
 									setIsAddModalVisible(false);
 									resetNewProductForm();
 								}}
-								style={styles.closeButton}
+								style={[
+									styles.closeButton,
+									{ backgroundColor: colors.surface },
+								]}
 							>
-								<Ionicons name="close" size={24} color="#6c757d" />
+								<Ionicons name="close" size={24} color={colors.textSecondary} />
 							</Pressable>
 						</View>
 					</View>
@@ -914,91 +1226,209 @@ export default function Inventory() {
 						showsVerticalScrollIndicator={false}
 					>
 						{currentView === "products" ? (
-							<>
-								<View style={styles.formSection}>
-									<Text style={styles.sectionTitle}>Basic Information</Text>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Barcode *</Text>
-										<TextInput
-											style={[styles.textInput, styles.disabledInput]}
-											value={scannedBarcode}
-											placeholder="Scan a barcode to populate"
-											placeholderTextColor="#6c757d"
-											editable={false}
-										/>
-									</View>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Product Name *</Text>
-										<TextInput
-											style={styles.textInput}
-											value={newProduct.name}
-											onChangeText={(text) =>
-												setNewProduct((prev) => ({ ...prev, name: text }))
-											}
-											placeholder="Enter product name"
-											placeholderTextColor="#6c757d"
-										/>
-									</View>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Quantity *</Text>
-										<TextInput
-											style={styles.textInput}
-											value={
-												newProduct.quantity === 0
-													? ""
-													: newProduct.quantity.toString()
-											}
-											onChangeText={(text) => {
-												const numValue = text === "" ? 0 : parseInt(text, 10);
-												setNewProduct((prev) => ({
-													...prev,
-													quantity: Number.isNaN(numValue) ? 0 : numValue,
-												}));
-											}}
-											placeholder="0"
-											placeholderTextColor="#6c757d"
-											keyboardType="number-pad"
-										/>
-									</View>
-								</View>
-
-								<View style={styles.formSection}>
-									<Text style={styles.sectionTitle}>Product Details</Text>
-
-									{Object.entries(PRODUCT_FIELD_OPTIONS).map(
-										([field, options]) => (
-											<CollapsibleRadioSection
-												key={field}
-												title={formatCategoryTitle(field)}
-												options={options}
-												selectedValue={
-													newProduct[field as keyof typeof newProduct] as string
-												}
-												onSelectionChange={(value) =>
-													setNewProduct((prev) => ({ ...prev, [field]: value }))
-												}
+							<View style={styles.formSection}>
+								{scannedBarcode ? (
+									// External Product Form
+									<>
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Barcode (SKU) *
+											</Text>
+											<TextInput
+												style={[
+													styles.textInput,
+													styles.disabledInput,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+														color: colors.textSecondary,
+													},
+												]}
+												value={newExternalProduct.unique_id_sku}
+												placeholder="Scanned barcode"
+												placeholderTextColor={colors.textSecondary}
+												editable={false}
 											/>
-										),
-									)}
-								</View>
-							</>
+										</View>
+
+										<CollapsibleRadioSection
+											title="Manufacturer Color *"
+											options={PRODUCT_FIELD_OPTIONS.manufacturer_color || []}
+											selectedValue={newExternalProduct.manufacturer_color}
+											onSelectionChange={(color) =>
+												setNewExternalProduct((prev) => ({
+													...prev,
+													manufacturer_color: color,
+												}))
+											}
+										/>
+
+										<CollapsibleRadioSection
+											title="Brand *"
+											options={PRODUCT_FIELD_OPTIONS.manufacturer || []}
+											selectedValue={newExternalProduct.brand}
+											onSelectionChange={(brand) =>
+												setNewExternalProduct((prev) => ({ ...prev, brand }))
+											}
+										/>
+
+										<CollapsibleRadioSection
+											title="Size *"
+											options={PRODUCT_FIELD_OPTIONS.size || []}
+											selectedValue={newExternalProduct.size}
+											onSelectionChange={(size) =>
+												setNewExternalProduct((prev) => ({ ...prev, size }))
+											}
+										/>
+
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Bag Quantity *
+											</Text>
+											<TextInput
+												style={[
+													styles.textInput,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+														color: colors.text,
+													},
+												]}
+												value={newExternalProduct.bag_quantity.toString()}
+												onChangeText={(text) =>
+													setNewExternalProduct((prev) => ({
+														...prev,
+														bag_quantity: parseInt(text) || 0,
+													}))
+												}
+												placeholder="50"
+												placeholderTextColor={colors.textSecondary}
+												keyboardType="numeric"
+											/>
+										</View>
+
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Current Quantity *
+											</Text>
+											<TextInput
+												style={[
+													styles.textInput,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+														color: colors.text,
+													},
+												]}
+												value={newExternalProduct.quantity.toString()}
+												onChangeText={(text) =>
+													setNewExternalProduct((prev) => ({
+														...prev,
+														quantity: parseInt(text) || 0,
+													}))
+												}
+												placeholder="0"
+												placeholderTextColor={colors.textSecondary}
+												keyboardType="numeric"
+											/>
+										</View>
+									</>
+								) : (
+									// Internal Product Form
+									<>
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Sparky's Product Name *
+											</Text>
+											<TextInput
+												style={[
+													styles.textInput,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+														color: colors.text,
+													},
+												]}
+												value={newInternalProduct.sparkys_product_name}
+												onChangeText={(text) =>
+													setNewInternalProduct((prev) => ({
+														...prev,
+														sparkys_product_name: text,
+													}))
+												}
+												placeholder="Enter product name"
+												placeholderTextColor={colors.textSecondary}
+												autoFocus
+											/>
+										</View>
+
+										<CollapsibleRadioSection
+											title="Product Type *"
+											options={PRODUCT_FIELD_OPTIONS.productType || []}
+											selectedValue={newInternalProduct.product_type}
+											onSelectionChange={(type) =>
+												setNewInternalProduct((prev) => ({
+													...prev,
+													product_type: type,
+												}))
+											}
+										/>
+
+										<CollapsibleRadioSection
+											title="Sparky's Color *"
+											options={PRODUCT_FIELD_OPTIONS.sparkys_color || []}
+											selectedValue={newInternalProduct.sparkys_color}
+											onSelectionChange={(color) =>
+												setNewInternalProduct((prev) => ({
+													...prev,
+													sparkys_color: color,
+												}))
+											}
+										/>
+
+										<CollapsibleRadioSection
+											title="Texture"
+											options={PRODUCT_FIELD_OPTIONS.texture || []}
+											selectedValue={newInternalProduct.texture}
+											onSelectionChange={(texture) =>
+												setNewInternalProduct((prev) => ({ ...prev, texture }))
+											}
+										/>
+
+										<CollapsibleRadioSection
+											title="Shape"
+											options={PRODUCT_FIELD_OPTIONS.shape || []}
+											selectedValue={newInternalProduct.shape}
+											onSelectionChange={(shape) =>
+												setNewInternalProduct((prev) => ({ ...prev, shape }))
+											}
+										/>
+									</>
+								)}
+							</View>
 						) : (
 							<View style={styles.formSection}>
-								<Text style={styles.sectionTitle}>Add New Value</Text>
+								<Text style={[styles.sectionTitle, { color: colors.text }]}>
+									Add New Value
+								</Text>
 
 								<View style={styles.inputGroup}>
-									<Text style={styles.inputLabel}>
+									<Text style={[styles.inputLabel, { color: colors.text }]}>
 										{currentViewLabel.slice(0, -1)} Name *
 									</Text>
 									<TextInput
-										style={styles.textInput}
+										style={[
+											styles.textInput,
+											{
+												backgroundColor: colors.surface,
+												borderColor: colors.border,
+												color: colors.text,
+											},
+										]}
 										value={newMetadataValue}
 										onChangeText={setNewMetadataValue}
 										placeholder={`Enter ${currentViewLabel.slice(0, -1).toLowerCase()} name`}
-										placeholderTextColor="#6c757d"
+										placeholderTextColor={colors.textSecondary}
 										autoFocus
 									/>
 								</View>
@@ -1441,5 +1871,27 @@ const styles = StyleSheet.create({
 		color: "#495057",
 		fontSize: 14,
 		fontWeight: "500",
+	},
+	filterSectionTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#1a1a1a",
+		marginTop: 20,
+		marginBottom: 12,
+		marginLeft: 16,
+	},
+	instructions: {
+		fontSize: 14,
+		color: "#6c757d",
+		marginBottom: 16,
+		fontStyle: "italic",
+	},
+	comingSoon: {
+		fontSize: 16,
+		color: "#6c757d",
+		textAlign: "center",
+		marginVertical: 32,
+		fontStyle: "italic",
+		lineHeight: 24,
 	},
 });
