@@ -15,7 +15,7 @@ import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import ExternalProductCard from "@/components/ExternalProductCard";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
-import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
+import { getQuantityColor, PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import {
 	getExternalProductsForInternal,
@@ -142,6 +142,23 @@ export default function InternalProductDetail() {
 		0,
 	);
 
+	const quantityColorType = getQuantityColor(
+		totalQuantity,
+		internalProduct.threshold_quantity,
+	);
+
+	const getQuantityColorValue = (colorType: "red" | "blue" | "green") => {
+		switch (colorType) {
+			case "red":
+				return "#dc3545";
+			case "green":
+				return "#28a745";
+			case "blue":
+			default:
+				return colors.primary;
+		}
+	};
+
 	const getIconForMetadata = (field: string): string => {
 		switch (field) {
 			case "product_type":
@@ -252,8 +269,14 @@ export default function InternalProductDetail() {
 						>
 							Total Quantity
 						</Text>
-						<Text style={[styles.quantity, { color: colors.primary }]}>
-							{totalQuantity}
+						<Text style={styles.quantity}>
+							<Text style={{ color: getQuantityColorValue(quantityColorType) }}>
+								{totalQuantity}
+							</Text>
+							<Text style={{ color: colors.primary }}>
+								{" "}
+								/ {internalProduct.threshold_quantity}
+							</Text>
 						</Text>
 					</View>
 

@@ -299,6 +299,46 @@ async function updateProductInSheet(
 	}
 }
 
+async function addExternalProductToSheet(
+	product: any,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.addExternalProduct(product, accessToken);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error adding external product to sheet:", error);
+		return {
+			success: false,
+			error: error.message || "Failed to add external product",
+		};
+	}
+}
+
+async function updateInternalProductInSheet(
+	product: any,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.updateInternalProduct(product, accessToken);
+
+		await refreshSheetsData(accessToken);
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error updating internal product in sheet:", error);
+		return {
+			success: false,
+			error: error.message || "Failed to update internal product",
+		};
+	}
+}
+
 export function useSheetsData() {
 	const [, forceUpdate] = useState({});
 	const { getAccessToken, isSignedIn } = useAuth();
@@ -389,6 +429,26 @@ export function useSheetsData() {
 		return await updateProductInSheet(product, accessToken);
 	};
 
+	const addExternalProduct = async (product: any) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await addExternalProductToSheet(product, accessToken);
+	};
+
+	const updateInternalProduct = async (product: any) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await updateInternalProductInSheet(product, accessToken);
+	};
+
 	return {
 		...globalSheetsState,
 		refresh,
@@ -397,6 +457,8 @@ export function useSheetsData() {
 		addProduct,
 		updateMetadata,
 		updateProduct,
+		addExternalProduct,
+		updateInternalProduct,
 		subscribeToMetadataChanges,
 	};
 }

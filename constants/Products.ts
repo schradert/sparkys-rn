@@ -88,6 +88,7 @@ export interface InternalProduct {
 	shape: string;
 	occasions: string[]; // multiple occasions
 	products: string[]; // comma-separated list of barcodes
+	threshold_quantity: number; // minimum stock threshold
 }
 
 export interface ExternalProduct {
@@ -109,6 +110,7 @@ export interface InternalProductSheet {
 	shape: string;
 	occasions: string; // comma-separated
 	products: string; // comma-separated barcodes
+	threshold_quantity: number;
 }
 
 export interface ExternalProductSheet {
@@ -145,6 +147,7 @@ export function convertInternalProductSheetToModel(
 		shape: sheet.shape,
 		occasions: parseCommaSeparated(sheet.occasions),
 		products: parseCommaSeparated(sheet.products),
+		threshold_quantity: sheet.threshold_quantity,
 	};
 }
 
@@ -159,6 +162,7 @@ export function convertInternalProductModelToSheet(
 		shape: internal.shape,
 		occasions: formatCommaSeparated(internal.occasions),
 		products: formatCommaSeparated(internal.products),
+		threshold_quantity: internal.threshold_quantity,
 	};
 }
 
@@ -207,6 +211,20 @@ export function getExternalProductsForInternal(
 	return externalProducts.filter((ext) =>
 		internalProduct.products.includes(ext.unique_id_sku),
 	);
+}
+
+// Helper to get quantity color based on threshold
+export function getQuantityColor(
+	quantity: number,
+	thresholdQuantity: number,
+): "red" | "blue" | "green" {
+	if (quantity < thresholdQuantity) {
+		return "red";
+	} else if (quantity <= thresholdQuantity * 1.25) {
+		return "blue";
+	} else {
+		return "green";
+	}
 }
 
 export const BALLOON_PRODUCTS: Product[] = [
