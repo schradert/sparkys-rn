@@ -17,6 +17,7 @@ import type {
 	getInternalProductTotalQuantity,
 	InternalProduct,
 } from "@/constants/Products";
+import { getQuantityColor } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import ExternalProductCard from "./ExternalProductCard";
 
@@ -67,6 +68,8 @@ export default function InternalProductCard({
 		occasionsType: typeof internalProduct?.occasions,
 		occasionsLength: internalProduct?.occasions?.length,
 		occasionValues: internalProduct?.occasions,
+		threshold_quantity: internalProduct?.threshold_quantity,
+		threshold_type: typeof internalProduct?.threshold_quantity,
 	});
 
 	// Debug the barcode matching
@@ -107,6 +110,30 @@ export default function InternalProductCard({
 		(total, ext) => total + ext.quantity,
 		0,
 	);
+
+	const quantityColorType = getQuantityColor(
+		totalQuantity,
+		internalProduct.threshold_quantity,
+	);
+
+	console.log("Color calculation:", {
+		productName: internalProduct.sparkys_product_name,
+		totalQuantity,
+		threshold: internalProduct.threshold_quantity,
+		colorType: quantityColorType,
+	});
+
+	const getQuantityColorValue = (colorType: "red" | "blue" | "green") => {
+		switch (colorType) {
+			case "red":
+				return "#dc3545";
+			case "green":
+				return "#28a745";
+			case "blue":
+			default:
+				return colors.primary;
+		}
+	};
 
 	const getIconForMetadata = (field: string): string => {
 		switch (field) {
@@ -184,8 +211,14 @@ export default function InternalProductCard({
 					</Text>
 				</View>
 				<View style={styles.headerRight}>
-					<Text style={[styles.quantity, { color: colors.primary }]}>
-						{totalQuantity}
+					<Text style={styles.quantity}>
+						<Text style={{ color: getQuantityColorValue(quantityColorType) }}>
+							{totalQuantity}
+						</Text>
+						<Text style={{ color: colors.primary }}>
+							{" "}
+							/ {internalProduct.threshold_quantity ?? 0}
+						</Text>
 					</Text>
 					{relatedExternals.length > 0 && (
 						<Pressable onPress={toggleExpansion} style={styles.expandButton}>
@@ -256,7 +289,7 @@ export default function InternalProductCard({
 								>
 									<Ionicons
 										name="calendar-outline"
-										size={12}
+										size={16}
 										color={isSelected ? "white" : colors.icon}
 									/>
 									<Text
@@ -265,6 +298,7 @@ export default function InternalProductCard({
 											{ color: colors.textSecondary },
 											isSelected && { color: "white", fontWeight: "600" },
 										]}
+										numberOfLines={1}
 									>
 										{occasion}
 									</Text>
@@ -353,6 +387,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 		borderRadius: 6,
 		flex: 0,
+		minWidth: "22%",
+		maxWidth: "24%",
 		gap: 4,
 	},
 	occasionText: {

@@ -25,6 +25,7 @@ import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import {
 	type ExternalProduct,
+	getInternalProductTotalQuantity,
 	type InternalProduct,
 	PRODUCT_FIELD_OPTIONS,
 } from "@/constants/Products";
@@ -68,6 +69,7 @@ type InternalFilters = {
 	shape: string[];
 	occasions: string[];
 	sparkys_color: string[];
+	understocked: boolean;
 };
 
 type ExternalFilters = {
@@ -342,6 +344,8 @@ export default function Inventory() {
 		refresh,
 		addMetadata,
 		addProduct: addProductToSheets,
+		addExternalProduct,
+		updateInternalProduct,
 		subscribeToMetadataChanges,
 	} = useSheetsData();
 
@@ -352,6 +356,7 @@ export default function Inventory() {
 		shape: [],
 		occasions: [],
 		sparkys_color: [],
+		understocked: false,
 	};
 
 	const defaultExternalFilters: ExternalFilters = {
@@ -406,6 +411,7 @@ export default function Inventory() {
 		bag_quantity: 50,
 		distributors: [] as string[],
 		quantity: 0,
+		assigned_internal_product: "",
 	});
 
 	useEffect(() => {
@@ -454,6 +460,17 @@ export default function Inventory() {
 						// Apply internal product filters
 						const matchesInternal = Object.entries(internalFilters).every(
 							([key, selectedValues]) => {
+								if (key === "understocked") {
+									// Handle understocked filter (boolean)
+									if (!selectedValues) return true;
+									const totalQuantity = getInternalProductTotalQuantity(
+										internalProduct,
+										externalProducts,
+									);
+									const isUnderstocked =
+										totalQuantity < internalProduct.threshold_quantity;
+									return isUnderstocked;
+								}
 								if (!selectedValues || selectedValues.length === 0) return true;
 								if (key === "occasions") {
 									// For occasions array, check if any selected occasion is in the product's occasions
@@ -680,10 +697,12 @@ export default function Inventory() {
 	}
 
 	const totalSelections =
-		Object.values(internalFilters).reduce(
-			(sum, arr) => sum + (arr?.length || 0),
-			0,
-		) +
+		Object.entries(internalFilters).reduce((sum, [key, value]) => {
+			if (key === "understocked") {
+				return sum + (value ? 1 : 0);
+			}
+			return sum + ((value as string[])?.length || 0);
+		}, 0) +
 		Object.values(externalFilters).reduce(
 			(sum, arr) => sum + (arr?.length || 0),
 			0,
@@ -709,6 +728,7 @@ export default function Inventory() {
 			bag_quantity: 50,
 			distributors: [],
 			quantity: 0,
+			assigned_internal_product: "",
 		});
 	}
 
@@ -896,19 +916,85 @@ export default function Inventory() {
 			return;
 		}
 
+		if (!newExternalProduct.assigned_internal_product) {
+			Alert.alert(
+				"Error",
+				"Please assign this external product to an internal product",
+			);
+			return;
+		}
+
 		if (newExternalProduct.quantity < 0) {
 			Alert.alert("Error", "Please enter a valid quantity");
 			return;
 		}
 
 		try {
-			// TODO: Add external product to spreadsheet
-			// For now, just show success message
+			// 1. Add the external product to external_products sheet
+			const externalProductForSheet = {
+				unique_id_sku: newExternalProduct.unique_id_sku,
+				manufacturer_color: newExternalProduct.manufacturer_color,
+				brand: newExternalProduct.brand,
+				size: newExternalProduct.size,
+				bag_quantity: newExternalProduct.bag_quantity,
+				distributors: newExternalProduct.distributors.join(", ") || "",
+				quantity: newExternalProduct.quantity,
+			};
+
+			const addResult = await addExternalProduct(externalProductForSheet);
+			if (!addResult.success) {
+				Alert.alert(
+					"Error",
+					addResult.error || "Failed to add external product",
+				);
+				return;
+			}
+
+			// 2. Update the assigned internal product to include this SKU
+			const assignedInternalProduct = internalProducts.find(
+				(p) =>
+					p.sparkys_product_name ===
+					newExternalProduct.assigned_internal_product,
+			);
+
+			if (assignedInternalProduct) {
+				const updatedInternalProduct = {
+					...assignedInternalProduct,
+					products: [
+						...assignedInternalProduct.products,
+						newExternalProduct.unique_id_sku,
+					],
+				};
+
+				// Convert to sheet format for updating
+				const internalProductForSheet = {
+					sparkys_product_name: updatedInternalProduct.sparkys_product_name,
+					product_type: updatedInternalProduct.product_type,
+					sparkys_color: updatedInternalProduct.sparkys_color,
+					texture: updatedInternalProduct.texture,
+					shape: updatedInternalProduct.shape,
+					occasions: updatedInternalProduct.occasions.join(", "),
+					products: updatedInternalProduct.products.join(", "),
+					threshold_quantity: updatedInternalProduct.threshold_quantity,
+				};
+
+				const updateResult = await updateInternalProduct(
+					internalProductForSheet,
+				);
+				if (!updateResult.success) {
+					Alert.alert(
+						"Warning",
+						"External product added but failed to link to internal product",
+					);
+					return;
+				}
+			}
+
 			setIsAddModalVisible(false);
 			resetNewProductForm();
 			Alert.alert(
 				"Success",
-				`External product with SKU "${newExternalProduct.unique_id_sku}" has been added!`,
+				`External product "${newExternalProduct.unique_id_sku}" added and assigned to "${newExternalProduct.assigned_internal_product}"!`,
 			);
 		} catch (error) {
 			Alert.alert("Error", "Failed to add external product to spreadsheet");
@@ -1111,6 +1197,71 @@ export default function Inventory() {
 						<Text style={[styles.filterSectionTitle, { color: colors.text }]}>
 							Sparky's
 						</Text>
+
+						{/* Understocked Filter */}
+						<View
+							style={[
+								styles.filterSection,
+								{ backgroundColor: colors.cardBackground },
+							]}
+						>
+							<Pressable
+								style={[
+									styles.filterHeader,
+									{ backgroundColor: colors.cardBackground },
+								]}
+								onPress={() =>
+									setInternalFilters((prev) => ({
+										...prev,
+										understocked: !prev.understocked,
+									}))
+								}
+							>
+								<View style={styles.understockedHeader}>
+									<Ionicons
+										name="alert-circle-outline"
+										size={20}
+										color={
+											internalFilters.understocked ? colors.error : colors.icon
+										}
+									/>
+									<Text
+										style={[
+											styles.filterHeaderText,
+											{
+												color: internalFilters.understocked
+													? colors.error
+													: colors.text,
+											},
+										]}
+									>
+										Understocked Items
+									</Text>
+								</View>
+								<View
+									style={[
+										styles.toggleSwitch,
+										{
+											backgroundColor: internalFilters.understocked
+												? colors.error
+												: colors.surface,
+										},
+									]}
+								>
+									<View
+										style={[
+											styles.toggleThumb,
+											{
+												backgroundColor: "white",
+												transform: [
+													{ translateX: internalFilters.understocked ? 18 : 2 },
+												],
+											},
+										]}
+									/>
+								</View>
+							</Pressable>
+						</View>
 						{Object.entries({
 							product_type: PRODUCT_FIELD_OPTIONS.productType,
 							sparkys_color: PRODUCT_FIELD_OPTIONS.sparkys_color,
@@ -1306,6 +1457,22 @@ export default function Inventory() {
 												keyboardType="numeric"
 											/>
 										</View>
+
+										<CollapsibleRadioSection
+											title="Assign to Internal Product *"
+											options={internalProducts.map(
+												(p) => p.sparkys_product_name,
+											)}
+											selectedValue={
+												newExternalProduct.assigned_internal_product || ""
+											}
+											onSelectionChange={(productName) =>
+												setNewExternalProduct((prev) => ({
+													...prev,
+													assigned_internal_product: productName,
+												}))
+											}
+										/>
 
 										<View style={styles.inputGroup}>
 											<Text style={[styles.inputLabel, { color: colors.text }]}>
@@ -1893,5 +2060,24 @@ const styles = StyleSheet.create({
 		marginVertical: 32,
 		fontStyle: "italic",
 		lineHeight: 24,
+	},
+	understockedHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		flex: 1,
+	},
+	toggleSwitch: {
+		width: 44,
+		height: 24,
+		borderRadius: 12,
+		justifyContent: "center",
+		position: "relative",
+	},
+	toggleThumb: {
+		width: 20,
+		height: 20,
+		borderRadius: 10,
+		position: "absolute",
 	},
 });

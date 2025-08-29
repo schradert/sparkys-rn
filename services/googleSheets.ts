@@ -204,7 +204,7 @@ export class GoogleSheetsService {
 
 		const products: any[] = [];
 
-		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products
+		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
@@ -217,6 +217,7 @@ export class GoogleSheetsService {
 				shape: row[4] || "",
 				occasions: row[5] || "", // comma-separated
 				products: row[6] || "", // comma-separated barcodes
+				threshold_quantity: parseInt(row[7] || "0", 10), // Parse as integer
 			};
 			console.log("Parsed internal product:", product);
 
@@ -414,6 +415,59 @@ export class GoogleSheetsService {
 		console.log(
 			`Added product: ${product.name} (${product.id}) to products sheet`,
 		);
+	}
+
+	async addExternalProduct(product: any, accessToken: string): Promise<void> {
+		const newRow = [
+			product.unique_id_sku,
+			product.manufacturer_color,
+			product.brand,
+			product.size,
+			product.bag_quantity.toString(),
+			product.distributors,
+			product.quantity.toString(),
+		];
+
+		await this.appendToSheet("external_products", [newRow], accessToken);
+		console.log(
+			`Added external product: ${product.unique_id_sku} to external_products sheet`,
+		);
+	}
+
+	async updateInternalProduct(
+		product: any,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			"internal_products",
+			"sparkys_product_name",
+			product.sparkys_product_name,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(
+				`Internal product "${product.sparkys_product_name}" not found`,
+			);
+		}
+
+		const updatedRow = [
+			product.sparkys_product_name,
+			product.product_type,
+			product.sparkys_color,
+			product.texture,
+			product.shape,
+			product.occasions,
+			product.products,
+			product.threshold_quantity.toString(),
+		];
+
+		await this.updateRow(
+			"internal_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Updated internal product: ${product.sparkys_product_name}`);
 	}
 
 	async findRowByValue(

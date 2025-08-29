@@ -161,7 +161,7 @@ export default function ExternalProductCard({
 								>
 									<Ionicons
 										name="storefront-outline"
-										size={12}
+										size={16}
 										color={isSelected ? "white" : colors.icon}
 									/>
 									<Text
@@ -170,6 +170,7 @@ export default function ExternalProductCard({
 											{ color: colors.textSecondary },
 											isSelected && { color: "white", fontWeight: "600" },
 										]}
+										numberOfLines={1}
 									>
 										{distributor}
 									</Text>
@@ -229,17 +230,17 @@ const styles = StyleSheet.create({
 	distributorPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		paddingHorizontal: 6,
+		backgroundColor: "#f8f9fa",
+		paddingHorizontal: 8,
 		paddingVertical: 4,
-		borderRadius: 4,
+		borderRadius: 6,
 		flex: 0,
 		minWidth: "30%",
 		maxWidth: "32%",
-		gap: 3,
+		gap: 4,
 	},
 	distributorText: {
-		fontSize: 10,
+		fontSize: 11,
 		fontWeight: "500",
 		color: "#495057",
 	},
@@ -252,17 +253,17 @@ const styles = StyleSheet.create({
 	metadataItem: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		paddingHorizontal: 6,
+		backgroundColor: "#f8f9fa",
+		paddingHorizontal: 8,
 		paddingVertical: 4,
-		borderRadius: 4,
+		borderRadius: 6,
 		flex: 0,
 		minWidth: "30%",
 		maxWidth: "32%",
-		gap: 3,
+		gap: 4,
 	},
 	metadataValue: {
-		fontSize: 10,
+		fontSize: 11,
 		color: "#495057",
 		fontWeight: "500",
 		flex: 1,
