@@ -1381,6 +1381,7 @@ export default function Inventory() {
 								{scannedBarcode ? (
 									// External Product Form
 									<>
+										{/* Primary Info Section */}
 										<View style={styles.inputGroup}>
 											<Text style={[styles.inputLabel, { color: colors.text }]}>
 												Barcode (SKU) *
@@ -1402,6 +1403,31 @@ export default function Inventory() {
 											/>
 										</View>
 
+										<CollapsibleRadioSection
+											title="Assign to Internal Product *"
+											options={internalProducts.map(
+												(p) => p.sparkys_product_name,
+											)}
+											selectedValue={
+												newExternalProduct.assigned_internal_product || ""
+											}
+											onSelectionChange={(productName) =>
+												setNewExternalProduct((prev) => ({
+													...prev,
+													assigned_internal_product: productName,
+												}))
+											}
+										/>
+
+										{/* Separator */}
+										<View
+											style={[
+												styles.sectionSeparator,
+												{ backgroundColor: colors.border },
+											]}
+										/>
+
+										{/* Product Details Section */}
 										<CollapsibleRadioSection
 											title="Manufacturer Color *"
 											options={PRODUCT_FIELD_OPTIONS.manufacturer_color || []}
@@ -1432,72 +1458,63 @@ export default function Inventory() {
 											}
 										/>
 
-										<View style={styles.inputGroup}>
-											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Bag Quantity *
-											</Text>
-											<TextInput
-												style={[
-													styles.textInput,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-														color: colors.text,
-													},
-												]}
-												value={newExternalProduct.bag_quantity.toString()}
-												onChangeText={(text) =>
-													setNewExternalProduct((prev) => ({
-														...prev,
-														bag_quantity: parseInt(text) || 0,
-													}))
-												}
-												placeholder="50"
-												placeholderTextColor={colors.textSecondary}
-												keyboardType="numeric"
-											/>
-										</View>
+										{/* Quantity Fields on Same Line */}
+										<View style={styles.quantityRow}>
+											<View style={styles.quantityField}>
+												<Text
+													style={[styles.inputLabel, { color: colors.text }]}
+												>
+													Bag Quantity *
+												</Text>
+												<TextInput
+													style={[
+														styles.textInput,
+														{
+															backgroundColor: colors.surface,
+															borderColor: colors.border,
+															color: colors.text,
+														},
+													]}
+													value={newExternalProduct.bag_quantity.toString()}
+													onChangeText={(text) =>
+														setNewExternalProduct((prev) => ({
+															...prev,
+															bag_quantity: parseInt(text) || 0,
+														}))
+													}
+													placeholder="50"
+													placeholderTextColor={colors.textSecondary}
+													keyboardType="numeric"
+												/>
+											</View>
 
-										<CollapsibleRadioSection
-											title="Assign to Internal Product *"
-											options={internalProducts.map(
-												(p) => p.sparkys_product_name,
-											)}
-											selectedValue={
-												newExternalProduct.assigned_internal_product || ""
-											}
-											onSelectionChange={(productName) =>
-												setNewExternalProduct((prev) => ({
-													...prev,
-													assigned_internal_product: productName,
-												}))
-											}
-										/>
-
-										<View style={styles.inputGroup}>
-											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Current Quantity *
-											</Text>
-											<TextInput
-												style={[
-													styles.textInput,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-														color: colors.text,
-													},
-												]}
-												value={newExternalProduct.quantity.toString()}
-												onChangeText={(text) =>
-													setNewExternalProduct((prev) => ({
-														...prev,
-														quantity: parseInt(text) || 0,
-													}))
-												}
-												placeholder="0"
-												placeholderTextColor={colors.textSecondary}
-												keyboardType="numeric"
-											/>
+											<View style={styles.quantityField}>
+												<Text
+													style={[styles.inputLabel, { color: colors.text }]}
+												>
+													Current Quantity *
+												</Text>
+												<TextInput
+													style={[
+														styles.textInput,
+														{
+															backgroundColor: colors.surface,
+															borderColor: colors.border,
+															color: colors.text,
+														},
+													]}
+													value={newExternalProduct.quantity.toString()}
+													onChangeText={(text) =>
+														setNewExternalProduct((prev) => ({
+															...prev,
+															quantity: parseInt(text) || 0,
+														}))
+													}
+													placeholder="0"
+													placeholderTextColor={colors.textSecondary}
+													keyboardType="numeric"
+												/>
+											</View>
 										</View>
 									</>
 								) : (
@@ -2079,5 +2096,18 @@ const styles = StyleSheet.create({
 		height: 20,
 		borderRadius: 10,
 		position: "absolute",
+	},
+	sectionSeparator: {
+		height: 1,
+		backgroundColor: "#dee2e6",
+		marginVertical: 20,
+		marginHorizontal: 4,
+	},
+	quantityRow: {
+		flexDirection: "row",
+		gap: 16,
+	},
+	quantityField: {
+		flex: 1,
 	},
 });
