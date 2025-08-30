@@ -5,6 +5,7 @@ import {
 	Pressable,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import PillCheckbox from "@/components/PillCheckbox";
@@ -25,19 +26,41 @@ export default function CollapsibleRadioSection({
 	onSelectionChange,
 }: CollapsibleRadioSectionProps) {
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>("");
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
 	function toggleExpansion(): void {
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 		setIsExpanded(!isExpanded);
+		if (!isExpanded) {
+			// Reset search when expanding
+			setSearchQuery("");
+		}
 	}
 
 	function handlePillPress(value: string): void {
 		onSelectionChange(value);
+		// Clear search and collapse
+		setSearchQuery("");
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 		setIsExpanded(false);
 	}
+
+	// Simple fuzzy matching function
+	function fuzzyMatch(query: string, text: string): boolean {
+		if (!query) return true;
+		const queryLower = query.toLowerCase();
+		const textLower = text.toLowerCase();
+
+		// Simple substring match for now - could be enhanced with more sophisticated fuzzy matching
+		return textLower.includes(queryLower);
+	}
+
+	// Filter options based on search query
+	const filteredOptions = searchQuery
+		? options.filter((option) => fuzzyMatch(searchQuery, option))
+		: options;
 
 	const hasSelection = selectedValue !== "";
 
@@ -81,16 +104,58 @@ export default function CollapsibleRadioSection({
 
 			{isExpanded && (
 				<View
-					style={[styles.pillContainer, { backgroundColor: colors.surface }]}
+					style={[styles.expandedContent, { backgroundColor: colors.surface }]}
 				>
-					{options.map((option) => (
-						<PillCheckbox
-							key={option}
-							label={option}
-							selected={selectedValue === option}
-							onPress={() => handlePillPress(option)}
+					<View
+						style={[
+							styles.searchContainer,
+							{ backgroundColor: colors.cardBackground },
+						]}
+					>
+						<Ionicons
+							name="search-outline"
+							size={16}
+							color={colors.textSecondary}
 						/>
-					))}
+						<TextInput
+							style={[styles.searchInput, { color: colors.text }]}
+							placeholder={`Search ${title.toLowerCase()}...`}
+							placeholderTextColor={colors.textMuted}
+							value={searchQuery}
+							onChangeText={setSearchQuery}
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{searchQuery.length > 0 && (
+							<Pressable onPress={() => setSearchQuery("")}>
+								<Ionicons
+									name="close-circle"
+									size={16}
+									color={colors.textSecondary}
+								/>
+							</Pressable>
+						)}
+					</View>
+
+					<View
+						style={[styles.pillContainer, { backgroundColor: colors.surface }]}
+					>
+						{filteredOptions.map((option) => (
+							<PillCheckbox
+								key={option}
+								label={option}
+								selected={selectedValue === option}
+								onPress={() => handlePillPress(option)}
+							/>
+						))}
+						{filteredOptions.length === 0 && searchQuery && (
+							<Text
+								style={[styles.noResultsText, { color: colors.textSecondary }]}
+							>
+								No results found for "{searchQuery}"
+							</Text>
+						)}
+					</View>
 				</View>
 			)}
 		</View>
@@ -123,13 +188,41 @@ const styles = StyleSheet.create({
 		color: "#1a1a1a",
 		flex: 1,
 	},
+	expandedContent: {
+		// Background color applied inline with theme
+	},
+	searchContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		marginHorizontal: 16,
+		marginTop: 8,
+		backgroundColor: "white",
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		gap: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 14,
+		color: "#1a1a1a",
+		paddingVertical: 0,
+	},
 	pillContainer: {
 		flexDirection: "row",
 		flexWrap: "wrap",
 		alignItems: "center",
 		padding: 16,
-		paddingTop: 0,
-		backgroundColor: "#f8f9fa",
+	},
+	noResultsText: {
+		fontSize: 14,
+		color: "#6c757d",
+		fontStyle: "italic",
+		textAlign: "center",
+		width: "100%",
+		paddingVertical: 20,
 	},
 	filterHeader: {
 		flexDirection: "row",
