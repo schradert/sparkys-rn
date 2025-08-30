@@ -48,10 +48,148 @@ export const DEFAULT_FIELD_OPTIONS = {
 
 export let PRODUCT_FIELD_OPTIONS = { ...DEFAULT_FIELD_OPTIONS };
 
+// Archive management for metadata items
+export const ARCHIVED_METADATA_ITEMS: Record<string, string[]> = {
+	productType: [],
+	manufacturer_color: [],
+	sparkys_color: [],
+	manufacturer: [],
+	size: [],
+	texture: [],
+	bagQuantity: [],
+	shape: [],
+	distributor: [],
+	occasion: [],
+};
+
 export function updateFieldOptions(
 	newOptions: Partial<typeof PRODUCT_FIELD_OPTIONS>,
 ) {
 	PRODUCT_FIELD_OPTIONS = { ...PRODUCT_FIELD_OPTIONS, ...newOptions };
+}
+
+// Archive/unarchive metadata items
+export function archiveMetadataItem(fieldKey: string, value: string) {
+	// Remove from active options
+	const activeOptions = PRODUCT_FIELD_OPTIONS[
+		fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
+	] as string[];
+	const index = activeOptions.indexOf(value);
+	if (index > -1) {
+		activeOptions.splice(index, 1);
+	}
+
+	// Add to archived items
+	if (!ARCHIVED_METADATA_ITEMS[fieldKey]) {
+		ARCHIVED_METADATA_ITEMS[fieldKey] = [];
+	}
+	if (!ARCHIVED_METADATA_ITEMS[fieldKey].includes(value)) {
+		ARCHIVED_METADATA_ITEMS[fieldKey].push(value);
+	}
+}
+
+export function unarchiveMetadataItem(fieldKey: string, value: string) {
+	// Remove from archived items
+	const archivedItems = ARCHIVED_METADATA_ITEMS[fieldKey] || [];
+	const index = archivedItems.indexOf(value);
+	if (index > -1) {
+		archivedItems.splice(index, 1);
+	}
+
+	// Add back to active options
+	const activeOptions = PRODUCT_FIELD_OPTIONS[
+		fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
+	] as string[];
+	if (!activeOptions.includes(value)) {
+		activeOptions.push(value);
+	}
+}
+
+export function isMetadataItemArchived(
+	fieldKey: string,
+	value: string,
+): boolean {
+	return ARCHIVED_METADATA_ITEMS[fieldKey]?.includes(value) || false;
+}
+
+export function getArchivedMetadataItems(fieldKey: string): string[] {
+	return ARCHIVED_METADATA_ITEMS[fieldKey] || [];
+}
+
+export function getAllMetadataItems(
+	fieldKey: string,
+	includeArchived: boolean = false,
+): string[] {
+	const activeItems =
+		(PRODUCT_FIELD_OPTIONS[
+			fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
+		] as string[]) || [];
+	if (!includeArchived) {
+		return activeItems;
+	}
+	const archivedItems = getArchivedMetadataItems(fieldKey);
+	return [...activeItems, ...archivedItems];
+}
+
+// Archive/unarchive product functions
+export function archiveInternalProduct(
+	productName: string,
+	products: InternalProduct[],
+): InternalProduct[] {
+	return products.map((product) =>
+		product.sparkys_product_name === productName
+			? { ...product, status: "archived" as const }
+			: product,
+	);
+}
+
+export function unarchiveInternalProduct(
+	productName: string,
+	products: InternalProduct[],
+): InternalProduct[] {
+	return products.map((product) =>
+		product.sparkys_product_name === productName
+			? { ...product, status: "active" as const }
+			: product,
+	);
+}
+
+export function archiveExternalProduct(
+	sku: string,
+	products: ExternalProduct[],
+): ExternalProduct[] {
+	return products.map((product) =>
+		product.unique_id_sku === sku
+			? { ...product, status: "archived" as const }
+			: product,
+	);
+}
+
+export function unarchiveExternalProduct(
+	sku: string,
+	products: ExternalProduct[],
+): ExternalProduct[] {
+	return products.map((product) =>
+		product.unique_id_sku === sku
+			? { ...product, status: "active" as const }
+			: product,
+	);
+}
+
+export function isInternalProductArchived(
+	productName: string,
+	products: InternalProduct[],
+): boolean {
+	const product = products.find((p) => p.sparkys_product_name === productName);
+	return product?.status === "archived";
+}
+
+export function isExternalProductArchived(
+	sku: string,
+	products: ExternalProduct[],
+): boolean {
+	const product = products.find((p) => p.unique_id_sku === sku);
+	return product?.status === "archived";
 }
 
 export type FieldOptions = typeof PRODUCT_FIELD_OPTIONS;
@@ -89,6 +227,7 @@ export interface InternalProduct {
 	occasions: string[]; // multiple occasions
 	products: string[]; // comma-separated list of barcodes
 	threshold_quantity: number; // minimum stock threshold
+	status?: "active" | "archived"; // archive status
 }
 
 export interface ExternalProduct {
@@ -99,6 +238,7 @@ export interface ExternalProduct {
 	bag_quantity: number;
 	distributors: string[]; // multiple distributors
 	quantity: number;
+	status?: "active" | "archived"; // archive status
 }
 
 // Spreadsheet representations with comma-separated arrays
@@ -111,6 +251,7 @@ export interface InternalProductSheet {
 	occasions: string; // comma-separated
 	products: string; // comma-separated barcodes
 	threshold_quantity: number;
+	status?: "active" | "archived"; // archive status
 }
 
 export interface ExternalProductSheet {
@@ -121,6 +262,7 @@ export interface ExternalProductSheet {
 	bag_quantity: number;
 	distributors: string; // comma-separated
 	quantity: number;
+	status?: "active" | "archived"; // archive status
 }
 
 // Utility functions for parsing comma-separated values
@@ -148,6 +290,7 @@ export function convertInternalProductSheetToModel(
 		occasions: parseCommaSeparated(sheet.occasions),
 		products: parseCommaSeparated(sheet.products),
 		threshold_quantity: sheet.threshold_quantity,
+		status: sheet.status || "active", // Default to "active" if not specified
 	};
 }
 
@@ -163,6 +306,7 @@ export function convertInternalProductModelToSheet(
 		occasions: formatCommaSeparated(internal.occasions),
 		products: formatCommaSeparated(internal.products),
 		threshold_quantity: internal.threshold_quantity,
+		status: internal.status || "active", // Default to "active" if not specified
 	};
 }
 
@@ -177,6 +321,7 @@ export function convertExternalProductSheetToModel(
 		bag_quantity: sheet.bag_quantity,
 		distributors: parseCommaSeparated(sheet.distributors),
 		quantity: sheet.quantity,
+		status: sheet.status || "active", // Default to "active" if not specified
 	};
 }
 
@@ -191,6 +336,7 @@ export function convertExternalProductModelToSheet(
 		bag_quantity: external.bag_quantity,
 		distributors: formatCommaSeparated(external.distributors),
 		quantity: external.quantity,
+		status: external.status || "active", // Default to "active" if not specified
 	};
 }
 

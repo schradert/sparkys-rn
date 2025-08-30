@@ -15,11 +15,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
-import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
+import {
+	archiveExternalProduct,
+	PRODUCT_FIELD_OPTIONS,
+	unarchiveExternalProduct,
+} from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import {
+	getAllExternalProducts,
 	getAllInternalProducts,
 	getExternalProductBySku,
+	setExternalProducts,
 	updateExternalProduct,
 } from "@/store/products";
 
@@ -161,6 +167,50 @@ export default function ExternalProductDetail() {
 		}
 	};
 
+	const handleArchive = () => {
+		if (!externalProduct) return;
+
+		const isCurrentlyArchived = externalProduct.status === "archived";
+		const action = isCurrentlyArchived ? "unarchive" : "archive";
+
+		Alert.alert(
+			`${action.charAt(0).toUpperCase() + action.slice(1)} Product`,
+			`Are you sure you want to ${action} "${externalProduct.unique_id_sku}"?`,
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: action.charAt(0).toUpperCase() + action.slice(1),
+					style: isCurrentlyArchived ? "default" : "destructive",
+					onPress: () => {
+						const allProducts = getAllExternalProducts();
+						const updatedProducts = isCurrentlyArchived
+							? unarchiveExternalProduct(
+									externalProduct.unique_id_sku,
+									allProducts,
+								)
+							: archiveExternalProduct(
+									externalProduct.unique_id_sku,
+									allProducts,
+								);
+
+						setExternalProducts(updatedProducts);
+
+						// Update local state
+						const updatedProduct = updatedProducts.find(
+							(p) => p.unique_id_sku === externalProduct.unique_id_sku,
+						);
+						if (updatedProduct) {
+							setExternalProduct(updatedProduct);
+							setEditedProduct(updatedProduct);
+						}
+
+						Alert.alert("Success", `Product ${action}d successfully!`);
+					},
+				},
+			],
+		);
+	};
+
 	if (loading) {
 		return (
 			<SafeAreaView
@@ -256,29 +306,47 @@ export default function ExternalProductDetail() {
 				<Text style={[styles.headerTitle, { color: colors.text }]}>
 					External Product
 				</Text>
-				<Pressable
-					onPress={isEditing ? handleSave : () => setIsEditing(true)}
-					style={[
-						styles.circleButton,
-						{ backgroundColor: colors.primary },
-						isSaving && styles.disabledButton,
-					]}
-					disabled={isSaving}
-				>
-					<Ionicons
-						name={isSaving ? "hourglass" : isEditing ? "checkmark" : "pencil"}
-						size={20}
-						color="white"
-					/>
-				</Pressable>
-				{isEditing && (
+				<View style={styles.headerActions}>
+					{!isEditing && (
+						<Pressable
+							onPress={handleArchive}
+							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+						>
+							<Ionicons
+								name={
+									externalProduct.status === "archived"
+										? "refresh-outline"
+										: "archive-outline"
+								}
+								size={20}
+								color="white"
+							/>
+						</Pressable>
+					)}
 					<Pressable
-						onPress={handleCancel}
-						style={[styles.circleButton, { backgroundColor: colors.error }]}
+						onPress={isEditing ? handleSave : () => setIsEditing(true)}
+						style={[
+							styles.circleButton,
+							{ backgroundColor: colors.primary },
+							isSaving && styles.disabledButton,
+						]}
+						disabled={isSaving}
 					>
-						<Ionicons name="close" size={20} color="white" />
+						<Ionicons
+							name={isSaving ? "hourglass" : isEditing ? "checkmark" : "pencil"}
+							size={20}
+							color="white"
+						/>
 					</Pressable>
-				)}
+					{isEditing && (
+						<Pressable
+							onPress={handleCancel}
+							style={[styles.circleButton, { backgroundColor: colors.error }]}
+						>
+							<Ionicons name="close" size={20} color="white" />
+						</Pressable>
+					)}
+				</View>
 			</View>
 
 			<View
@@ -564,6 +632,13 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "bold",
 		color: "#1a1a1a",
+		flex: 1,
+		textAlign: "center",
+	},
+	headerActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
 	content: {
 		flex: 1,
