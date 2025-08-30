@@ -19,8 +19,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
+import InfiniteScroll from "@/components/InfiniteScroll";
 import InternalProductCard from "@/components/InternalProductCard";
-import Pagination from "@/components/Pagination";
 import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import {
@@ -1176,7 +1176,7 @@ export default function Inventory() {
 					</View>
 				)}
 
-				<Pagination
+				<InfiniteScroll
 					data={currentData}
 					renderItem={currentRenderItem}
 					keyExtractor={currentKeyExtractor}
