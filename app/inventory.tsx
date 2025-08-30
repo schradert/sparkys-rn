@@ -25,8 +25,10 @@ import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import {
 	type ExternalProduct,
+	getAllMetadataItems,
 	getInternalProductTotalQuantity,
 	type InternalProduct,
+	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
@@ -70,6 +72,7 @@ type InternalFilters = {
 	occasions: string[];
 	sparkys_color: string[];
 	understocked: boolean;
+	showArchived: boolean;
 };
 
 type ExternalFilters = {
@@ -77,6 +80,7 @@ type ExternalFilters = {
 	brand: string[];
 	size: string[];
 	distributors: string[];
+	showArchived: boolean;
 };
 
 // Enable LayoutAnimation on Android
@@ -423,6 +427,7 @@ export default function Inventory() {
 		occasions: [],
 		sparkys_color: [],
 		understocked: false,
+		showArchived: false,
 	};
 
 	const defaultExternalFilters: ExternalFilters = {
@@ -430,6 +435,7 @@ export default function Inventory() {
 		brand: [],
 		size: [],
 		distributors: [],
+		showArchived: false,
 	};
 
 	const [permission, requestPermission] = useCameraPermissions();
@@ -537,6 +543,18 @@ export default function Inventory() {
 										totalQuantity < internalProduct.threshold_quantity;
 									return isUnderstocked;
 								}
+								if (key === "showArchived") {
+									// Handle showArchived filter (boolean)
+									const isProductArchived =
+										internalProduct.status === "archived";
+									if (selectedValues === true) {
+										// Show all products (both active and archived)
+										return true;
+									} else {
+										// Show only active products (exclude archived)
+										return !isProductArchived;
+									}
+								}
 								if (!selectedValues || selectedValues.length === 0) return true;
 								if (key === "occasions") {
 									// For occasions array, check if any selected occasion is in the product's occasions
@@ -568,6 +586,18 @@ export default function Inventory() {
 							(externalProduct) => {
 								return Object.entries(externalFilters).every(
 									([key, selectedValues]) => {
+										if (key === "showArchived") {
+											// Handle showArchived filter (boolean)
+											const isProductArchived =
+												externalProduct.status === "archived";
+											if (selectedValues === true) {
+												// Show all products (both active and archived)
+												return true;
+											} else {
+												// Show only active products (exclude archived)
+												return !isProductArchived;
+											}
+										}
 										if (!selectedValues || selectedValues.length === 0)
 											return true;
 										if (key === "distributors") {
@@ -631,6 +661,18 @@ export default function Inventory() {
 						(externalProduct) => {
 							return Object.entries(externalFilters).every(
 								([key, selectedValues]) => {
+									if (key === "showArchived") {
+										// Handle showArchived filter (boolean)
+										const isProductArchived =
+											externalProduct.status === "archived";
+										if (selectedValues === true) {
+											// Show all products (both active and archived)
+											return true;
+										} else {
+											// Show only active products (exclude archived)
+											return !isProductArchived;
+										}
+									}
 									if (!selectedValues || selectedValues.length === 0)
 										return true;
 									if (key === "distributors") {
@@ -798,15 +840,17 @@ export default function Inventory() {
 
 	const totalSelections =
 		Object.entries(internalFilters).reduce((sum, [key, value]) => {
-			if (key === "understocked") {
+			if (key === "understocked" || key === "showArchived") {
 				return sum + (value ? 1 : 0);
 			}
 			return sum + ((value as string[])?.length || 0);
 		}, 0) +
-		Object.values(externalFilters).reduce(
-			(sum, arr) => sum + (arr?.length || 0),
-			0,
-		);
+		Object.entries(externalFilters).reduce((sum, [key, value]) => {
+			if (key === "showArchived") {
+				return sum + (value ? 1 : 0);
+			}
+			return sum + ((value as string[])?.length || 0);
+		}, 0);
 
 	function resetNewProductForm(): void {
 		setScannedBarcode("");
@@ -1371,17 +1415,88 @@ export default function Inventory() {
 								</View>
 							</Pressable>
 						</View>
+
+						{/* Show Archived Filter */}
+						<View
+							style={[
+								styles.filterSection,
+								{ backgroundColor: colors.cardBackground },
+							]}
+						>
+							<Pressable
+								style={[
+									styles.filterHeader,
+									{ backgroundColor: colors.cardBackground },
+								]}
+								onPress={() =>
+									setInternalFilters((prev) => ({
+										...prev,
+										showArchived: !prev.showArchived,
+									}))
+								}
+							>
+								<View style={styles.understockedHeader}>
+									<Ionicons
+										name="archive-outline"
+										size={20}
+										color={
+											internalFilters.showArchived
+												? colors.primary
+												: colors.icon
+										}
+									/>
+									<Text
+										style={[
+											styles.filterHeaderText,
+											{
+												color: internalFilters.showArchived
+													? colors.primary
+													: colors.text,
+											},
+										]}
+									>
+										Show Archived Items
+									</Text>
+								</View>
+								<View
+									style={[
+										styles.toggleSwitch,
+										{
+											backgroundColor: internalFilters.showArchived
+												? colors.primary
+												: colors.surface,
+										},
+									]}
+								>
+									<View
+										style={[
+											styles.toggleThumb,
+											{
+												backgroundColor: "white",
+												transform: [
+													{ translateX: internalFilters.showArchived ? 18 : 2 },
+												],
+											},
+										]}
+									/>
+								</View>
+							</Pressable>
+						</View>
+
 						{Object.entries({
-							product_type: PRODUCT_FIELD_OPTIONS.productType,
-							sparkys_color: PRODUCT_FIELD_OPTIONS.sparkys_color,
-							texture: PRODUCT_FIELD_OPTIONS.texture,
-							shape: PRODUCT_FIELD_OPTIONS.shape,
-							occasions: PRODUCT_FIELD_OPTIONS.occasion,
-						}).map(([category, options]) => (
+							product_type: "productType",
+							sparkys_color: "sparkys_color",
+							texture: "texture",
+							shape: "shape",
+							occasions: "occasion",
+						}).map(([category, fieldKey]) => (
 							<CollapsibleFilterSection
 								key={category}
 								title={formatCategoryTitle(category)}
-								options={options}
+								options={getAllMetadataItems(
+									fieldKey,
+									internalFilters.showArchived,
+								)}
 								selectedValues={
 									internalFilters[category as keyof InternalFilters] || []
 								}
@@ -1398,16 +1513,87 @@ export default function Inventory() {
 						<Text style={[styles.filterSectionTitle, { color: colors.text }]}>
 							Manufacturers'
 						</Text>
+
+						{/* Show Archived Filter for External */}
+						<View
+							style={[
+								styles.filterSection,
+								{ backgroundColor: colors.cardBackground },
+							]}
+						>
+							<Pressable
+								style={[
+									styles.filterHeader,
+									{ backgroundColor: colors.cardBackground },
+								]}
+								onPress={() =>
+									setExternalFilters((prev) => ({
+										...prev,
+										showArchived: !prev.showArchived,
+									}))
+								}
+							>
+								<View style={styles.understockedHeader}>
+									<Ionicons
+										name="archive-outline"
+										size={20}
+										color={
+											externalFilters.showArchived
+												? colors.primary
+												: colors.icon
+										}
+									/>
+									<Text
+										style={[
+											styles.filterHeaderText,
+											{
+												color: externalFilters.showArchived
+													? colors.primary
+													: colors.text,
+											},
+										]}
+									>
+										Show Archived Items
+									</Text>
+								</View>
+								<View
+									style={[
+										styles.toggleSwitch,
+										{
+											backgroundColor: externalFilters.showArchived
+												? colors.primary
+												: colors.surface,
+										},
+									]}
+								>
+									<View
+										style={[
+											styles.toggleThumb,
+											{
+												backgroundColor: "white",
+												transform: [
+													{ translateX: externalFilters.showArchived ? 18 : 2 },
+												],
+											},
+										]}
+									/>
+								</View>
+							</Pressable>
+						</View>
+
 						{Object.entries({
-							manufacturer_color: PRODUCT_FIELD_OPTIONS.manufacturer_color,
-							brand: PRODUCT_FIELD_OPTIONS.manufacturer,
-							size: PRODUCT_FIELD_OPTIONS.size,
-							distributors: PRODUCT_FIELD_OPTIONS.distributor,
-						}).map(([category, options]) => (
+							manufacturer_color: "manufacturer_color",
+							brand: "manufacturer",
+							size: "size",
+							distributors: "distributor",
+						}).map(([category, fieldKey]) => (
 							<CollapsibleFilterSection
 								key={category}
 								title={formatCategoryTitle(category)}
-								options={options}
+								options={getAllMetadataItems(
+									fieldKey,
+									externalFilters.showArchived,
+								)}
 								selectedValues={
 									externalFilters[category as keyof ExternalFilters] || []
 								}

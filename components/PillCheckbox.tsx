@@ -6,12 +6,14 @@ interface PillCheckboxProps {
 	label: string;
 	selected: boolean;
 	onPress: () => void;
+	archived?: boolean;
 }
 
 export default function PillCheckbox({
 	label,
 	selected,
 	onPress,
+	archived = false,
 }: PillCheckboxProps) {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
@@ -23,6 +25,7 @@ export default function PillCheckbox({
 				{
 					backgroundColor: selected ? colors.primary : colors.cardBackground,
 					borderColor: selected ? colors.primary : colors.border,
+					opacity: archived ? 0.6 : 1,
 				},
 			]}
 			onPress={onPress}
@@ -32,10 +35,11 @@ export default function PillCheckbox({
 					styles.pillText,
 					{
 						color: selected ? "white" : colors.textSecondary,
+						textDecorationLine: archived ? "line-through" : "none",
 					},
 				]}
 			>
-				{label}
+				{archived ? `${label} (archived)` : label}
 			</Text>
 		</Pressable>
 	);

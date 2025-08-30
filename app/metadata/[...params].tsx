@@ -11,7 +11,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
-import { PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
+import {
+	archiveMetadataItem,
+	isMetadataItemArchived,
+	PRODUCT_FIELD_OPTIONS,
+	unarchiveMetadataItem,
+} from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -25,6 +30,7 @@ export default function MetadataDetail() {
 	const decodedItemName = decodeURIComponent(itemName);
 	const [editedValue, setEditedValue] = useState(decodedItemName);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
 
 	if (!params || params.length < 2) {
 		return (
@@ -44,6 +50,9 @@ export default function MetadataDetail() {
 
 	const fieldKey = getFieldKey(viewMode);
 	const categoryTitle = formatCategoryTitle(viewMode);
+	const isArchived = fieldKey
+		? isMetadataItemArchived(fieldKey, decodedItemName)
+		: false;
 
 	if (!fieldKey) {
 		return (
@@ -170,30 +179,58 @@ export default function MetadataDetail() {
 		}
 	}
 
-	function handleDelete() {
+	function handleArchive() {
 		Alert.alert(
-			"Delete Value",
-			`Are you sure you want to delete "${decodedItemName}"?`,
+			"Archive Value",
+			`Are you sure you want to archive "${decodedItemName}"?`,
 			[
 				{ text: "Cancel", style: "cancel" },
 				{
-					text: "Delete",
-					style: "destructive",
+					text: "Archive",
+					style: "default",
 					onPress: () => {
-						const existingValues =
-							PRODUCT_FIELD_OPTIONS[
-								fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
-							];
-						const index = existingValues.indexOf(decodedItemName);
-						if (index !== -1) {
-							(existingValues as string[]).splice(index, 1);
+						try {
+							archiveMetadataItem(fieldKey!, decodedItemName);
+							Alert.alert("Success", `"${decodedItemName}" has been archived!`);
+							router.back();
+						} catch (error) {
+							Alert.alert("Error", "Failed to archive item");
 						}
-						Alert.alert("Success", `"${decodedItemName}" has been deleted!`);
-						router.back();
 					},
 				},
 			],
 		);
+	}
+
+	function handleUnarchive() {
+		Alert.alert(
+			"Unarchive Value",
+			`Are you sure you want to unarchive "${decodedItemName}"?`,
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Unarchive",
+					style: "default",
+					onPress: () => {
+						try {
+							unarchiveMetadataItem(fieldKey!, decodedItemName);
+							Alert.alert(
+								"Success",
+								`"${decodedItemName}" has been unarchived!`,
+							);
+							router.back();
+						} catch (error) {
+							Alert.alert("Error", "Failed to unarchive item");
+						}
+					},
+				},
+			],
+		);
+	}
+
+	function handleCancel() {
+		setEditedValue(decodedItemName);
+		setIsEditing(false);
 	}
 
 	return (
@@ -217,19 +254,55 @@ export default function MetadataDetail() {
 					<Ionicons name="arrow-back" size={24} color={colors.primary} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: colors.text }]}>
-					Edit {categoryTitle.slice(0, -1)}
+					{categoryTitle.slice(0, -1)}
 				</Text>
-				<Pressable
-					onPress={handleSave}
-					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-					disabled={isSaving}
-				>
-					{isSaving ? (
-						<Ionicons name="hourglass-outline" size={24} color="white" />
-					) : (
-						<Ionicons name="checkmark" size={24} color="white" />
+				<View style={styles.headerActions}>
+					{!isEditing && !isArchived && (
+						<Pressable
+							onPress={handleArchive}
+							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+						>
+							<Ionicons name="archive-outline" size={20} color="white" />
+						</Pressable>
 					)}
-				</Pressable>
+					{!isEditing && isArchived && (
+						<Pressable
+							onPress={handleUnarchive}
+							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+						>
+							<Ionicons name="refresh-outline" size={20} color="white" />
+						</Pressable>
+					)}
+					<Pressable
+						onPress={isEditing ? handleSave : () => setIsEditing(true)}
+						style={[
+							styles.circleButton,
+							{ backgroundColor: colors.primary },
+							isSaving && styles.disabledButton,
+						]}
+						disabled={isSaving}
+					>
+						<Ionicons
+							name={
+								isSaving
+									? "hourglass-outline"
+									: isEditing
+										? "checkmark"
+										: "pencil"
+							}
+							size={20}
+							color="white"
+						/>
+					</Pressable>
+					{isEditing && (
+						<Pressable
+							onPress={handleCancel}
+							style={[styles.circleButton, { backgroundColor: colors.error }]}
+						>
+							<Ionicons name="close" size={20} color="white" />
+						</Pressable>
+					)}
+				</View>
 			</View>
 
 			<View
@@ -241,41 +314,70 @@ export default function MetadataDetail() {
 				<View style={styles.content}>
 					<View style={styles.section}>
 						<Text style={[styles.sectionTitle, { color: colors.text }]}>
-							Edit Value
+							{isEditing ? "Edit Value" : "Value Details"}
 						</Text>
 
-						<View style={styles.inputGroup}>
-							<Text
-								style={[styles.inputLabel, { color: colors.textSecondary }]}
-							>
-								{categoryTitle.slice(0, -1)} Name *
-							</Text>
-							<TextInput
+						{isEditing ? (
+							<View style={styles.inputGroup}>
+								<Text
+									style={[styles.inputLabel, { color: colors.textSecondary }]}
+								>
+									{categoryTitle.slice(0, -1)} Name *
+								</Text>
+								<TextInput
+									style={[
+										styles.textInput,
+										{
+											backgroundColor: colors.cardBackground,
+											color: colors.text,
+											borderColor: colors.border,
+										},
+									]}
+									value={editedValue}
+									onChangeText={setEditedValue}
+									placeholder={`Enter ${categoryTitle.slice(0, -1).toLowerCase()} name`}
+									placeholderTextColor={colors.textMuted}
+									autoFocus
+								/>
+							</View>
+						) : (
+							<View
 								style={[
-									styles.textInput,
+									styles.valueDisplay,
 									{
-										backgroundColor: colors.cardBackground,
-										color: colors.text,
+										backgroundColor: colors.surface,
 										borderColor: colors.border,
 									},
 								]}
-								value={editedValue}
-								onChangeText={setEditedValue}
-								placeholder={`Enter ${categoryTitle.slice(0, -1).toLowerCase()} name`}
-								placeholderTextColor={colors.textMuted}
-								autoFocus
-							/>
-						</View>
+							>
+								<Text style={[styles.valueText, { color: colors.text }]}>
+									{decodedItemName}
+								</Text>
+							</View>
+						)}
 
-						<Pressable
-							style={[styles.deleteButton, { backgroundColor: colors.error }]}
-							onPress={handleDelete}
-						>
-							<Ionicons name="trash-outline" size={20} color="white" />
-							<Text style={styles.deleteButtonText}>
-								Delete {categoryTitle.slice(0, -1)}
-							</Text>
-						</Pressable>
+						{isArchived && !isEditing && (
+							<View
+								style={[
+									styles.archivedIndicator,
+									{
+										backgroundColor: colors.surface,
+										borderColor: colors.border,
+									},
+								]}
+							>
+								<Ionicons
+									name="archive"
+									size={20}
+									color={colors.textSecondary}
+								/>
+								<Text
+									style={[styles.archivedText, { color: colors.textSecondary }]}
+								>
+									This {categoryTitle.slice(0, -1).toLowerCase()} is archived
+								</Text>
+							</View>
+						)}
 					</View>
 				</View>
 			</View>
@@ -317,6 +419,16 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		marginHorizontal: 16,
 	},
+	circleButton: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	disabledButton: {
+		opacity: 0.7,
+	},
 	saveButton: {
 		width: 44,
 		height: 44,
@@ -327,6 +439,32 @@ const styles = StyleSheet.create({
 	},
 	saveButtonDisabled: {
 		backgroundColor: "#6c757d",
+	},
+	headerActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	valueDisplay: {
+		backgroundColor: "#f8f9fa",
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		borderRadius: 8,
+		padding: 16,
+		marginBottom: 24,
+	},
+	valueText: {
+		fontSize: 16,
+		fontWeight: "500",
+		color: "#1a1a1a",
+	},
+	unarchiveButton: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "#007bff",
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	content: {
 		flex: 1,
@@ -360,19 +498,35 @@ const styles = StyleSheet.create({
 		backgroundColor: "white",
 		color: "#495057",
 	},
-	deleteButton: {
+	archiveButton: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#dc3545",
+		backgroundColor: "#6c757d",
 		borderRadius: 8,
 		padding: 16,
 		gap: 8,
 	},
-	deleteButtonText: {
+	archiveButtonText: {
 		color: "white",
 		fontSize: 16,
 		fontWeight: "600",
+	},
+	archivedIndicator: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "#f8f9fa",
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		padding: 16,
+		gap: 8,
+	},
+	archivedText: {
+		color: "#6c757d",
+		fontSize: 16,
+		fontWeight: "500",
 	},
 	errorContainer: {
 		flex: 1,

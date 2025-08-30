@@ -15,11 +15,18 @@ import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import ExternalProductCard from "@/components/ExternalProductCard";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
-import { getQuantityColor, PRODUCT_FIELD_OPTIONS } from "@/constants/Products";
+import {
+	archiveInternalProduct,
+	getQuantityColor,
+	PRODUCT_FIELD_OPTIONS,
+	unarchiveInternalProduct,
+} from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import {
+	getAllInternalProducts,
 	getExternalProductsForInternal,
 	getInternalProductByName,
+	setInternalProducts,
 	updateInternalProduct,
 } from "@/store/products";
 
@@ -103,6 +110,51 @@ export default function InternalProductDetail() {
 				occasions: [...occasions, occasionValue],
 			});
 		}
+	};
+
+	const handleArchive = () => {
+		if (!internalProduct) return;
+
+		const isCurrentlyArchived = internalProduct.status === "archived";
+		const action = isCurrentlyArchived ? "unarchive" : "archive";
+
+		Alert.alert(
+			`${action.charAt(0).toUpperCase() + action.slice(1)} Product`,
+			`Are you sure you want to ${action} "${internalProduct.sparkys_product_name}"?`,
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: action.charAt(0).toUpperCase() + action.slice(1),
+					style: isCurrentlyArchived ? "default" : "destructive",
+					onPress: () => {
+						const allProducts = getAllInternalProducts();
+						const updatedProducts = isCurrentlyArchived
+							? unarchiveInternalProduct(
+									internalProduct.sparkys_product_name,
+									allProducts,
+								)
+							: archiveInternalProduct(
+									internalProduct.sparkys_product_name,
+									allProducts,
+								);
+
+						setInternalProducts(updatedProducts);
+
+						// Update local state
+						const updatedProduct = updatedProducts.find(
+							(p) =>
+								p.sparkys_product_name === internalProduct.sparkys_product_name,
+						);
+						if (updatedProduct) {
+							setInternalProduct(updatedProduct);
+							setEditedProduct(updatedProduct);
+						}
+
+						Alert.alert("Success", `Product ${action}d successfully!`);
+					},
+				},
+			],
+		);
 	};
 
 	if (loading) {
@@ -222,29 +274,47 @@ export default function InternalProductDetail() {
 				<Text style={[styles.headerTitle, { color: colors.text }]}>
 					Internal Product
 				</Text>
-				<Pressable
-					onPress={isEditing ? handleSave : () => setIsEditing(true)}
-					style={[
-						styles.circleButton,
-						{ backgroundColor: colors.primary },
-						isSaving && styles.disabledButton,
-					]}
-					disabled={isSaving}
-				>
-					<Ionicons
-						name={isSaving ? "hourglass" : isEditing ? "checkmark" : "pencil"}
-						size={20}
-						color="white"
-					/>
-				</Pressable>
-				{isEditing && (
+				<View style={styles.headerActions}>
+					{!isEditing && (
+						<Pressable
+							onPress={handleArchive}
+							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+						>
+							<Ionicons
+								name={
+									internalProduct.status === "archived"
+										? "refresh-outline"
+										: "archive-outline"
+								}
+								size={20}
+								color="white"
+							/>
+						</Pressable>
+					)}
 					<Pressable
-						onPress={handleCancel}
-						style={[styles.circleButton, { backgroundColor: colors.error }]}
+						onPress={isEditing ? handleSave : () => setIsEditing(true)}
+						style={[
+							styles.circleButton,
+							{ backgroundColor: colors.primary },
+							isSaving && styles.disabledButton,
+						]}
+						disabled={isSaving}
 					>
-						<Ionicons name="close" size={20} color="white" />
+						<Ionicons
+							name={isSaving ? "hourglass" : isEditing ? "checkmark" : "pencil"}
+							size={20}
+							color="white"
+						/>
 					</Pressable>
-				)}
+					{isEditing && (
+						<Pressable
+							onPress={handleCancel}
+							style={[styles.circleButton, { backgroundColor: colors.error }]}
+						>
+							<Ionicons name="close" size={20} color="white" />
+						</Pressable>
+					)}
+				</View>
 			</View>
 
 			<View
@@ -508,6 +578,13 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "bold",
 		color: "#1a1a1a",
+		flex: 1,
+		textAlign: "center",
+	},
+	headerActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
 	content: {
 		flex: 1,
