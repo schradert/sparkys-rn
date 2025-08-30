@@ -164,7 +164,7 @@ export default function ExternalProductDetail() {
 	if (loading) {
 		return (
 			<SafeAreaView
-				style={[styles.container, { backgroundColor: colors.background }]}
+				style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			>
 				<ActivityIndicator size="large" color={colors.primary} />
 			</SafeAreaView>
@@ -174,7 +174,7 @@ export default function ExternalProductDetail() {
 	if (!externalProduct) {
 		return (
 			<SafeAreaView
-				style={[styles.container, { backgroundColor: colors.background }]}
+				style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			>
 				<View style={styles.header}>
 					<Pressable onPress={() => router.back()}>
@@ -239,7 +239,7 @@ export default function ExternalProductDetail() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 		>
 			<View
 				style={[
@@ -281,238 +281,263 @@ export default function ExternalProductDetail() {
 				)}
 			</View>
 
-			<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-				<View
-					style={[
-						styles.productCard,
-						{ backgroundColor: colors.cardBackground },
-					]}
-				>
-					<View style={styles.skuContainer}>
-						<Text style={[styles.skuValue, { color: colors.text }]}>
-							{externalProduct.unique_id_sku}
-						</Text>
-						<View style={styles.quantityHeaderContainer}>
-							{isEditing ? (
-								<View style={styles.quantityControls}>
-									<Pressable
-										onPress={handleDecrementStock}
-										style={[
-											styles.quantityButton,
-											{ backgroundColor: colors.error },
-										]}
-									>
-										<Ionicons name="remove" size={16} color="white" />
-									</Pressable>
+			<View
+				style={[
+					styles.contentContainer,
+					{ backgroundColor: colors.background },
+				]}
+			>
+				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+					<View
+						style={[
+							styles.productCard,
+							{ backgroundColor: colors.cardBackground },
+						]}
+					>
+						<View style={styles.skuContainer}>
+							<Text style={[styles.skuValue, { color: colors.text }]}>
+								{externalProduct.unique_id_sku}
+							</Text>
+							<View style={styles.quantityHeaderContainer}>
+								{isEditing ? (
+									<View style={styles.quantityControls}>
+										<Pressable
+											onPress={handleDecrementStock}
+											style={[
+												styles.quantityButton,
+												{ backgroundColor: colors.error },
+											]}
+										>
+											<Ionicons name="remove" size={16} color="white" />
+										</Pressable>
+										<Text style={[styles.quantity, { color: colors.primary }]}>
+											{externalProduct.quantity}
+										</Text>
+										<Pressable
+											onPress={handleIncrementStock}
+											style={[
+												styles.quantityButton,
+												{ backgroundColor: colors.success },
+											]}
+										>
+											<Ionicons name="add" size={16} color="white" />
+										</Pressable>
+									</View>
+								) : (
 									<Text style={[styles.quantity, { color: colors.primary }]}>
 										{externalProduct.quantity}
 									</Text>
-									<Pressable
-										onPress={handleIncrementStock}
+								)}
+							</View>
+						</View>
+
+						{/* Internal Product Link */}
+						{internalProduct && (
+							<Pressable
+								style={[
+									styles.internalProductLink,
+									{
+										backgroundColor: colors.surface,
+										borderColor: colors.border,
+									},
+								]}
+								onPress={() =>
+									router.push(
+										`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
+									)
+								}
+							>
+								<View style={styles.internalProductInfo}>
+									<Text
 										style={[
-											styles.quantityButton,
-											{ backgroundColor: colors.success },
+											styles.internalLabel,
+											{ color: colors.textSecondary },
 										]}
 									>
-										<Ionicons name="add" size={16} color="white" />
-									</Pressable>
+										Grouped under Internal Product
+									</Text>
+									<Text
+										style={[styles.internalName, { color: colors.primary }]}
+									>
+										{internalProduct.sparkys_product_name}
+									</Text>
 								</View>
-							) : (
-								<Text style={[styles.quantity, { color: colors.primary }]}>
-									{externalProduct.quantity}
-								</Text>
-							)}
-						</View>
-					</View>
+								<Ionicons
+									name="arrow-forward"
+									size={20}
+									color={colors.primary}
+								/>
+							</Pressable>
+						)}
 
-					{/* Internal Product Link */}
-					{internalProduct && (
-						<Pressable
-							style={[
-								styles.internalProductLink,
-								{ backgroundColor: colors.surface, borderColor: colors.border },
-							]}
-							onPress={() =>
-								router.push(
-									`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
-								)
-							}
-						>
-							<View style={styles.internalProductInfo}>
-								<Text
+						{/* Editable Fields */}
+						{isEditing && editedProduct && (
+							<>
+								<CollapsibleRadioSection
+									title="Manufacturer Color"
+									options={PRODUCT_FIELD_OPTIONS.manufacturer_color}
+									selectedValue={editedProduct.manufacturer_color}
+									onSelectionChange={(value) =>
+										handleFieldChange("manufacturer_color", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Brand"
+									options={PRODUCT_FIELD_OPTIONS.manufacturer}
+									selectedValue={editedProduct.brand}
+									onSelectionChange={(value) =>
+										handleFieldChange("brand", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Size"
+									options={PRODUCT_FIELD_OPTIONS.size}
+									selectedValue={editedProduct.size}
+									onSelectionChange={(value) =>
+										handleFieldChange("size", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Bag Quantity"
+									options={PRODUCT_FIELD_OPTIONS.bagQuantity}
+									selectedValue={editedProduct.bag_quantity.toString()}
+									onSelectionChange={(value) =>
+										handleFieldChange("bag_quantity", parseInt(value, 10))
+									}
+								/>
+
+								{/* Distributors - Multi-select */}
+								<View
 									style={[
-										styles.internalLabel,
-										{ color: colors.textSecondary },
+										styles.multiSelectSection,
+										{ backgroundColor: colors.cardBackground },
 									]}
 								>
-									Grouped under Internal Product
-								</Text>
-								<Text style={[styles.internalName, { color: colors.primary }]}>
-									{internalProduct.sparkys_product_name}
-								</Text>
-							</View>
-							<Ionicons name="arrow-forward" size={20} color={colors.primary} />
-						</Pressable>
-					)}
-
-					{/* Editable Fields */}
-					{isEditing && editedProduct && (
-						<>
-							<CollapsibleRadioSection
-								title="Manufacturer Color"
-								options={PRODUCT_FIELD_OPTIONS.manufacturer_color}
-								selectedValue={editedProduct.manufacturer_color}
-								onSelectionChange={(value) =>
-									handleFieldChange("manufacturer_color", value)
-								}
-							/>
-							<CollapsibleRadioSection
-								title="Brand"
-								options={PRODUCT_FIELD_OPTIONS.manufacturer}
-								selectedValue={editedProduct.brand}
-								onSelectionChange={(value) => handleFieldChange("brand", value)}
-							/>
-							<CollapsibleRadioSection
-								title="Size"
-								options={PRODUCT_FIELD_OPTIONS.size}
-								selectedValue={editedProduct.size}
-								onSelectionChange={(value) => handleFieldChange("size", value)}
-							/>
-							<CollapsibleRadioSection
-								title="Bag Quantity"
-								options={PRODUCT_FIELD_OPTIONS.bagQuantity}
-								selectedValue={editedProduct.bag_quantity.toString()}
-								onSelectionChange={(value) =>
-									handleFieldChange("bag_quantity", parseInt(value, 10))
-								}
-							/>
-
-							{/* Distributors - Multi-select */}
-							<View
-								style={[
-									styles.multiSelectSection,
-									{ backgroundColor: colors.cardBackground },
-								]}
-							>
-								<Text style={[styles.sectionTitle, { color: colors.text }]}>
-									Distributors (Multi-select)
-								</Text>
-								<View style={styles.distributorsEditContainer}>
-									{PRODUCT_FIELD_OPTIONS.distributor.map((distributor) => {
-										const isSelected =
-											editedProduct.distributors?.includes(distributor) ||
-											false;
-										return (
-											<Pressable
-												key={distributor}
-												onPress={() => handleDistributorsChange(distributor)}
-												style={[
-													styles.distributorEditPill,
-													{
-														backgroundColor: isSelected
-															? colors.primary
-															: colors.surface,
-														borderColor: colors.border,
-													},
-												]}
-											>
-												<Text
+									<Text style={[styles.sectionTitle, { color: colors.text }]}>
+										Distributors (Multi-select)
+									</Text>
+									<View style={styles.distributorsEditContainer}>
+										{PRODUCT_FIELD_OPTIONS.distributor.map((distributor) => {
+											const isSelected =
+												editedProduct.distributors?.includes(distributor) ||
+												false;
+											return (
+												<Pressable
+													key={distributor}
+													onPress={() => handleDistributorsChange(distributor)}
 													style={[
-														styles.distributorEditText,
-														{ color: isSelected ? "white" : colors.text },
+														styles.distributorEditPill,
+														{
+															backgroundColor: isSelected
+																? colors.primary
+																: colors.surface,
+															borderColor: colors.border,
+														},
 													]}
 												>
-													{distributor}
-												</Text>
-											</Pressable>
-										);
-									})}
+													<Text
+														style={[
+															styles.distributorEditText,
+															{ color: isSelected ? "white" : colors.text },
+														]}
+													>
+														{distributor}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</View>
 								</View>
-							</View>
-						</>
-					)}
+							</>
+						)}
 
-					{!isEditing && (
-						<>
-							{/* Read-only Distributors */}
-							{externalProduct.distributors.length > 0 && (
+						{!isEditing && (
+							<>
+								{/* Read-only Distributors */}
+								{externalProduct.distributors.length > 0 && (
+									<View style={styles.section}>
+										<Text style={[styles.sectionTitle, { color: colors.text }]}>
+											Distributors
+										</Text>
+										<View style={styles.distributorsContainer}>
+											{externalProduct.distributors.map(
+												(distributor, index) => (
+													<View
+														key={`${distributor}-${index}`}
+														style={[
+															styles.distributorPill,
+															{
+																backgroundColor: colors.surface,
+																borderColor: colors.border,
+															},
+														]}
+													>
+														<Ionicons
+															name="storefront-outline"
+															size={16}
+															color={colors.primary}
+														/>
+														<Text
+															style={[
+																styles.distributorText,
+																{ color: colors.primary },
+															]}
+														>
+															{distributor}
+														</Text>
+													</View>
+												),
+											)}
+										</View>
+									</View>
+								)}
+
+								{/* Read-only Metadata */}
 								<View style={styles.section}>
 									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Distributors
+										Product Details
 									</Text>
-									<View style={styles.distributorsContainer}>
-										{externalProduct.distributors.map((distributor, index) => (
+									<View style={styles.metadataGrid}>
+										{metadataItems.map((item) => (
 											<View
-												key={`${distributor}-${index}`}
+												key={item.field}
 												style={[
-													styles.distributorPill,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-													},
+													styles.metadataItem,
+													{ backgroundColor: colors.surface },
 												]}
 											>
 												<Ionicons
-													name="storefront-outline"
-													size={16}
+													name={item.icon as any}
+													size={20}
 													color={colors.primary}
 												/>
-												<Text
-													style={[
-														styles.distributorText,
-														{ color: colors.primary },
-													]}
-												>
-													{distributor}
-												</Text>
+												<View style={styles.metadataContent}>
+													<Text
+														style={[
+															styles.metadataLabel,
+															{ color: colors.textSecondary },
+														]}
+													>
+														{item.label}
+													</Text>
+													<Text
+														style={[
+															styles.metadataValue,
+															{ color: colors.text },
+														]}
+													>
+														{item.value}
+													</Text>
+												</View>
 											</View>
 										))}
 									</View>
 								</View>
-							)}
-
-							{/* Read-only Metadata */}
-							<View style={styles.section}>
-								<Text style={[styles.sectionTitle, { color: colors.text }]}>
-									Product Details
-								</Text>
-								<View style={styles.metadataGrid}>
-									{metadataItems.map((item) => (
-										<View
-											key={item.field}
-											style={[
-												styles.metadataItem,
-												{ backgroundColor: colors.surface },
-											]}
-										>
-											<Ionicons
-												name={item.icon as any}
-												size={20}
-												color={colors.primary}
-											/>
-											<View style={styles.metadataContent}>
-												<Text
-													style={[
-														styles.metadataLabel,
-														{ color: colors.textSecondary },
-													]}
-												>
-													{item.label}
-												</Text>
-												<Text
-													style={[styles.metadataValue, { color: colors.text }]}
-												>
-													{item.value}
-												</Text>
-											</View>
-										</View>
-									))}
-								</View>
-							</View>
-						</>
-					)}
-				</View>
-			</ScrollView>
+							</>
+						)}
+					</View>
+				</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
@@ -521,6 +546,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f9fa",
+	},
+	contentContainer: {
+		flex: 1,
 	},
 	header: {
 		flexDirection: "row",

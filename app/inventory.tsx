@@ -1038,7 +1038,7 @@ export default function Inventory() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			edges={["top", "bottom"]}
 		>
 			<View
@@ -1137,46 +1137,53 @@ export default function Inventory() {
 				</View>
 			)}
 
-			{sheetsRefreshing && (
-				<View
-					style={[
-						styles.loadingContainer,
-						{
-							backgroundColor: colors.surface,
-							borderBottomColor: colors.borderLight,
-						},
-					]}
-				>
-					<ActivityIndicator size="small" color={colors.primary} />
-					<Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-						Loading data...
-					</Text>
-				</View>
-			)}
-
-			{sheetsError && (
-				<View
-					style={[styles.errorContainer, { backgroundColor: colors.surface }]}
-				>
-					<Text style={[styles.errorText, { color: colors.error }]}>
-						{sheetsError}
-					</Text>
-					<Pressable
-						onPress={refresh}
-						style={[styles.retryButton, { backgroundColor: colors.primary }]}
+			<View
+				style={[
+					styles.contentContainer,
+					{ backgroundColor: colors.background },
+				]}
+			>
+				{sheetsRefreshing && (
+					<View
+						style={[
+							styles.loadingContainer,
+							{
+								backgroundColor: colors.surface,
+								borderBottomColor: colors.borderLight,
+							},
+						]}
 					>
-						<Text style={styles.retryButtonText}>Retry</Text>
-					</Pressable>
-				</View>
-			)}
+						<ActivityIndicator size="small" color={colors.primary} />
+						<Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+							Loading data...
+						</Text>
+					</View>
+				)}
 
-			<Pagination
-				data={currentData}
-				renderItem={currentRenderItem}
-				keyExtractor={currentKeyExtractor}
-				onRefresh={refresh}
-				refreshing={sheetsRefreshing}
-			/>
+				{sheetsError && (
+					<View
+						style={[styles.errorContainer, { backgroundColor: colors.surface }]}
+					>
+						<Text style={[styles.errorText, { color: colors.error }]}>
+							{sheetsError}
+						</Text>
+						<Pressable
+							onPress={refresh}
+							style={[styles.retryButton, { backgroundColor: colors.primary }]}
+						>
+							<Text style={styles.retryButtonText}>Retry</Text>
+						</Pressable>
+					</View>
+				)}
+
+				<Pagination
+					data={currentData}
+					renderItem={currentRenderItem}
+					keyExtractor={currentKeyExtractor}
+					onRefresh={refresh}
+					refreshing={sheetsRefreshing}
+				/>
+			</View>
 
 			<Modal
 				visible={isFilterModalVisible}
@@ -1690,6 +1697,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f9fa",
+	},
+	contentContainer: {
+		flex: 1,
 	},
 	headerContainer: {
 		flexDirection: "row",

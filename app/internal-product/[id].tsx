@@ -108,7 +108,7 @@ export default function InternalProductDetail() {
 	if (loading) {
 		return (
 			<SafeAreaView
-				style={[styles.container, { backgroundColor: colors.background }]}
+				style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			>
 				<ActivityIndicator size="large" color={colors.primary} />
 			</SafeAreaView>
@@ -118,7 +118,7 @@ export default function InternalProductDetail() {
 	if (!internalProduct) {
 		return (
 			<SafeAreaView
-				style={[styles.container, { backgroundColor: colors.background }]}
+				style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			>
 				<View style={styles.header}>
 					<Pressable onPress={() => router.back()}>
@@ -205,7 +205,7 @@ export default function InternalProductDetail() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 		>
 			<View
 				style={[
@@ -247,224 +247,241 @@ export default function InternalProductDetail() {
 				)}
 			</View>
 
-			<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-				<View
-					style={[
-						styles.productCard,
-						{ backgroundColor: colors.cardBackground },
-					]}
-				>
-					<Text style={[styles.productName, { color: colors.text }]}>
-						{internalProduct.sparkys_product_name}
-					</Text>
-
+			<View
+				style={[
+					styles.contentContainer,
+					{ backgroundColor: colors.background },
+				]}
+			>
+				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 					<View
 						style={[
-							styles.quantityContainer,
-							{ backgroundColor: colors.surface },
+							styles.productCard,
+							{ backgroundColor: colors.cardBackground },
 						]}
 					>
-						<Text
-							style={[styles.quantityLabel, { color: colors.textSecondary }]}
+						<Text style={[styles.productName, { color: colors.text }]}>
+							{internalProduct.sparkys_product_name}
+						</Text>
+
+						<View
+							style={[
+								styles.quantityContainer,
+								{ backgroundColor: colors.surface },
+							]}
 						>
-							Total Quantity
-						</Text>
-						<Text style={styles.quantity}>
-							<Text style={{ color: getQuantityColorValue(quantityColorType) }}>
-								{totalQuantity}
-							</Text>
-							<Text style={{ color: colors.primary }}>
-								{" "}
-								/ {internalProduct.threshold_quantity}
-							</Text>
-						</Text>
-					</View>
-
-					{/* Editable Fields */}
-					{isEditing && editedProduct && (
-						<>
-							<CollapsibleRadioSection
-								title="Product Type"
-								options={PRODUCT_FIELD_OPTIONS.productType}
-								selectedValue={editedProduct.product_type}
-								onSelectionChange={(value) =>
-									handleFieldChange("product_type", value)
-								}
-							/>
-							<CollapsibleRadioSection
-								title="Sparky's Color"
-								options={PRODUCT_FIELD_OPTIONS.sparkys_color}
-								selectedValue={editedProduct.sparkys_color}
-								onSelectionChange={(value) =>
-									handleFieldChange("sparkys_color", value)
-								}
-							/>
-							<CollapsibleRadioSection
-								title="Texture"
-								options={PRODUCT_FIELD_OPTIONS.texture}
-								selectedValue={editedProduct.texture}
-								onSelectionChange={(value) =>
-									handleFieldChange("texture", value)
-								}
-							/>
-							<CollapsibleRadioSection
-								title="Shape"
-								options={PRODUCT_FIELD_OPTIONS.shape}
-								selectedValue={editedProduct.shape}
-								onSelectionChange={(value) => handleFieldChange("shape", value)}
-							/>
-
-							{/* Occasions - Multi-select */}
-							<View
-								style={[
-									styles.multiSelectSection,
-									{ backgroundColor: colors.cardBackground },
-								]}
+							<Text
+								style={[styles.quantityLabel, { color: colors.textSecondary }]}
 							>
-								<Text style={[styles.sectionTitle, { color: colors.text }]}>
-									Occasions (Multi-select)
+								Total Quantity
+							</Text>
+							<Text style={styles.quantity}>
+								<Text
+									style={{ color: getQuantityColorValue(quantityColorType) }}
+								>
+									{totalQuantity}
 								</Text>
-								<View style={styles.occasionsEditContainer}>
-									{PRODUCT_FIELD_OPTIONS.occasion.map((occasion) => {
-										const isSelected =
-											editedProduct.occasions?.includes(occasion) || false;
-										return (
-											<Pressable
-												key={occasion}
-												onPress={() => handleOccasionsChange(occasion)}
-												style={[
-													styles.occasionEditPill,
-													{
-														backgroundColor: isSelected
-															? colors.primary
-															: colors.surface,
-														borderColor: colors.border,
-													},
-												]}
-											>
-												<Text
+								<Text style={{ color: colors.primary }}>
+									{" "}
+									/ {internalProduct.threshold_quantity}
+								</Text>
+							</Text>
+						</View>
+
+						{/* Editable Fields */}
+						{isEditing && editedProduct && (
+							<>
+								<CollapsibleRadioSection
+									title="Product Type"
+									options={PRODUCT_FIELD_OPTIONS.productType}
+									selectedValue={editedProduct.product_type}
+									onSelectionChange={(value) =>
+										handleFieldChange("product_type", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Sparky's Color"
+									options={PRODUCT_FIELD_OPTIONS.sparkys_color}
+									selectedValue={editedProduct.sparkys_color}
+									onSelectionChange={(value) =>
+										handleFieldChange("sparkys_color", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Texture"
+									options={PRODUCT_FIELD_OPTIONS.texture}
+									selectedValue={editedProduct.texture}
+									onSelectionChange={(value) =>
+										handleFieldChange("texture", value)
+									}
+								/>
+								<CollapsibleRadioSection
+									title="Shape"
+									options={PRODUCT_FIELD_OPTIONS.shape}
+									selectedValue={editedProduct.shape}
+									onSelectionChange={(value) =>
+										handleFieldChange("shape", value)
+									}
+								/>
+
+								{/* Occasions - Multi-select */}
+								<View
+									style={[
+										styles.multiSelectSection,
+										{ backgroundColor: colors.cardBackground },
+									]}
+								>
+									<Text style={[styles.sectionTitle, { color: colors.text }]}>
+										Occasions (Multi-select)
+									</Text>
+									<View style={styles.occasionsEditContainer}>
+										{PRODUCT_FIELD_OPTIONS.occasion.map((occasion) => {
+											const isSelected =
+												editedProduct.occasions?.includes(occasion) || false;
+											return (
+												<Pressable
+													key={occasion}
+													onPress={() => handleOccasionsChange(occasion)}
 													style={[
-														styles.occasionEditText,
-														{ color: isSelected ? "white" : colors.text },
+														styles.occasionEditPill,
+														{
+															backgroundColor: isSelected
+																? colors.primary
+																: colors.surface,
+															borderColor: colors.border,
+														},
 													]}
 												>
-													{occasion}
-												</Text>
-											</Pressable>
-										);
-									})}
+													<Text
+														style={[
+															styles.occasionEditText,
+															{ color: isSelected ? "white" : colors.text },
+														]}
+													>
+														{occasion}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</View>
 								</View>
-							</View>
-						</>
-					)}
+							</>
+						)}
 
-					{!isEditing && (
-						<>
-							{/* Read-only Occasions */}
-							{internalProduct.occasions.length > 0 && (
+						{!isEditing && (
+							<>
+								{/* Read-only Occasions */}
+								{internalProduct.occasions.length > 0 && (
+									<View style={styles.section}>
+										<Text style={[styles.sectionTitle, { color: colors.text }]}>
+											Occasions
+										</Text>
+										<View style={styles.occasionsContainer}>
+											{internalProduct.occasions.map((occasion, index) => (
+												<View
+													key={`${occasion}-${index}`}
+													style={[
+														styles.occasionPill,
+														{
+															backgroundColor: colors.surface,
+															borderColor: colors.border,
+														},
+													]}
+												>
+													<Ionicons
+														name="calendar-outline"
+														size={14}
+														color={colors.primary}
+													/>
+													<Text
+														style={[
+															styles.occasionText,
+															{ color: colors.primary },
+														]}
+													>
+														{occasion}
+													</Text>
+												</View>
+											))}
+										</View>
+									</View>
+								)}
+
+								{/* Read-only Metadata */}
 								<View style={styles.section}>
 									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Occasions
+										Product Details
 									</Text>
-									<View style={styles.occasionsContainer}>
-										{internalProduct.occasions.map((occasion, index) => (
+									<View style={styles.metadataGrid}>
+										{metadataItems.map((item) => (
 											<View
-												key={`${occasion}-${index}`}
+												key={item.field}
 												style={[
-													styles.occasionPill,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-													},
+													styles.metadataItem,
+													{ backgroundColor: colors.surface },
 												]}
 											>
 												<Ionicons
-													name="calendar-outline"
-													size={14}
+													name={item.icon as any}
+													size={20}
 													color={colors.primary}
 												/>
-												<Text
-													style={[
-														styles.occasionText,
-														{ color: colors.primary },
-													]}
-												>
-													{occasion}
-												</Text>
+												<View style={styles.metadataContent}>
+													<Text
+														style={[
+															styles.metadataLabel,
+															{ color: colors.textSecondary },
+														]}
+													>
+														{item.label}
+													</Text>
+													<Text
+														style={[
+															styles.metadataValue,
+															{ color: colors.text },
+														]}
+													>
+														{item.value}
+													</Text>
+												</View>
 											</View>
 										))}
 									</View>
 								</View>
-							)}
-
-							{/* Read-only Metadata */}
-							<View style={styles.section}>
-								<Text style={[styles.sectionTitle, { color: colors.text }]}>
-									Product Details
-								</Text>
-								<View style={styles.metadataGrid}>
-									{metadataItems.map((item) => (
-										<View
-											key={item.field}
-											style={[
-												styles.metadataItem,
-												{ backgroundColor: colors.surface },
-											]}
-										>
-											<Ionicons
-												name={item.icon as any}
-												size={20}
-												color={colors.primary}
-											/>
-											<View style={styles.metadataContent}>
-												<Text
-													style={[
-														styles.metadataLabel,
-														{ color: colors.textSecondary },
-													]}
-												>
-													{item.label}
-												</Text>
-												<Text
-													style={[styles.metadataValue, { color: colors.text }]}
-												>
-													{item.value}
-												</Text>
-											</View>
-										</View>
-									))}
-								</View>
-							</View>
-						</>
-					)}
-				</View>
-
-				{/* External Products */}
-				{externalProducts.length > 0 && (
-					<View
-						style={[
-							styles.externalProductsCard,
-							{ backgroundColor: colors.cardBackground },
-						]}
-					>
-						<Text style={[styles.sectionTitle, { color: colors.text }]}>
-							External Products ({externalProducts.length})
-						</Text>
-						<Text
-							style={[styles.sectionSubtitle, { color: colors.textSecondary }]}
-						>
-							These are the manufacturer products grouped under this internal
-							product
-						</Text>
-						{externalProducts.map((externalProduct) => (
-							<ExternalProductCard
-								key={externalProduct.unique_id_sku}
-								externalProduct={externalProduct}
-							/>
-						))}
+							</>
+						)}
 					</View>
-				)}
-			</ScrollView>
+
+					{/* External Products */}
+					{externalProducts.length > 0 && (
+						<View
+							style={[
+								styles.externalProductsCard,
+								{ backgroundColor: colors.cardBackground },
+							]}
+						>
+							<Text style={[styles.sectionTitle, { color: colors.text }]}>
+								External Products ({externalProducts.length})
+							</Text>
+							<Text
+								style={[
+									styles.sectionSubtitle,
+									{ color: colors.textSecondary },
+								]}
+							>
+								These are the manufacturer products grouped under this internal
+								product
+							</Text>
+							{externalProducts.map((externalProduct) => (
+								<ExternalProductCard
+									key={externalProduct.unique_id_sku}
+									externalProduct={externalProduct}
+								/>
+							))}
+						</View>
+					)}
+				</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
@@ -473,6 +490,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f9fa",
+	},
+	contentContainer: {
+		flex: 1,
 	},
 	header: {
 		flexDirection: "row",
