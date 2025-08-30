@@ -234,9 +234,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 6,
-		flex: 0,
-		minWidth: "30%",
-		maxWidth: "32%",
 		gap: 4,
 	},
 	distributorText: {
