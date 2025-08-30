@@ -101,12 +101,17 @@ function CollapsibleFilterSection({
 	onSelectionChange,
 }: CollapsibleFilterSectionProps) {
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>("");
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
 	function toggleExpansion(): void {
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 		setIsExpanded(!isExpanded);
+		if (!isExpanded) {
+			// Reset search when expanding
+			setSearchQuery("");
+		}
 	}
 
 	function handlePillPress(value: string): void {
@@ -116,8 +121,21 @@ function CollapsibleFilterSection({
 		onSelectionChange(newSelection);
 	}
 
+	// Simple fuzzy matching function
+	function fuzzyMatch(query: string, text: string): boolean {
+		if (!query) return true;
+		const queryLower = query.toLowerCase();
+		const textLower = text.toLowerCase();
+		return textLower.includes(queryLower);
+	}
+
+	// Filter options based on search query
+	const filteredOptions = searchQuery
+		? options.filter((option) => fuzzyMatch(searchQuery, option))
+		: options;
+
 	const displayOptions = isExpanded
-		? options
+		? filteredOptions
 		: options.filter((opt) => selectedValues.includes(opt));
 	const hasSelections = selectedValues.length > 0;
 
@@ -144,31 +162,78 @@ function CollapsibleFilterSection({
 
 			{(isExpanded || hasSelections) && (
 				<View
-					style={[styles.pillContainer, { backgroundColor: colors.surface }]}
+					style={[styles.expandedContent, { backgroundColor: colors.surface }]}
 				>
-					{displayOptions.map((option) => (
-						<PillCheckbox
-							key={option}
-							label={option}
-							selected={selectedValues.includes(option)}
-							onPress={() => handlePillPress(option)}
-						/>
-					))}
-					{!isExpanded && hasSelections && (
-						<Pressable
+					{isExpanded && (
+						<View
 							style={[
-								styles.expandPill,
-								{ backgroundColor: colors.surface, borderColor: colors.border },
+								styles.searchContainer,
+								{ backgroundColor: colors.cardBackground },
 							]}
-							onPress={toggleExpansion}
 						>
-							<Text
-								style={[styles.expandText, { color: colors.textSecondary }]}
-							>
-								+{options.length - selectedValues.length} more
-							</Text>
-						</Pressable>
+							<Ionicons
+								name="search-outline"
+								size={16}
+								color={colors.textSecondary}
+							/>
+							<TextInput
+								style={[styles.searchInput, { color: colors.text }]}
+								placeholder={`Search ${title.toLowerCase()}...`}
+								placeholderTextColor={colors.textMuted}
+								value={searchQuery}
+								onChangeText={setSearchQuery}
+								autoCapitalize="none"
+								autoCorrect={false}
+							/>
+							{searchQuery.length > 0 && (
+								<Pressable onPress={() => setSearchQuery("")}>
+									<Ionicons
+										name="close-circle"
+										size={16}
+										color={colors.textSecondary}
+									/>
+								</Pressable>
+							)}
+						</View>
 					)}
+
+					<View
+						style={[styles.pillContainer, { backgroundColor: colors.surface }]}
+					>
+						{displayOptions.map((option) => (
+							<PillCheckbox
+								key={option}
+								label={option}
+								selected={selectedValues.includes(option)}
+								onPress={() => handlePillPress(option)}
+							/>
+						))}
+						{isExpanded && filteredOptions.length === 0 && searchQuery && (
+							<Text
+								style={[styles.noResultsText, { color: colors.textSecondary }]}
+							>
+								No results found for "{searchQuery}"
+							</Text>
+						)}
+						{!isExpanded && hasSelections && (
+							<Pressable
+								style={[
+									styles.expandPill,
+									{
+										backgroundColor: colors.surface,
+										borderColor: colors.border,
+									},
+								]}
+								onPress={toggleExpansion}
+							>
+								<Text
+									style={[styles.expandText, { color: colors.textSecondary }]}
+								>
+									+{options.length - selectedValues.length} more
+								</Text>
+							</Pressable>
+						)}
+					</View>
 				</View>
 			)}
 		</View>
@@ -2165,5 +2230,35 @@ const styles = StyleSheet.create({
 	},
 	quantityField: {
 		flex: 1,
+	},
+	expandedContent: {
+		// Background color applied inline with theme
+	},
+	searchContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		marginHorizontal: 16,
+		marginTop: 8,
+		backgroundColor: "white",
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		gap: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 14,
+		color: "#1a1a1a",
+		paddingVertical: 0,
+	},
+	noResultsText: {
+		fontSize: 14,
+		color: "#6c757d",
+		fontStyle: "italic",
+		textAlign: "center",
+		width: "100%",
+		paddingVertical: 20,
 	},
 });
