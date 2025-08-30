@@ -405,9 +405,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 6,
-		flex: 0,
-		minWidth: "22%",
-		maxWidth: "24%",
 		gap: 4,
 	},
 	occasionText: {
