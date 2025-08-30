@@ -198,7 +198,7 @@ export default function MetadataDetail() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			edges={["top", "bottom"]}
 		>
 			<View
@@ -232,42 +232,51 @@ export default function MetadataDetail() {
 				</Pressable>
 			</View>
 
-			<View style={styles.content}>
-				<View style={styles.section}>
-					<Text style={[styles.sectionTitle, { color: colors.text }]}>
-						Edit Value
-					</Text>
-
-					<View style={styles.inputGroup}>
-						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-							{categoryTitle.slice(0, -1)} Name *
+			<View
+				style={[
+					styles.contentContainer,
+					{ backgroundColor: colors.background },
+				]}
+			>
+				<View style={styles.content}>
+					<View style={styles.section}>
+						<Text style={[styles.sectionTitle, { color: colors.text }]}>
+							Edit Value
 						</Text>
-						<TextInput
-							style={[
-								styles.textInput,
-								{
-									backgroundColor: colors.cardBackground,
-									color: colors.text,
-									borderColor: colors.border,
-								},
-							]}
-							value={editedValue}
-							onChangeText={setEditedValue}
-							placeholder={`Enter ${categoryTitle.slice(0, -1).toLowerCase()} name`}
-							placeholderTextColor={colors.textMuted}
-							autoFocus
-						/>
+
+						<View style={styles.inputGroup}>
+							<Text
+								style={[styles.inputLabel, { color: colors.textSecondary }]}
+							>
+								{categoryTitle.slice(0, -1)} Name *
+							</Text>
+							<TextInput
+								style={[
+									styles.textInput,
+									{
+										backgroundColor: colors.cardBackground,
+										color: colors.text,
+										borderColor: colors.border,
+									},
+								]}
+								value={editedValue}
+								onChangeText={setEditedValue}
+								placeholder={`Enter ${categoryTitle.slice(0, -1).toLowerCase()} name`}
+								placeholderTextColor={colors.textMuted}
+								autoFocus
+							/>
+						</View>
+
+						<Pressable
+							style={[styles.deleteButton, { backgroundColor: colors.error }]}
+							onPress={handleDelete}
+						>
+							<Ionicons name="trash-outline" size={20} color="white" />
+							<Text style={styles.deleteButtonText}>
+								Delete {categoryTitle.slice(0, -1)}
+							</Text>
+						</Pressable>
 					</View>
-
-					<Pressable
-						style={[styles.deleteButton, { backgroundColor: colors.error }]}
-						onPress={handleDelete}
-					>
-						<Ionicons name="trash-outline" size={20} color="white" />
-						<Text style={styles.deleteButtonText}>
-							Delete {categoryTitle.slice(0, -1)}
-						</Text>
-					</Pressable>
 				</View>
 			</View>
 		</SafeAreaView>
@@ -278,6 +287,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f9fa",
+	},
+	contentContainer: {
+		flex: 1,
 	},
 	header: {
 		flexDirection: "row",

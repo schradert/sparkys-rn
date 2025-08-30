@@ -108,7 +108,7 @@ export default function ProductDetail() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			edges={["top", "bottom"]}
 		>
 			<View
@@ -142,136 +142,147 @@ export default function ProductDetail() {
 				</Pressable>
 			</View>
 
-			<ScrollView
-				style={styles.scrollView}
-				showsVerticalScrollIndicator={false}
+			<View
+				style={[
+					styles.contentContainer,
+					{ backgroundColor: colors.background },
+				]}
 			>
-				<View style={styles.section}>
-					<Text style={[styles.sectionTitle, { color: colors.text }]}>
-						Basic Information
-					</Text>
-
-					<View style={styles.inputGroup}>
-						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-							Product ID
+				<ScrollView
+					style={styles.scrollView}
+					showsVerticalScrollIndicator={false}
+				>
+					<View style={styles.section}>
+						<Text style={[styles.sectionTitle, { color: colors.text }]}>
+							Basic Information
 						</Text>
-						<TextInput
-							style={[
-								styles.textInput,
-								styles.disabledInput,
-								{
-									backgroundColor: colors.surface,
-									color: colors.textMuted,
-									borderColor: colors.border,
-								},
-							]}
-							value={editedProduct.id}
-							editable={false}
-						/>
-					</View>
 
-					<View style={styles.inputGroup}>
-						<Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-							Product Name
-						</Text>
-						<TextInput
-							style={[
-								styles.textInput,
-								styles.disabledInput,
-								{
-									backgroundColor: colors.surface,
-									color: colors.textMuted,
-									borderColor: colors.border,
-								},
-							]}
-							value={editedProduct.name}
-							editable={false}
-						/>
-					</View>
-				</View>
-
-				<View style={styles.section}>
-					<Text style={[styles.sectionTitle, { color: colors.text }]}>
-						Quantity
-					</Text>
-
-					<View style={styles.quantityContainer}>
-						<View style={styles.bagQuantityButtons}>
-							<Pressable
-								style={styles.bagQuantityButton}
-								onPress={incrementByBag}
+						<View style={styles.inputGroup}>
+							<Text
+								style={[styles.inputLabel, { color: colors.textSecondary }]}
 							>
-								<Text style={styles.bagQuantityButtonText}>
-									+{editedProduct.bagQuantity}
-								</Text>
-								<Text style={styles.bagQuantityLabel}>Add Bag</Text>
-							</Pressable>
+								Product ID
+							</Text>
+							<TextInput
+								style={[
+									styles.textInput,
+									styles.disabledInput,
+									{
+										backgroundColor: colors.surface,
+										color: colors.textMuted,
+										borderColor: colors.border,
+									},
+								]}
+								value={editedProduct.id}
+								editable={false}
+							/>
 						</View>
 
-						<View style={styles.quantityInputContainer}>
-							<View style={styles.quantityControls}>
-								<Pressable
-									style={styles.quantityButton}
-									onPress={() => incrementQuantity(-1)}
-								>
-									<Ionicons name="remove" size={20} color="#007bff" />
-								</Pressable>
+						<View style={styles.inputGroup}>
+							<Text
+								style={[styles.inputLabel, { color: colors.textSecondary }]}
+							>
+								Product Name
+							</Text>
+							<TextInput
+								style={[
+									styles.textInput,
+									styles.disabledInput,
+									{
+										backgroundColor: colors.surface,
+										color: colors.textMuted,
+										borderColor: colors.border,
+									},
+								]}
+								value={editedProduct.name}
+								editable={false}
+							/>
+						</View>
+					</View>
 
-								<TextInput
-									style={styles.quantityInput}
-									value={editedProduct.quantity.toString()}
-									onChangeText={(text) => {
-										const numValue = text === "" ? 0 : parseInt(text, 10);
-										setEditedProduct((prev) => ({
-											...prev,
-											quantity: Number.isNaN(numValue)
-												? 0
-												: Math.max(0, numValue),
-										}));
-									}}
-									keyboardType="number-pad"
-								/>
+					<View style={styles.section}>
+						<Text style={[styles.sectionTitle, { color: colors.text }]}>
+							Quantity
+						</Text>
 
+						<View style={styles.quantityContainer}>
+							<View style={styles.bagQuantityButtons}>
 								<Pressable
-									style={styles.quantityButton}
-									onPress={() => incrementQuantity(1)}
+									style={styles.bagQuantityButton}
+									onPress={incrementByBag}
 								>
-									<Ionicons name="add" size={20} color="#007bff" />
+									<Text style={styles.bagQuantityButtonText}>
+										+{editedProduct.bagQuantity}
+									</Text>
+									<Text style={styles.bagQuantityLabel}>Add Bag</Text>
 								</Pressable>
 							</View>
-							<Text style={styles.quantityLabel}>Current Quantity</Text>
-						</View>
 
-						<View style={styles.bagQuantityButtons}>
-							<Pressable
-								style={styles.bagQuantityButton}
-								onPress={decrementByBag}
-							>
-								<Text style={styles.bagQuantityButtonText}>
-									-{editedProduct.bagQuantity}
-								</Text>
-								<Text style={styles.bagQuantityLabel}>Remove Bag</Text>
-							</Pressable>
+							<View style={styles.quantityInputContainer}>
+								<View style={styles.quantityControls}>
+									<Pressable
+										style={styles.quantityButton}
+										onPress={() => incrementQuantity(-1)}
+									>
+										<Ionicons name="remove" size={20} color="#007bff" />
+									</Pressable>
+
+									<TextInput
+										style={styles.quantityInput}
+										value={editedProduct.quantity.toString()}
+										onChangeText={(text) => {
+											const numValue = text === "" ? 0 : parseInt(text, 10);
+											setEditedProduct((prev) => ({
+												...prev,
+												quantity: Number.isNaN(numValue)
+													? 0
+													: Math.max(0, numValue),
+											}));
+										}}
+										keyboardType="number-pad"
+									/>
+
+									<Pressable
+										style={styles.quantityButton}
+										onPress={() => incrementQuantity(1)}
+									>
+										<Ionicons name="add" size={20} color="#007bff" />
+									</Pressable>
+								</View>
+								<Text style={styles.quantityLabel}>Current Quantity</Text>
+							</View>
+
+							<View style={styles.bagQuantityButtons}>
+								<Pressable
+									style={styles.bagQuantityButton}
+									onPress={decrementByBag}
+								>
+									<Text style={styles.bagQuantityButtonText}>
+										-{editedProduct.bagQuantity}
+									</Text>
+									<Text style={styles.bagQuantityLabel}>Remove Bag</Text>
+								</Pressable>
+							</View>
 						</View>
 					</View>
-				</View>
 
-				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Product Details</Text>
+					<View style={styles.section}>
+						<Text style={styles.sectionTitle}>Product Details</Text>
 
-					{Object.entries(PRODUCT_FIELD_OPTIONS).map(([field, options]) => (
-						<CollapsibleRadioSection
-							key={field}
-							title={formatCategoryTitle(field)}
-							options={options}
-							selectedValue={editedProduct[field as keyof Product] as string}
-							onSelectionChange={(value) =>
-								setEditedProduct((prev) => ({ ...prev, [field]: value }))
-							}
-						/>
-					))}
-				</View>
-			</ScrollView>
+						{Object.entries(PRODUCT_FIELD_OPTIONS).map(([field, options]) => (
+							<CollapsibleRadioSection
+								key={field}
+								title={formatCategoryTitle(field)}
+								options={options}
+								selectedValue={editedProduct[field as keyof Product] as string}
+								onSelectionChange={(value) =>
+									setEditedProduct((prev) => ({ ...prev, [field]: value }))
+								}
+							/>
+						))}
+					</View>
+				</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
@@ -280,6 +291,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f9fa",
+	},
+	contentContainer: {
+		flex: 1,
 	},
 	header: {
 		flexDirection: "row",
