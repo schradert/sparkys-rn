@@ -497,23 +497,29 @@ export default function Inventory() {
 							internalProduct.products.includes(ext.unique_id_sku),
 						);
 
-						return relatedExternals.some((externalProduct) => {
-							return Object.entries(externalFilters).every(
-								([key, selectedValues]) => {
-									if (!selectedValues || selectedValues.length === 0)
-										return true;
-									if (key === "distributors") {
-										return selectedValues.some((selectedValue) =>
-											externalProduct.distributors.includes(selectedValue),
-										);
-									}
-									const productValue = externalProduct[
-										key as keyof ExternalProduct
-									] as string;
-									return selectedValues.includes(productValue);
-								},
-							);
-						});
+						// Filter the related externals with the same logic as in render
+						const filteredExternals = relatedExternals.filter(
+							(externalProduct) => {
+								return Object.entries(externalFilters).every(
+									([key, selectedValues]) => {
+										if (!selectedValues || selectedValues.length === 0)
+											return true;
+										if (key === "distributors") {
+											return selectedValues.some((selectedValue) =>
+												externalProduct.distributors.includes(selectedValue),
+											);
+										}
+										const productValue = externalProduct[
+											key as keyof ExternalProduct
+										] as string;
+										return selectedValues.includes(productValue);
+									},
+								);
+							},
+						);
+
+						// Only show internal product if it has at least one matching external product
+						return filteredExternals.length > 0;
 					}) || []
 				);
 			case "productTypes":
@@ -548,14 +554,42 @@ export default function Inventory() {
 		return currentView === "products"
 			? ({ item }: { item: InternalProduct }) => {
 					console.log("Rendering InternalProductCard with item:", item);
-					console.log(
-						"External products count:",
-						externalProducts?.length || 0,
+
+					// Filter external products for this internal product and apply external filters
+					const relatedExternals = externalProducts.filter((ext) =>
+						item.products.includes(ext.unique_id_sku),
 					);
+
+					// Apply external product filters to the related externals
+					const filteredExternals = relatedExternals.filter(
+						(externalProduct) => {
+							return Object.entries(externalFilters).every(
+								([key, selectedValues]) => {
+									if (!selectedValues || selectedValues.length === 0)
+										return true;
+									if (key === "distributors") {
+										return selectedValues.some((selectedValue) =>
+											externalProduct.distributors.includes(selectedValue),
+										);
+									}
+									const productValue = externalProduct[
+										key as keyof ExternalProduct
+									] as string;
+									return selectedValues.includes(productValue);
+								},
+							);
+						},
+					);
+
+					console.log(
+						`External products for ${item.sparkys_product_name}:`,
+						`${relatedExternals.length} total, ${filteredExternals.length} after filters`,
+					);
+
 					return (
 						<InternalProductCard
 							internalProduct={item}
-							externalProducts={externalProducts || []}
+							externalProducts={relatedExternals}
 							onMetadataPress={handleMetadataPress}
 							selectedFilters={{
 								internal: internalFilters,

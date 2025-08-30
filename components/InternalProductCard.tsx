@@ -311,14 +311,33 @@ export default function InternalProductCard({
 			{/* Expandable external products */}
 			{isExpanded && relatedExternals.length > 0 && (
 				<View style={styles.externalProductsContainer}>
-					{relatedExternals.map((externalProduct) => (
-						<ExternalProductCard
-							key={externalProduct.unique_id_sku}
-							externalProduct={externalProduct}
-							onMetadataPress={onMetadataPress}
-							selectedFilters={{ external: selectedFilters?.external }}
-						/>
-					))}
+					{relatedExternals
+						.filter((externalProduct) => {
+							// Apply external product filters only for display
+							return Object.entries(selectedFilters?.external || {}).every(
+								([key, selectedValues]) => {
+									if (!selectedValues || selectedValues.length === 0)
+										return true;
+									if (key === "distributors") {
+										return selectedValues.some((selectedValue) =>
+											externalProduct.distributors.includes(selectedValue),
+										);
+									}
+									const productValue = externalProduct[
+										key as keyof ExternalProduct
+									] as string;
+									return selectedValues.includes(productValue);
+								},
+							);
+						})
+						.map((externalProduct) => (
+							<ExternalProductCard
+								key={externalProduct.unique_id_sku}
+								externalProduct={externalProduct}
+								onMetadataPress={onMetadataPress}
+								selectedFilters={{ external: selectedFilters?.external }}
+							/>
+						))}
 				</View>
 			)}
 		</View>
