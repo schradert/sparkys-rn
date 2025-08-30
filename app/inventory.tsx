@@ -1672,14 +1672,26 @@ export default function Inventory() {
 				presentationStyle="fullScreen"
 				onRequestClose={() => setIsScannerVisible(false)}
 			>
-				<View style={styles.scannerContainer}>
-					<View style={styles.scannerHeader}>
-						<Text style={styles.scannerTitle}>Scan Barcode</Text>
+				<SafeAreaView
+					style={[
+						styles.scannerContainer,
+						{ backgroundColor: colors.cardBackground },
+					]}
+				>
+					<View
+						style={[
+							styles.scannerHeader,
+							{ backgroundColor: colors.cardBackground },
+						]}
+					>
+						<Text style={[styles.scannerTitle, { color: colors.text }]}>
+							Scan Barcode
+						</Text>
 						<Pressable
 							onPress={() => setIsScannerVisible(false)}
-							style={styles.closeButton}
+							style={[styles.closeButton, { backgroundColor: colors.surface }]}
 						>
-							<Ionicons name="close" size={24} color="white" />
+							<Ionicons name="close" size={24} color={colors.text} />
 						</Pressable>
 					</View>
 					<CameraView
@@ -1687,7 +1699,7 @@ export default function Inventory() {
 						barcodeScannerSettings={{ barcodeTypes: ["ean13"] }}
 						onBarcodeScanned={({ data }) => handleBarcodeScanned(data)}
 					/>
-				</View>
+				</SafeAreaView>
 			</Modal>
 		</SafeAreaView>
 	);
@@ -1838,7 +1850,6 @@ const styles = StyleSheet.create({
 		width: 36,
 		height: 36,
 		borderRadius: 18,
-		backgroundColor: "#f8f9fa",
 		justifyContent: "center",
 		alignItems: "center",
 	},
@@ -2039,14 +2050,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 		paddingHorizontal: 16,
-		paddingTop: 60,
-		paddingBottom: 16,
-		backgroundColor: "rgba(0, 0, 0, 0.8)",
+		paddingVertical: 16,
+		borderBottomWidth: 1,
 	},
 	scannerTitle: {
 		fontSize: 20,
 		fontWeight: "bold",
-		color: "white",
 	},
 	camera: {
 		flex: 1,
