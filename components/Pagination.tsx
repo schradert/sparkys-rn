@@ -1,6 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+	Animated,
+	FlatList,
+	Pressable,
+	RefreshControl,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -11,6 +19,8 @@ interface PaginationProps<T> {
 	emptyText?: string;
 	itemsPerPage?: number;
 	maxVisiblePages?: number;
+	onRefresh?: () => void;
+	refreshing?: boolean;
 }
 
 export default function Pagination<T>({
@@ -20,6 +30,8 @@ export default function Pagination<T>({
 	emptyText = "No items",
 	itemsPerPage = 10,
 	maxVisiblePages = 5,
+	onRefresh,
+	refreshing = false,
 }: PaginationProps<T>) {
 	const [currentPage, setCurrentPage] = useState(1);
 	const { theme } = useTheme();
@@ -73,6 +85,16 @@ export default function Pagination<T>({
 				ListEmptyComponent={renderEmpty}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={styles.listContainer}
+				refreshControl={
+					onRefresh ? (
+						<RefreshControl
+							refreshing={refreshing}
+							onRefresh={onRefresh}
+							colors={[colors.primary]}
+							tintColor={colors.primary}
+						/>
+					) : undefined
+				}
 			/>
 
 			<View

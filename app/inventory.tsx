@@ -340,6 +340,7 @@ export default function Inventory() {
 	const colors = Colors[theme];
 	const {
 		isLoading: sheetsLoading,
+		isRefreshing: sheetsRefreshing,
 		error: sheetsError,
 		refresh,
 		addMetadata,
@@ -1136,7 +1137,7 @@ export default function Inventory() {
 				</View>
 			)}
 
-			{sheetsLoading && (
+			{sheetsRefreshing && (
 				<View
 					style={[
 						styles.loadingContainer,
@@ -1173,6 +1174,8 @@ export default function Inventory() {
 				data={currentData}
 				renderItem={currentRenderItem}
 				keyExtractor={currentKeyExtractor}
+				onRefresh={refresh}
+				refreshing={sheetsRefreshing}
 			/>
 
 			<Modal

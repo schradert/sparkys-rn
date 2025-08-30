@@ -15,6 +15,7 @@ interface SheetsDataState {
 	internalProducts: InternalProduct[];
 	externalProducts: ExternalProduct[];
 	isLoading: boolean;
+	isRefreshing: boolean;
 	error: string | null;
 	lastUpdated: Date | null;
 }
@@ -23,6 +24,7 @@ let globalSheetsState: SheetsDataState = {
 	internalProducts: [],
 	externalProducts: [],
 	isLoading: false,
+	isRefreshing: false,
 	error: null,
 	lastUpdated: null,
 };
@@ -98,6 +100,7 @@ function getSheetNameForMetadata(viewMode: string): string | null {
 
 async function loadSheetsData(
 	accessToken: string,
+	isRefresh = false,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		if (!SPREADSHEET_ID)
@@ -108,7 +111,9 @@ async function loadSheetsData(
 		console.log("Loading sheets data with spreadsheet ID:", SPREADSHEET_ID);
 		console.log("Access token length:", accessToken?.length);
 
-		updateSheetsState({ isLoading: true, error: null });
+		if (!isRefresh) {
+			updateSheetsState({ isLoading: true, error: null });
+		}
 
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		console.log("Fetching data from sheets...");
@@ -167,7 +172,9 @@ async function loadSheetsData(
 }
 
 async function refreshSheetsData(accessToken: string): Promise<void> {
-	const result = await loadSheetsData(accessToken);
+	updateSheetsState({ isRefreshing: true });
+	const result = await loadSheetsData(accessToken, true);
+	updateSheetsState({ isRefreshing: false });
 	if (!result.success) {
 		Alert.alert("Error", result.error || "Failed to refresh data");
 	}
