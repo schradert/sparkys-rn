@@ -18,6 +18,7 @@ export interface AuditEvent {
 	object_name: string;
 	changes: string; // JSON string
 	sheet_name: string;
+	user_email: string;
 }
 
 export interface AuditEventSheet {
@@ -29,6 +30,7 @@ export interface AuditEventSheet {
 	object_name: string;
 	changes: string;
 	sheet_name: string;
+	user_email: string;
 }
 
 export class GoogleSheetsService {
@@ -37,6 +39,30 @@ export class GoogleSheetsService {
 
 	constructor(spreadsheetId: string) {
 		this.spreadsheetId = spreadsheetId;
+	}
+
+	private async getUserEmail(accessToken: string): Promise<string> {
+		try {
+			const response = await fetch(
+				"https://www.googleapis.com/oauth2/v2/userinfo",
+				{
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+					},
+				},
+			);
+
+			if (!response.ok) {
+				console.error("Failed to fetch user info:", response.status);
+				return "unknown";
+			}
+
+			const userInfo = await response.json();
+			return userInfo.email || "unknown";
+		} catch (error) {
+			console.error("Error fetching user email:", error);
+			return "unknown";
+		}
 	}
 
 	private async makeRequest(
@@ -1009,11 +1035,15 @@ export class GoogleSheetsService {
 
 	// Audit Log Functions
 	async logEvent(
-		event: Omit<AuditEvent, "id">,
+		event: Omit<AuditEvent, "id" | "user_email">,
 		accessToken: string,
 	): Promise<void> {
 		try {
-			const nextId = await this.getNextId("events", accessToken);
+			const [nextId, userEmail] = await Promise.all([
+				this.getNextId("events", accessToken),
+				this.getUserEmail(accessToken),
+			]);
+
 			const newRow = [
 				nextId.toString(),
 				event.timestamp,
@@ -1023,11 +1053,12 @@ export class GoogleSheetsService {
 				event.object_name,
 				event.changes,
 				event.sheet_name,
+				userEmail,
 			];
 
 			await this.appendToSheet("events", [newRow], accessToken);
 			console.log(
-				`Logged audit event: ${event.event_type} ${event.object_type} ${event.object_name}`,
+				`Logged audit event: ${event.event_type} ${event.object_type} ${event.object_name} by ${userEmail}`,
 			);
 		} catch (error) {
 			console.error("Failed to log audit event:", error);
@@ -1057,6 +1088,7 @@ export class GoogleSheetsService {
 						object_name: row[5] || "",
 						changes: row[6] || "",
 						sheet_name: row[7] || "",
+						user_email: row[8] || "unknown",
 					});
 				}
 			}
