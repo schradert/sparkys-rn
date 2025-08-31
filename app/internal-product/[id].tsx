@@ -77,15 +77,32 @@ export default function InternalProductDetail() {
 
 		setIsSaving(true);
 		try {
-			// Simulate API call delay
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			updateInternalProduct(
-				internalProduct.sparkys_product_name,
-				editedProduct,
-			);
-			setInternalProduct(editedProduct);
-			setIsEditing(false);
-			Alert.alert("Success", "Product updated successfully");
+			// Update spreadsheet first
+			const productForSheet = {
+				sparkys_product_name: editedProduct.sparkys_product_name,
+				product_type: editedProduct.product_type,
+				sparkys_color: editedProduct.sparkys_color,
+				texture: editedProduct.texture,
+				shape: editedProduct.shape,
+				occasions: editedProduct.occasions.join(", "),
+				products: editedProduct.products.join(", "),
+				threshold_quantity: editedProduct.threshold_quantity,
+				status: editedProduct.status || "active",
+			};
+
+			const result = await updateInternalProductInSheet(productForSheet);
+			if (result.success) {
+				// Update global store
+				updateInternalProduct(
+					internalProduct.sparkys_product_name,
+					editedProduct,
+				);
+				setInternalProduct(editedProduct);
+				setIsEditing(false);
+				Alert.alert("Success", "Product updated successfully");
+			} else {
+				Alert.alert("Error", result.error || "Failed to update product");
+			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to update product");
 		} finally {
