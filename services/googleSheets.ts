@@ -9,6 +9,28 @@ interface SheetsResponse {
 	values: string[][];
 }
 
+export interface AuditEvent {
+	id: number;
+	timestamp: string;
+	event_type: "create" | "edit" | "archive" | "unarchive";
+	object_type: "internal_product" | "external_product" | "metadata";
+	object_id: string;
+	object_name: string;
+	changes: string; // JSON string
+	sheet_name: string;
+}
+
+export interface AuditEventSheet {
+	id: number;
+	timestamp: string;
+	event_type: string;
+	object_type: string;
+	object_id: string;
+	object_name: string;
+	changes: string;
+	sheet_name: string;
+}
+
 export class GoogleSheetsService {
 	private baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
 	private spreadsheetId: string;
@@ -439,6 +461,20 @@ export class GoogleSheetsService {
 		console.log(
 			`Added metadata item: ${name} with id ${nextId} to ${sheetName}`,
 		);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "create",
+				object_type: "metadata",
+				object_id: nextId.toString(),
+				object_name: name,
+				changes: JSON.stringify({ created: { name } }),
+				sheet_name: sheetName,
+			},
+			accessToken,
+		);
 	}
 
 	async addProduct(product: ProductSheet, accessToken: string): Promise<void> {
@@ -479,11 +515,26 @@ export class GoogleSheetsService {
 		console.log(
 			`Added external product: ${product.unique_id_sku} to external_products sheet`,
 		);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "create",
+				object_type: "external_product",
+				object_id: product.unique_id_sku,
+				object_name: product.unique_id_sku,
+				changes: JSON.stringify({ created: product }),
+				sheet_name: "external_products",
+			},
+			accessToken,
+		);
 	}
 
 	async updateExternalProduct(
 		product: any,
 		accessToken: string,
+		skipAuditLog: boolean = false,
 	): Promise<void> {
 		const rowNumber = await this.findRowByValue(
 			"external_products",
@@ -513,6 +564,22 @@ export class GoogleSheetsService {
 			accessToken,
 		);
 		console.log(`Updated external product: ${product.unique_id_sku}`);
+
+		// Log audit event only if not skipped
+		if (!skipAuditLog) {
+			await this.logEvent(
+				{
+					timestamp: new Date().toISOString(),
+					event_type: "edit",
+					object_type: "external_product",
+					object_id: product.unique_id_sku,
+					object_name: product.unique_id_sku,
+					changes: JSON.stringify({ updated: product }),
+					sheet_name: "external_products",
+				},
+				accessToken,
+			);
+		}
 	}
 
 	async updateInternalProduct(
@@ -550,6 +617,20 @@ export class GoogleSheetsService {
 			accessToken,
 		);
 		console.log(`Updated internal product: ${product.sparkys_product_name}`);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "edit",
+				object_type: "internal_product",
+				object_id: product.sparkys_product_name,
+				object_name: product.sparkys_product_name,
+				changes: JSON.stringify({ updated: product }),
+				sheet_name: "internal_products",
+			},
+			accessToken,
+		);
 	}
 
 	async findRowByValue(
@@ -645,6 +726,20 @@ export class GoogleSheetsService {
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
 		console.log(
 			`Updated metadata item from "${oldName}" to "${newName}" in ${sheetName}`,
+		);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "edit",
+				object_type: "metadata",
+				object_id: id,
+				object_name: newName,
+				changes: JSON.stringify({ name: { from: oldName, to: newName } }),
+				sheet_name: sheetName,
+			},
+			accessToken,
 		);
 
 		// Update all products that use this metadata value
@@ -791,6 +886,20 @@ export class GoogleSheetsService {
 		const updatedRow = [name, id, "archived"];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
 		console.log(`Archived metadata item "${name}" in ${sheetName}`);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "archive",
+				object_type: "metadata",
+				object_id: id,
+				object_name: name,
+				changes: JSON.stringify({ status: { from: "active", to: "archived" } }),
+				sheet_name: sheetName,
+			},
+			accessToken,
+		);
 	}
 
 	async unarchiveMetadataItem(
@@ -817,6 +926,20 @@ export class GoogleSheetsService {
 		const updatedRow = [name, id, "active"];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
 		console.log(`Unarchived metadata item "${name}" in ${sheetName}`);
+
+		// Log audit event
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "unarchive",
+				object_type: "metadata",
+				object_id: id,
+				object_name: name,
+				changes: JSON.stringify({ status: { from: "archived", to: "active" } }),
+				sheet_name: sheetName,
+			},
+			accessToken,
+		);
 	}
 
 	async updateProduct(
@@ -850,5 +973,70 @@ export class GoogleSheetsService {
 
 		await this.updateRow("products", rowNumber, updatedRow, accessToken);
 		console.log(`Updated product: ${product.name} (${product.id})`);
+	}
+
+	// Audit Log Functions
+	async logEvent(
+		event: Omit<AuditEvent, "id">,
+		accessToken: string,
+	): Promise<void> {
+		try {
+			const nextId = await this.getNextId("events", accessToken);
+			const newRow = [
+				nextId.toString(),
+				event.timestamp,
+				event.event_type,
+				event.object_type,
+				event.object_id,
+				event.object_name,
+				event.changes,
+				event.sheet_name,
+			];
+
+			await this.appendToSheet("events", [newRow], accessToken);
+			console.log(
+				`Logged audit event: ${event.event_type} ${event.object_type} ${event.object_name}`,
+			);
+		} catch (error) {
+			console.error("Failed to log audit event:", error);
+		}
+	}
+
+	async getAuditEvents(
+		accessToken: string,
+		limit: number = 50,
+		offset: number = 0,
+	): Promise<AuditEvent[]> {
+		try {
+			const values = await this.getSheetData("events", accessToken);
+
+			if (values.length <= 1) return [];
+
+			const events: AuditEvent[] = [];
+			for (let i = 1; i < values.length; i++) {
+				const row = values[i];
+				if (row.length >= 8) {
+					events.push({
+						id: parseInt(row[0] || "0", 10),
+						timestamp: row[1] || "",
+						event_type: row[2] as AuditEvent["event_type"],
+						object_type: row[3] as AuditEvent["object_type"],
+						object_id: row[4] || "",
+						object_name: row[5] || "",
+						changes: row[6] || "",
+						sheet_name: row[7] || "",
+					});
+				}
+			}
+
+			// Sort by ID descending (most recent first)
+			events.sort((a, b) => b.id - a.id);
+
+			// Apply pagination
+			return events.slice(offset, offset + limit);
+		} catch (error) {
+			console.error("Failed to fetch audit events:", error);
+			return [];
+		}
 	}
 }

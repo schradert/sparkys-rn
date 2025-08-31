@@ -471,7 +471,10 @@ export function useSheetsData() {
 		}
 	};
 
-	const updateExternalProduct = async (product: any) => {
+	const updateExternalProduct = async (
+		product: any,
+		skipAuditLog: boolean = false,
+	) => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
 			Alert.alert("Error", "No access token available");
@@ -480,7 +483,11 @@ export function useSheetsData() {
 
 		try {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
-			await sheetsService.updateExternalProduct(product, accessToken);
+			await sheetsService.updateExternalProduct(
+				product,
+				accessToken,
+				skipAuditLog,
+			);
 			// Don't refresh - let the caller update the store directly
 			return { success: true };
 		} catch (error: any) {
@@ -534,6 +541,36 @@ export function useSheetsData() {
 		}
 	};
 
+	const logAuditEvent = async (
+		event: Omit<import("@/services/googleSheets").AuditEvent, "id">,
+	) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) return;
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			await sheetsService.logEvent(event, accessToken);
+		} catch (error) {
+			console.error("Failed to log audit event:", error);
+		}
+	};
+
+	const getAuditEvents = async (limit = 50, offset = 0) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return [];
+		}
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			return await sheetsService.getAuditEvents(accessToken, limit, offset);
+		} catch (error: any) {
+			console.error("Error fetching audit events:", error);
+			return [];
+		}
+	};
+
 	return {
 		...globalSheetsState,
 		refresh,
@@ -548,5 +585,7 @@ export function useSheetsData() {
 		archiveMetadata,
 		unarchiveMetadata,
 		subscribeToMetadataChanges,
+		logAuditEvent,
+		getAuditEvents,
 	};
 }

@@ -29,6 +29,11 @@ export default function AvatarDropdown() {
 		setIsDropdownVisible(false);
 	};
 
+	const handleActivityPress = () => {
+		setIsDropdownVisible(false);
+		router.push("/activity");
+	};
+
 	return (
 		<View style={styles.container}>
 			<Pressable
@@ -69,6 +74,17 @@ export default function AvatarDropdown() {
 							style={[styles.themeToggleText, { color: colors.textSecondary }]}
 						>
 							{theme === "dark" ? "Light" : "Dark"}
+						</Text>
+					</Pressable>
+					<View
+						style={[styles.separator, { backgroundColor: colors.separator }]}
+					/>
+					<Pressable style={styles.dropdownItem} onPress={handleActivityPress}>
+						<Ionicons name="time-outline" size={20} color={colors.icon} />
+						<Text
+							style={[styles.themeToggleText, { color: colors.textSecondary }]}
+						>
+							Activity
 						</Text>
 					</Pressable>
 					<View
