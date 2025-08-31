@@ -62,7 +62,7 @@ export class GoogleSheetsService {
 	async getMetadataValues(
 		sheetName: string,
 		accessToken: string,
-	): Promise<string[]> {
+	): Promise<any[]> {
 		const values = await this.getSheetData(sheetName, accessToken);
 
 		if (values.length === 0) return [];
@@ -71,6 +71,9 @@ export class GoogleSheetsService {
 		const nameColumnIndex = headerRow.findIndex(
 			(header) => header.toLowerCase() === "name",
 		);
+		const statusColumnIndex = headerRow.findIndex(
+			(header) => header.toLowerCase() === "status",
+		);
 
 		if (nameColumnIndex === -1) {
 			throw new Error(`No 'name' column found in ${sheetName} sheet`);
@@ -78,8 +81,14 @@ export class GoogleSheetsService {
 
 		return values
 			.slice(1)
-			.map((row) => row[nameColumnIndex])
-			.filter((value) => value && value.trim() !== "");
+			.map((row) => ({
+				name: row[nameColumnIndex] || "",
+				status:
+					statusColumnIndex !== -1
+						? row[statusColumnIndex] || "active"
+						: "active",
+			}))
+			.filter((item) => item.name && item.name.trim() !== "");
 	}
 
 	async getProductData(accessToken: string): Promise<ProductSheet[]> {
@@ -204,7 +213,7 @@ export class GoogleSheetsService {
 
 		const products: any[] = [];
 
-		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity
+		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, status
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
@@ -218,6 +227,7 @@ export class GoogleSheetsService {
 				occasions: row[5] || "", // comma-separated
 				products: row[6] || "", // comma-separated barcodes
 				threshold_quantity: parseInt(row[7] || "0", 10), // Parse as integer
+				status: row[8] || "active", // status field
 			};
 			console.log("Parsed internal product:", product);
 
@@ -255,6 +265,7 @@ export class GoogleSheetsService {
 				bag_quantity: parseInt(row[4] || "0", 10),
 				distributors: row[5] || "", // comma-separated
 				quantity: parseInt(row[6] || "0", 10),
+				status: row[7] || "active", // status field
 			};
 			console.log("Parsed external product:", product);
 
@@ -297,13 +308,48 @@ export class GoogleSheetsService {
 				...new Set(externalProducts.map((p) => p.size).filter(Boolean)),
 			].sort();
 
+			const uniqueSizesWithStatus = uniqueSizes.map((size) => ({
+				name: size,
+				status: "active",
+			}));
+
 			return {
 				metadata: {
+					productType: productTypes
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					manufacturer_color: manufacturerColors
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					sparkys_color: sparkyColors
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					manufacturer: brands
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					size: uniqueSizes,
+					texture: textures
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					bagQuantity: bagQuantities
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					shape: shapes
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					distributor: distributors
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+					occasion: occasions
+						.filter((item) => item.status === "active")
+						.map((item) => item.name),
+				},
+				fullMetadata: {
 					productType: productTypes,
 					manufacturer_color: manufacturerColors,
 					sparkys_color: sparkyColors,
 					manufacturer: brands,
-					size: uniqueSizes,
+					size: uniqueSizesWithStatus,
 					texture: textures,
 					bagQuantity: bagQuantities,
 					shape: shapes,
@@ -426,12 +472,47 @@ export class GoogleSheetsService {
 			product.bag_quantity.toString(),
 			product.distributors,
 			product.quantity.toString(),
+			product.status || "active",
 		];
 
 		await this.appendToSheet("external_products", [newRow], accessToken);
 		console.log(
 			`Added external product: ${product.unique_id_sku} to external_products sheet`,
 		);
+	}
+
+	async updateExternalProduct(
+		product: any,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			"external_products",
+			"unique_id_sku",
+			product.unique_id_sku,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`External product "${product.unique_id_sku}" not found`);
+		}
+
+		const updatedRow = [
+			product.unique_id_sku,
+			product.manufacturer_color,
+			product.brand,
+			product.size,
+			product.bag_quantity.toString(),
+			product.distributors,
+			product.quantity.toString(),
+			product.status || "active",
+		];
+
+		await this.updateRow(
+			"external_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Updated external product: ${product.unique_id_sku}`);
 	}
 
 	async updateInternalProduct(
@@ -459,6 +540,7 @@ export class GoogleSheetsService {
 			product.occasions,
 			product.products,
 			product.threshold_quantity.toString(),
+			product.status || "active",
 		];
 
 		await this.updateRow(
@@ -557,8 +639,9 @@ export class GoogleSheetsService {
 		const existingRow = values[rowNumber - 1]; // Convert to 0-based index
 		const id = existingRow[1]; // ID is in second column
 
-		// Update the metadata sheet
-		const updatedRow = [newName, id];
+		// Update the metadata sheet (preserve status if it exists)
+		const status = existingRow[2] || "active"; // status is in third column
+		const updatedRow = [newName, id, status];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
 		console.log(
 			`Updated metadata item from "${oldName}" to "${newName}" in ${sheetName}`,
@@ -682,6 +765,58 @@ export class GoogleSheetsService {
 			default:
 				return null;
 		}
+	}
+
+	async archiveMetadataItem(
+		sheetName: string,
+		name: string,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			sheetName,
+			"name",
+			name,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Metadata item "${name}" not found in ${sheetName}`);
+		}
+
+		// Get the existing row to preserve the ID
+		const values = await this.getSheetData(sheetName, accessToken);
+		const existingRow = values[rowNumber - 1]; // Convert to 0-based index
+		const id = existingRow[1]; // ID is in second column
+
+		// Update the metadata sheet with archived status
+		const updatedRow = [name, id, "archived"];
+		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
+		console.log(`Archived metadata item "${name}" in ${sheetName}`);
+	}
+
+	async unarchiveMetadataItem(
+		sheetName: string,
+		name: string,
+		accessToken: string,
+	): Promise<void> {
+		const rowNumber = await this.findRowByValue(
+			sheetName,
+			"name",
+			name,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Metadata item "${name}" not found in ${sheetName}`);
+		}
+
+		// Get the existing row to preserve the ID
+		const values = await this.getSheetData(sheetName, accessToken);
+		const existingRow = values[rowNumber - 1]; // Convert to 0-based index
+		const id = existingRow[1]; // ID is in second column
+
+		// Update the metadata sheet with active status
+		const updatedRow = [name, id, "active"];
+		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
+		console.log(`Unarchived metadata item "${name}" in ${sheetName}`);
 	}
 
 	async updateProduct(

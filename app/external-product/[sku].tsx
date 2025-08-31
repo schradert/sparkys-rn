@@ -17,9 +17,11 @@ import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import {
 	archiveExternalProduct,
+	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 	unarchiveExternalProduct,
 } from "@/constants/Products";
+import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import {
 	getAllExternalProducts,
@@ -32,6 +34,16 @@ import {
 export default function ExternalProductDetail() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
+
+	// Helper function to add (Archived) labels to metadata options
+	const addArchivedLabels = (options: string[], fieldKey: string): string[] => {
+		return options.map((option) => {
+			const isArchived = isMetadataItemArchived(fieldKey, option);
+			return isArchived ? `${option} (Archived)` : option;
+		});
+	};
+	const { updateExternalProduct: updateExternalProductInSheet } =
+		useSheetsData();
 	const { sku } = useLocalSearchParams<{ sku: string }>();
 	const [externalProduct, setExternalProduct] =
 		useState<ExternalProduct | null>(null);
@@ -40,11 +52,14 @@ export default function ExternalProductDetail() {
 	const [loading, setLoading] = useState(true);
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isArchiving, setIsArchiving] = useState(false);
 	const [isEditingQuantity, setIsEditingQuantity] = useState(false);
 	const [editedQuantity, setEditedQuantity] = useState("");
 	const [editedProduct, setEditedProduct] = useState<ExternalProduct | null>(
 		null,
 	);
+	const [originalProduct, setOriginalProduct] =
+		useState<ExternalProduct | null>(null);
 
 	useEffect(() => {
 		if (!sku) return;
@@ -61,6 +76,7 @@ export default function ExternalProductDetail() {
 			setInternalProduct(internal || null);
 			setEditedQuantity(external.quantity.toString());
 			setEditedProduct(external);
+			setOriginalProduct(external);
 		}
 
 		setLoading(false);
@@ -87,26 +103,66 @@ export default function ExternalProductDetail() {
 		Alert.alert("Success", "Quantity updated successfully");
 	};
 
-	const handleIncrementStock = () => {
+	const handleIncrementStock = async () => {
 		if (!externalProduct) return;
 		const newQuantity = externalProduct.quantity + externalProduct.bag_quantity;
 		const updatedProduct: ExternalProduct = {
 			...externalProduct,
 			quantity: newQuantity,
 		};
-		updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
-		setExternalProduct(updatedProduct);
+
+		// Update spreadsheet and global store immediately
+		const productForSheet = {
+			unique_id_sku: externalProduct.unique_id_sku,
+			manufacturer_color: externalProduct.manufacturer_color,
+			brand: externalProduct.brand,
+			size: externalProduct.size,
+			bag_quantity: externalProduct.bag_quantity,
+			distributors: externalProduct.distributors.join(", "),
+			quantity: newQuantity,
+			status: externalProduct.status || "active",
+		};
+
+		const result = await updateExternalProductInSheet(productForSheet);
+		if (result.success) {
+			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
+			setExternalProduct(updatedProduct);
+			setEditedProduct(updatedProduct);
+			setOriginalProduct(updatedProduct);
+		} else {
+			Alert.alert("Error", "Failed to update quantity");
+		}
 	};
 
-	const handleDecrementStock = () => {
+	const handleDecrementStock = async () => {
 		if (!externalProduct) return;
 		const newQuantity = Math.max(0, externalProduct.quantity - 1);
 		const updatedProduct: ExternalProduct = {
 			...externalProduct,
 			quantity: newQuantity,
 		};
-		updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
-		setExternalProduct(updatedProduct);
+
+		// Update spreadsheet and global store immediately
+		const productForSheet = {
+			unique_id_sku: externalProduct.unique_id_sku,
+			manufacturer_color: externalProduct.manufacturer_color,
+			brand: externalProduct.brand,
+			size: externalProduct.size,
+			bag_quantity: externalProduct.bag_quantity,
+			distributors: externalProduct.distributors.join(", "),
+			quantity: newQuantity,
+			status: externalProduct.status || "active",
+		};
+
+		const result = await updateExternalProductInSheet(productForSheet);
+		if (result.success) {
+			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
+			setExternalProduct(updatedProduct);
+			setEditedProduct(updatedProduct);
+			setOriginalProduct(updatedProduct);
+		} else {
+			Alert.alert("Error", "Failed to update quantity");
+		}
 	};
 
 	const handleCancelEdit = () => {
@@ -119,12 +175,29 @@ export default function ExternalProductDetail() {
 
 		setIsSaving(true);
 		try {
-			// Simulate API call delay
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
-			setExternalProduct(editedProduct);
-			setIsEditing(false);
-			Alert.alert("Success", "Product updated successfully");
+			// Update spreadsheet first
+			const productForSheet = {
+				unique_id_sku: editedProduct.unique_id_sku,
+				manufacturer_color: editedProduct.manufacturer_color,
+				brand: editedProduct.brand,
+				size: editedProduct.size,
+				bag_quantity: editedProduct.bag_quantity,
+				distributors: editedProduct.distributors.join(", "),
+				quantity: editedProduct.quantity,
+				status: editedProduct.status || "active",
+			};
+
+			const result = await updateExternalProductInSheet(productForSheet);
+			if (result.success) {
+				// Update global store
+				updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
+				setExternalProduct(editedProduct);
+				setOriginalProduct(editedProduct);
+				setIsEditing(false);
+				Alert.alert("Success", "Product updated successfully");
+			} else {
+				Alert.alert("Error", result.error || "Failed to update product");
+			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to update product");
 		} finally {
@@ -133,7 +206,11 @@ export default function ExternalProductDetail() {
 	};
 
 	const handleCancel = () => {
-		setEditedProduct(externalProduct);
+		// Revert to original product state
+		if (originalProduct) {
+			setExternalProduct(originalProduct);
+			setEditedProduct(originalProduct);
+		}
 		setIsEditing(false);
 	};
 
@@ -167,7 +244,7 @@ export default function ExternalProductDetail() {
 		}
 	};
 
-	const handleArchive = () => {
+	const handleArchive = async () => {
 		if (!externalProduct) return;
 
 		const isCurrentlyArchived = externalProduct.status === "archived";
@@ -181,30 +258,51 @@ export default function ExternalProductDetail() {
 				{
 					text: action.charAt(0).toUpperCase() + action.slice(1),
 					style: isCurrentlyArchived ? "default" : "destructive",
-					onPress: () => {
-						const allProducts = getAllExternalProducts();
-						const updatedProducts = isCurrentlyArchived
-							? unarchiveExternalProduct(
+					onPress: async () => {
+						setIsArchiving(true);
+						try {
+							// Update spreadsheet with new status
+							const newStatus = isCurrentlyArchived ? "active" : "archived";
+							const productForSheet = {
+								unique_id_sku: externalProduct.unique_id_sku,
+								manufacturer_color: externalProduct.manufacturer_color,
+								brand: externalProduct.brand,
+								size: externalProduct.size,
+								bag_quantity: externalProduct.bag_quantity,
+								distributors: externalProduct.distributors.join(", "),
+								quantity: externalProduct.quantity,
+								status: newStatus,
+							};
+
+							const result =
+								await updateExternalProductInSheet(productForSheet);
+							if (result.success) {
+								// Update global store immediately
+								const updatedProduct = {
+									...externalProduct,
+									status: newStatus,
+								};
+								updateExternalProduct(
 									externalProduct.unique_id_sku,
-									allProducts,
-								)
-							: archiveExternalProduct(
-									externalProduct.unique_id_sku,
-									allProducts,
+									updatedProduct,
 								);
 
-						setExternalProducts(updatedProducts);
+								// Update local component state
+								setExternalProduct(updatedProduct);
+								setEditedProduct(updatedProduct);
 
-						// Update local state
-						const updatedProduct = updatedProducts.find(
-							(p) => p.unique_id_sku === externalProduct.unique_id_sku,
-						);
-						if (updatedProduct) {
-							setExternalProduct(updatedProduct);
-							setEditedProduct(updatedProduct);
+								Alert.alert("Success", `Product ${action}d successfully!`);
+							} else {
+								Alert.alert(
+									"Error",
+									result.error || `Failed to ${action} product`,
+								);
+							}
+						} catch (error) {
+							Alert.alert("Error", `Failed to ${action} product`);
+						} finally {
+							setIsArchiving(false);
 						}
-
-						Alert.alert("Success", `Product ${action}d successfully!`);
 					},
 				},
 			],
@@ -310,13 +408,20 @@ export default function ExternalProductDetail() {
 					{!isEditing && (
 						<Pressable
 							onPress={handleArchive}
-							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+							style={[
+								styles.circleButton,
+								{ backgroundColor: colors.primary },
+								isArchiving && styles.disabledButton,
+							]}
+							disabled={isArchiving}
 						>
 							<Ionicons
 								name={
-									externalProduct.status === "archived"
-										? "refresh-outline"
-										: "archive-outline"
+									isArchiving
+										? "hourglass"
+										: externalProduct.status === "archived"
+											? "refresh-outline"
+											: "archive-outline"
 								}
 								size={20}
 								color="white"
@@ -443,34 +548,52 @@ export default function ExternalProductDetail() {
 							<>
 								<CollapsibleRadioSection
 									title="Manufacturer Color"
-									options={PRODUCT_FIELD_OPTIONS.manufacturer_color}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.manufacturer_color,
+										"manufacturer_color",
+									)}
 									selectedValue={editedProduct.manufacturer_color}
 									onSelectionChange={(value) =>
-										handleFieldChange("manufacturer_color", value)
+										handleFieldChange(
+											"manufacturer_color",
+											value.replace(" (Archived)", ""),
+										)
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Brand"
-									options={PRODUCT_FIELD_OPTIONS.manufacturer}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.manufacturer,
+										"manufacturer",
+									)}
 									selectedValue={editedProduct.brand}
 									onSelectionChange={(value) =>
-										handleFieldChange("brand", value)
+										handleFieldChange("brand", value.replace(" (Archived)", ""))
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Size"
-									options={PRODUCT_FIELD_OPTIONS.size}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.size,
+										"size",
+									)}
 									selectedValue={editedProduct.size}
 									onSelectionChange={(value) =>
-										handleFieldChange("size", value)
+										handleFieldChange("size", value.replace(" (Archived)", ""))
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Bag Quantity"
-									options={PRODUCT_FIELD_OPTIONS.bagQuantity}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.bagQuantity,
+										"bagQuantity",
+									)}
 									selectedValue={editedProduct.bag_quantity.toString()}
 									onSelectionChange={(value) =>
-										handleFieldChange("bag_quantity", parseInt(value, 10))
+										handleFieldChange(
+											"bag_quantity",
+											parseInt(value.replace(" (Archived)", ""), 10),
+										)
 									}
 								/>
 
@@ -485,13 +608,20 @@ export default function ExternalProductDetail() {
 										Distributors (Multi-select)
 									</Text>
 									<View style={styles.distributorsEditContainer}>
-										{PRODUCT_FIELD_OPTIONS.distributor.map((distributor) => {
+										{addArchivedLabels(
+											PRODUCT_FIELD_OPTIONS.distributor,
+											"distributor",
+										).map((distributorLabel) => {
+											const distributor = distributorLabel.replace(
+												" (Archived)",
+												"",
+											);
 											const isSelected =
 												editedProduct.distributors?.includes(distributor) ||
 												false;
 											return (
 												<Pressable
-													key={distributor}
+													key={distributorLabel}
 													onPress={() => handleDistributorsChange(distributor)}
 													style={[
 														styles.distributorEditPill,
@@ -509,7 +639,7 @@ export default function ExternalProductDetail() {
 															{ color: isSelected ? "white" : colors.text },
 														]}
 													>
-														{distributor}
+														{distributorLabel}
 													</Text>
 												</Pressable>
 											);

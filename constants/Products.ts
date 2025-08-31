@@ -62,58 +62,48 @@ export const ARCHIVED_METADATA_ITEMS: Record<string, string[]> = {
 	occasion: [],
 };
 
-export function updateFieldOptions(
-	newOptions: Partial<typeof PRODUCT_FIELD_OPTIONS>,
-) {
-	PRODUCT_FIELD_OPTIONS = { ...PRODUCT_FIELD_OPTIONS, ...newOptions };
+export function updateFieldOptions(newOptions: any) {
+	// Convert metadata objects to strings for existing compatibility
+	const convertedOptions: any = {};
+	for (const [key, items] of Object.entries(newOptions)) {
+		if (Array.isArray(items)) {
+			convertedOptions[key] = (items as any[]).map((item) =>
+				typeof item === "object" && item.name ? item.name : item,
+			);
+		} else {
+			convertedOptions[key] = items;
+		}
+	}
+	PRODUCT_FIELD_OPTIONS = { ...PRODUCT_FIELD_OPTIONS, ...convertedOptions };
 }
 
-// Archive/unarchive metadata items
-export function archiveMetadataItem(fieldKey: string, value: string) {
-	// Remove from active options
-	const activeOptions = PRODUCT_FIELD_OPTIONS[
-		fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
-	] as string[];
-	const index = activeOptions.indexOf(value);
-	if (index > -1) {
-		activeOptions.splice(index, 1);
-	}
+// Metadata storage with status
+let METADATA_ITEMS: Record<
+	string,
+	Array<{ name: string; status: string }>
+> = {};
 
-	// Add to archived items
-	if (!ARCHIVED_METADATA_ITEMS[fieldKey]) {
-		ARCHIVED_METADATA_ITEMS[fieldKey] = [];
-	}
-	if (!ARCHIVED_METADATA_ITEMS[fieldKey].includes(value)) {
-		ARCHIVED_METADATA_ITEMS[fieldKey].push(value);
-	}
+export function updateMetadataItems(metadata: any) {
+	METADATA_ITEMS = { ...metadata };
 }
 
-export function unarchiveMetadataItem(fieldKey: string, value: string) {
-	// Remove from archived items
-	const archivedItems = ARCHIVED_METADATA_ITEMS[fieldKey] || [];
-	const index = archivedItems.indexOf(value);
-	if (index > -1) {
-		archivedItems.splice(index, 1);
-	}
-
-	// Add back to active options
-	const activeOptions = PRODUCT_FIELD_OPTIONS[
-		fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS
-	] as string[];
-	if (!activeOptions.includes(value)) {
-		activeOptions.push(value);
-	}
+export function getMetadataItems(
+	fieldKey: string,
+	includeArchived: boolean = false,
+): Array<{ name: string; status: string }> {
+	const items = METADATA_ITEMS[fieldKey] || [];
+	return includeArchived
+		? items
+		: items.filter((item) => item.status === "active");
 }
 
 export function isMetadataItemArchived(
 	fieldKey: string,
 	value: string,
 ): boolean {
-	return ARCHIVED_METADATA_ITEMS[fieldKey]?.includes(value) || false;
-}
-
-export function getArchivedMetadataItems(fieldKey: string): string[] {
-	return ARCHIVED_METADATA_ITEMS[fieldKey] || [];
+	const items = METADATA_ITEMS[fieldKey] || [];
+	const item = items.find((item) => item.name === value);
+	return item?.status === "archived" || false;
 }
 
 export function getAllMetadataItems(
@@ -385,6 +375,7 @@ export const BALLOON_PRODUCTS: Product[] = [
 		texture: "Matte",
 		quantity: 18,
 		bagQuantity: 100,
+		status: "active",
 	},
 	{
 		id: "8901234567891",

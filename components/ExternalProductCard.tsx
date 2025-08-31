@@ -81,8 +81,16 @@ export default function ExternalProductCard({
 		return fieldFilters ? fieldFilters.includes(value) : false;
 	};
 
+	const isArchived = externalProduct.status === "archived";
+
 	return (
-		<View style={[styles.card, { backgroundColor: colors.surface }]}>
+		<View
+			style={[
+				styles.card,
+				{ backgroundColor: colors.surface },
+				isArchived && { opacity: 0.6, backgroundColor: colors.background },
+			]}
+		>
 			<Pressable
 				style={styles.cardHeader}
 				onPress={() =>
@@ -92,9 +100,22 @@ export default function ExternalProductCard({
 				<View style={styles.headerLeft}>
 					<Text style={[styles.sku, { color: colors.textSecondary }]}>
 						{externalProduct.unique_id_sku}
+						{isArchived && (
+							<Text
+								style={[styles.archivedLabel, { color: colors.textSecondary }]}
+							>
+								{" "}
+								(Archived)
+							</Text>
+						)}
 					</Text>
 				</View>
-				<Text style={[styles.quantity, { color: colors.primary }]}>
+				<Text
+					style={[
+						styles.quantity,
+						{ color: isArchived ? colors.textSecondary : colors.primary },
+					]}
+				>
 					{externalProduct.quantity}
 				</Text>
 			</Pressable>
@@ -264,5 +285,10 @@ const styles = StyleSheet.create({
 		color: "#495057",
 		fontWeight: "500",
 		flex: 1,
+	},
+	archivedLabel: {
+		fontSize: 10,
+		fontWeight: "400",
+		fontStyle: "italic",
 	},
 });

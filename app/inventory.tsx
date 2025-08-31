@@ -27,6 +27,7 @@ import {
 	type ExternalProduct,
 	getAllMetadataItems,
 	getInternalProductTotalQuantity,
+	getMetadataItems,
 	type InternalProduct,
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
@@ -37,6 +38,7 @@ import {
 	getAllExternalProducts,
 	getAllInternalProducts,
 	getExternalProductBySku,
+	subscribeToStoreChanges,
 } from "@/store/products";
 
 type ViewMode =
@@ -390,15 +392,56 @@ function MetadataCard({
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
+	// Get the fieldKey for this viewMode to check if item is archived
+	const getFieldKeyForViewMode = (viewMode: ViewMode): string | null => {
+		switch (viewMode) {
+			case "productTypes":
+				return "productType";
+			case "colors":
+				return "manufacturer_color"; // Use manufacturer_color as primary
+			case "manufacturers":
+				return "manufacturer";
+			case "sizes":
+				return "size";
+			case "textures":
+				return "texture";
+			case "bagQuantities":
+				return "bagQuantity";
+			case "shapes":
+				return "shape";
+			case "distributors":
+				return "distributor";
+			case "occasions":
+				return "occasion";
+			default:
+				return null;
+		}
+	};
+
+	const fieldKey = getFieldKeyForViewMode(viewMode);
+	const isArchived = fieldKey ? isMetadataItemArchived(fieldKey, item) : false;
+
 	return (
 		<Pressable
-			style={[styles.card, { backgroundColor: colors.cardBackground }]}
+			style={[
+				styles.card,
+				{ backgroundColor: colors.cardBackground },
+				isArchived && { opacity: 0.6, backgroundColor: colors.surface },
+			]}
 			onPress={() =>
 				router.push(`/metadata/${viewMode}/${encodeURIComponent(item)}`)
 			}
 		>
 			<View style={styles.cardHeader}>
-				<Text style={[styles.productName, { color: colors.text }]}>{item}</Text>
+				<Text
+					style={[
+						styles.productName,
+						{ color: isArchived ? colors.textSecondary : colors.text },
+					]}
+				>
+					{item}
+					{isArchived ? " (Archived)" : ""}
+				</Text>
 			</View>
 		</Pressable>
 	);
@@ -453,6 +496,7 @@ export default function Inventory() {
 	const [externalProducts, setExternalProductsState] = useState<
 		ExternalProduct[]
 	>(getAllExternalProducts());
+	const [storeUpdateTrigger, setStoreUpdateTrigger] = useState(0);
 
 	// UI state
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -498,7 +542,15 @@ export default function Inventory() {
 		});
 		setInternalProductsState(internalData);
 		setExternalProductsState(externalData);
-	}, [sheetsLoading]);
+	}, [sheetsLoading, storeUpdateTrigger]);
+
+	// Subscribe to store changes to update products
+	useEffect(() => {
+		const unsubscribe = subscribeToStoreChanges(() => {
+			setStoreUpdateTrigger((prev) => prev + 1);
+		});
+		return unsubscribe;
+	}, []);
 
 	// Subscribe to metadata changes to update filters
 	useEffect(() => {
@@ -546,7 +598,7 @@ export default function Inventory() {
 								if (key === "showArchived") {
 									// Handle showArchived filter (boolean)
 									const isProductArchived =
-										internalProduct.status === "archived";
+										(internalProduct.status || "active") === "archived";
 									if (selectedValues === true) {
 										// Show all products (both active and archived)
 										return true;
@@ -589,7 +641,7 @@ export default function Inventory() {
 										if (key === "showArchived") {
 											// Handle showArchived filter (boolean)
 											const isProductArchived =
-												externalProduct.status === "archived";
+												(externalProduct.status || "active") === "archived";
 											if (selectedValues === true) {
 												// Show all products (both active and archived)
 												return true;
@@ -619,28 +671,45 @@ export default function Inventory() {
 					}) || []
 				);
 			case "productTypes":
-				return PRODUCT_FIELD_OPTIONS.productType;
+				return getMetadataItems("productType", showArchived).map(
+					(item) => item.name,
+				);
 			case "colors": {
 				// Combine both manufacturer and sparkys colors
-				const manufacturerColors =
-					PRODUCT_FIELD_OPTIONS.manufacturer_color || [];
-				const sparkysColors = PRODUCT_FIELD_OPTIONS.sparkys_color || [];
+				const manufacturerColors = getMetadataItems(
+					"manufacturer_color",
+					showArchived,
+				).map((item) => item.name);
+				const sparkysColors = getMetadataItems(
+					"sparkys_color",
+					showArchived,
+				).map((item) => item.name);
 				return [...new Set([...manufacturerColors, ...sparkysColors])].sort();
 			}
 			case "manufacturers":
-				return PRODUCT_FIELD_OPTIONS.manufacturer;
+				return getMetadataItems("manufacturer", showArchived).map(
+					(item) => item.name,
+				);
 			case "sizes":
-				return PRODUCT_FIELD_OPTIONS.size;
+				return getMetadataItems("size", showArchived).map((item) => item.name);
 			case "textures":
-				return PRODUCT_FIELD_OPTIONS.texture;
+				return getMetadataItems("texture", showArchived).map(
+					(item) => item.name,
+				);
 			case "bagQuantities":
-				return PRODUCT_FIELD_OPTIONS.bagQuantity;
+				return getMetadataItems("bagQuantity", showArchived).map(
+					(item) => item.name,
+				);
 			case "shapes":
-				return PRODUCT_FIELD_OPTIONS.shape;
+				return getMetadataItems("shape", showArchived).map((item) => item.name);
 			case "distributors":
-				return PRODUCT_FIELD_OPTIONS.distributor;
+				return getMetadataItems("distributor", showArchived).map(
+					(item) => item.name,
+				);
 			case "occasions":
-				return PRODUCT_FIELD_OPTIONS.occasion;
+				return getMetadataItems("occasion", showArchived).map(
+					(item) => item.name,
+				);
 			default:
 				return [];
 		}
@@ -651,7 +720,7 @@ export default function Inventory() {
 			? ({ item }: { item: InternalProduct }) => {
 					console.log("Rendering InternalProductCard with item:", item);
 
-					// Filter external products for this internal product and apply external filters
+					// Get all external products for this internal product
 					const relatedExternals = externalProducts.filter((ext) =>
 						item.products.includes(ext.unique_id_sku),
 					);
@@ -664,7 +733,7 @@ export default function Inventory() {
 									if (key === "showArchived") {
 										// Handle showArchived filter (boolean)
 										const isProductArchived =
-											externalProduct.status === "archived";
+											(externalProduct.status || "active") === "archived";
 										if (selectedValues === true) {
 											// Show all products (both active and archived)
 											return true;
