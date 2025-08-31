@@ -117,7 +117,9 @@ export function getAllMetadataItems(
 	if (!includeArchived) {
 		return activeItems;
 	}
-	const archivedItems = getArchivedMetadataItems(fieldKey);
+	const archivedItems = getMetadataItems(fieldKey, true)
+		.filter(item => item.status === "archived")
+		.map(item => item.name);
 	return [...activeItems, ...archivedItems];
 }
 
