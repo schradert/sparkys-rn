@@ -12,17 +12,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import {
-	archiveMetadataItem,
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
-	unarchiveMetadataItem,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
-	const { updateMetadata } = useSheetsData();
+	const { updateMetadata, archiveMetadata, unarchiveMetadata } =
+		useSheetsData();
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
@@ -31,6 +30,7 @@ export default function MetadataDetail() {
 	const [editedValue, setEditedValue] = useState(decodedItemName);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
+	const [isArchiving, setIsArchiving] = useState(false);
 
 	if (!params || params.length < 2) {
 		return (
@@ -179,7 +179,13 @@ export default function MetadataDetail() {
 		}
 	}
 
-	function handleArchive() {
+	async function handleArchive() {
+		const sheetName = getSheetName(viewMode);
+		if (!sheetName) {
+			Alert.alert("Error", "Cannot archive this metadata type");
+			return;
+		}
+
 		Alert.alert(
 			"Archive Value",
 			`Are you sure you want to archive "${decodedItemName}"?`,
@@ -188,13 +194,23 @@ export default function MetadataDetail() {
 				{
 					text: "Archive",
 					style: "default",
-					onPress: () => {
+					onPress: async () => {
+						setIsArchiving(true);
 						try {
-							archiveMetadataItem(fieldKey!, decodedItemName);
-							Alert.alert("Success", `"${decodedItemName}" has been archived!`);
-							router.back();
+							const result = await archiveMetadata(sheetName, decodedItemName);
+							if (result.success) {
+								Alert.alert(
+									"Success",
+									`"${decodedItemName}" has been archived!`,
+								);
+								router.back();
+							} else {
+								Alert.alert("Error", result.error || "Failed to archive item");
+							}
 						} catch (error) {
 							Alert.alert("Error", "Failed to archive item");
+						} finally {
+							setIsArchiving(false);
 						}
 					},
 				},
@@ -202,7 +218,13 @@ export default function MetadataDetail() {
 		);
 	}
 
-	function handleUnarchive() {
+	async function handleUnarchive() {
+		const sheetName = getSheetName(viewMode);
+		if (!sheetName) {
+			Alert.alert("Error", "Cannot unarchive this metadata type");
+			return;
+		}
+
 		Alert.alert(
 			"Unarchive Value",
 			`Are you sure you want to unarchive "${decodedItemName}"?`,
@@ -211,16 +233,29 @@ export default function MetadataDetail() {
 				{
 					text: "Unarchive",
 					style: "default",
-					onPress: () => {
+					onPress: async () => {
+						setIsArchiving(true);
 						try {
-							unarchiveMetadataItem(fieldKey!, decodedItemName);
-							Alert.alert(
-								"Success",
-								`"${decodedItemName}" has been unarchived!`,
+							const result = await unarchiveMetadata(
+								sheetName,
+								decodedItemName,
 							);
-							router.back();
+							if (result.success) {
+								Alert.alert(
+									"Success",
+									`"${decodedItemName}" has been unarchived!`,
+								);
+								router.back();
+							} else {
+								Alert.alert(
+									"Error",
+									result.error || "Failed to unarchive item",
+								);
+							}
 						} catch (error) {
 							Alert.alert("Error", "Failed to unarchive item");
+						} finally {
+							setIsArchiving(false);
 						}
 					},
 				},
@@ -260,17 +295,35 @@ export default function MetadataDetail() {
 					{!isEditing && !isArchived && (
 						<Pressable
 							onPress={handleArchive}
-							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+							style={[
+								styles.circleButton,
+								{ backgroundColor: colors.primary },
+								isArchiving && styles.disabledButton,
+							]}
+							disabled={isArchiving}
 						>
-							<Ionicons name="archive-outline" size={20} color="white" />
+							<Ionicons
+								name={isArchiving ? "hourglass" : "archive-outline"}
+								size={20}
+								color="white"
+							/>
 						</Pressable>
 					)}
 					{!isEditing && isArchived && (
 						<Pressable
 							onPress={handleUnarchive}
-							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+							style={[
+								styles.circleButton,
+								{ backgroundColor: colors.primary },
+								isArchiving && styles.disabledButton,
+							]}
+							disabled={isArchiving}
 						>
-							<Ionicons name="refresh-outline" size={20} color="white" />
+							<Ionicons
+								name={isArchiving ? "hourglass" : "refresh-outline"}
+								size={20}
+								color="white"
+							/>
 						</Pressable>
 					)}
 					<Pressable

@@ -103,14 +103,26 @@ async function signOut(): Promise<void> {
 	}
 }
 
+let tokenPromise: Promise<string | null> | null = null;
+
 async function getAccessToken(): Promise<string | null> {
-	try {
-		const tokens = await GoogleSignin.getTokens();
-		return tokens.accessToken;
-	} catch (error) {
-		console.error("Get access token error:", error);
-		return null;
+	if (tokenPromise) {
+		return tokenPromise;
 	}
+
+	tokenPromise = (async () => {
+		try {
+			const tokens = await GoogleSignin.getTokens();
+			return tokens.accessToken;
+		} catch (error) {
+			console.error("Get access token error:", error);
+			return null;
+		} finally {
+			tokenPromise = null;
+		}
+	})();
+
+	return tokenPromise;
 }
 
 export function useAuth() {

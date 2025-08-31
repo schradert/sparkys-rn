@@ -18,9 +18,11 @@ import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import {
 	archiveInternalProduct,
 	getQuantityColor,
+	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 	unarchiveInternalProduct,
 } from "@/constants/Products";
+import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import {
 	getAllInternalProducts,
@@ -33,6 +35,16 @@ import {
 export default function InternalProductDetail() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
+
+	// Helper function to add (Archived) labels to metadata options
+	const addArchivedLabels = (options: string[], fieldKey: string): string[] => {
+		return options.map((option) => {
+			const isArchived = isMetadataItemArchived(fieldKey, option);
+			return isArchived ? `${option} (Archived)` : option;
+		});
+	};
+	const { updateInternalProduct: updateInternalProductInSheet } =
+		useSheetsData();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const productName = decodeURIComponent(id || "");
 	const [internalProduct, setInternalProduct] =
@@ -43,6 +55,7 @@ export default function InternalProductDetail() {
 	const [loading, setLoading] = useState(true);
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isArchiving, setIsArchiving] = useState(false);
 	const [editedProduct, setEditedProduct] = useState<InternalProduct | null>(
 		null,
 	);
@@ -112,7 +125,7 @@ export default function InternalProductDetail() {
 		}
 	};
 
-	const handleArchive = () => {
+	const handleArchive = async () => {
 		if (!internalProduct) return;
 
 		const isCurrentlyArchived = internalProduct.status === "archived";
@@ -126,31 +139,52 @@ export default function InternalProductDetail() {
 				{
 					text: action.charAt(0).toUpperCase() + action.slice(1),
 					style: isCurrentlyArchived ? "default" : "destructive",
-					onPress: () => {
-						const allProducts = getAllInternalProducts();
-						const updatedProducts = isCurrentlyArchived
-							? unarchiveInternalProduct(
+					onPress: async () => {
+						setIsArchiving(true);
+						try {
+							// Update spreadsheet with new status
+							const newStatus = isCurrentlyArchived ? "active" : "archived";
+							const productForSheet = {
+								sparkys_product_name: internalProduct.sparkys_product_name,
+								product_type: internalProduct.product_type,
+								sparkys_color: internalProduct.sparkys_color,
+								texture: internalProduct.texture,
+								shape: internalProduct.shape,
+								occasions: internalProduct.occasions.join(", "),
+								products: internalProduct.products.join(", "),
+								threshold_quantity: internalProduct.threshold_quantity,
+								status: newStatus,
+							};
+
+							const result =
+								await updateInternalProductInSheet(productForSheet);
+							if (result.success) {
+								// Update global store immediately
+								const updatedProduct = {
+									...internalProduct,
+									status: newStatus,
+								};
+								updateInternalProduct(
 									internalProduct.sparkys_product_name,
-									allProducts,
-								)
-							: archiveInternalProduct(
-									internalProduct.sparkys_product_name,
-									allProducts,
+									updatedProduct,
 								);
 
-						setInternalProducts(updatedProducts);
+								// Update local component state
+								setInternalProduct(updatedProduct);
+								setEditedProduct(updatedProduct);
 
-						// Update local state
-						const updatedProduct = updatedProducts.find(
-							(p) =>
-								p.sparkys_product_name === internalProduct.sparkys_product_name,
-						);
-						if (updatedProduct) {
-							setInternalProduct(updatedProduct);
-							setEditedProduct(updatedProduct);
+								Alert.alert("Success", `Product ${action}d successfully!`);
+							} else {
+								Alert.alert(
+									"Error",
+									result.error || `Failed to ${action} product`,
+								);
+							}
+						} catch (error) {
+							Alert.alert("Error", `Failed to ${action} product`);
+						} finally {
+							setIsArchiving(false);
 						}
-
-						Alert.alert("Success", `Product ${action}d successfully!`);
 					},
 				},
 			],
@@ -189,10 +223,9 @@ export default function InternalProductDetail() {
 		);
 	}
 
-	const totalQuantity = externalProducts.reduce(
-		(total, ext) => total + ext.quantity,
-		0,
-	);
+	const totalQuantity = externalProducts
+		.filter((ext) => (ext.status || "active") === "active")
+		.reduce((total, ext) => total + ext.quantity, 0);
 
 	const quantityColorType = getQuantityColor(
 		totalQuantity,
@@ -278,13 +311,20 @@ export default function InternalProductDetail() {
 					{!isEditing && (
 						<Pressable
 							onPress={handleArchive}
-							style={[styles.circleButton, { backgroundColor: colors.primary }]}
+							style={[
+								styles.circleButton,
+								{ backgroundColor: colors.primary },
+								isArchiving && styles.disabledButton,
+							]}
+							disabled={isArchiving}
 						>
 							<Ionicons
 								name={
-									internalProduct.status === "archived"
-										? "refresh-outline"
-										: "archive-outline"
+									isArchiving
+										? "hourglass"
+										: internalProduct.status === "archived"
+											? "refresh-outline"
+											: "archive-outline"
 								}
 								size={20}
 								color="white"
@@ -363,34 +403,55 @@ export default function InternalProductDetail() {
 							<>
 								<CollapsibleRadioSection
 									title="Product Type"
-									options={PRODUCT_FIELD_OPTIONS.productType}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.productType,
+										"productType",
+									)}
 									selectedValue={editedProduct.product_type}
 									onSelectionChange={(value) =>
-										handleFieldChange("product_type", value)
+										handleFieldChange(
+											"product_type",
+											value.replace(" (Archived)", ""),
+										)
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Sparky's Color"
-									options={PRODUCT_FIELD_OPTIONS.sparkys_color}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.sparkys_color,
+										"sparkys_color",
+									)}
 									selectedValue={editedProduct.sparkys_color}
 									onSelectionChange={(value) =>
-										handleFieldChange("sparkys_color", value)
+										handleFieldChange(
+											"sparkys_color",
+											value.replace(" (Archived)", ""),
+										)
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Texture"
-									options={PRODUCT_FIELD_OPTIONS.texture}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.texture,
+										"texture",
+									)}
 									selectedValue={editedProduct.texture}
 									onSelectionChange={(value) =>
-										handleFieldChange("texture", value)
+										handleFieldChange(
+											"texture",
+											value.replace(" (Archived)", ""),
+										)
 									}
 								/>
 								<CollapsibleRadioSection
 									title="Shape"
-									options={PRODUCT_FIELD_OPTIONS.shape}
+									options={addArchivedLabels(
+										PRODUCT_FIELD_OPTIONS.shape,
+										"shape",
+									)}
 									selectedValue={editedProduct.shape}
 									onSelectionChange={(value) =>
-										handleFieldChange("shape", value)
+										handleFieldChange("shape", value.replace(" (Archived)", ""))
 									}
 								/>
 
@@ -405,12 +466,16 @@ export default function InternalProductDetail() {
 										Occasions (Multi-select)
 									</Text>
 									<View style={styles.occasionsEditContainer}>
-										{PRODUCT_FIELD_OPTIONS.occasion.map((occasion) => {
+										{addArchivedLabels(
+											PRODUCT_FIELD_OPTIONS.occasion,
+											"occasion",
+										).map((occasionLabel) => {
+											const occasion = occasionLabel.replace(" (Archived)", "");
 											const isSelected =
 												editedProduct.occasions?.includes(occasion) || false;
 											return (
 												<Pressable
-													key={occasion}
+													key={occasionLabel}
 													onPress={() => handleOccasionsChange(occasion)}
 													style={[
 														styles.occasionEditPill,
@@ -428,7 +493,7 @@ export default function InternalProductDetail() {
 															{ color: isSelected ? "white" : colors.text },
 														]}
 													>
-														{occasion}
+														{occasionLabel}
 													</Text>
 												</Pressable>
 											);

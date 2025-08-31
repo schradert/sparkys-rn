@@ -6,6 +6,20 @@ let internalProducts: InternalProduct[] = [];
 // Store for external products (manufacturer products with barcodes)
 let externalProducts: ExternalProduct[] = [];
 
+// Store change notification
+let storeChangeListeners: Array<() => void> = [];
+
+function notifyStoreChange() {
+	storeChangeListeners.forEach((listener) => listener());
+}
+
+export function subscribeToStoreChanges(listener: () => void) {
+	storeChangeListeners.push(listener);
+	return () => {
+		storeChangeListeners = storeChangeListeners.filter((l) => l !== listener);
+	};
+}
+
 // Internal Products Management
 export function getAllInternalProducts(): InternalProduct[] {
 	return internalProducts;
@@ -30,6 +44,7 @@ export function updateInternalProduct(
 	);
 	if (index !== -1) {
 		internalProducts[index] = updatedProduct;
+		notifyStoreChange();
 	}
 }
 
@@ -68,6 +83,7 @@ export function updateExternalProduct(
 	const index = externalProducts.findIndex((p) => p.unique_id_sku === sku);
 	if (index !== -1) {
 		externalProducts[index] = updatedProduct;
+		notifyStoreChange();
 	}
 }
 

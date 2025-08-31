@@ -87,9 +87,18 @@ export default function InternalProductCard({
 		},
 	);
 
-	const relatedExternals = externalProducts.filter((ext) =>
+	// Get all external products for this internal product
+	const allRelatedExternals = externalProducts.filter((ext) =>
 		internalProduct.products.includes(ext.unique_id_sku),
 	);
+
+	// For display, respect the showArchived filter
+	const showArchived = selectedFilters?.external?.showArchived === true;
+	const relatedExternals = showArchived
+		? allRelatedExternals
+		: allRelatedExternals.filter(
+				(ext) => (ext.status || "active") === "active",
+			);
 
 	console.log(
 		"RelatedExternals result for",
@@ -106,10 +115,10 @@ export default function InternalProductCard({
 		},
 	);
 
-	const totalQuantity = relatedExternals.reduce(
-		(total, ext) => total + ext.quantity,
-		0,
-	);
+	// Calculate quantity from active products only (for threshold calculations)
+	const totalQuantity = allRelatedExternals
+		.filter((ext) => (ext.status || "active") === "active")
+		.reduce((total, ext) => total + ext.quantity, 0);
 
 	const quantityColorType = getQuantityColor(
 		totalQuantity,
@@ -191,8 +200,16 @@ export default function InternalProductCard({
 		return fieldFilters ? fieldFilters.includes(value) : false;
 	};
 
+	const isArchived = internalProduct.status === "archived";
+
 	return (
-		<View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+		<View
+			style={[
+				styles.card,
+				{ backgroundColor: colors.cardBackground },
+				isArchived && { opacity: 0.6, backgroundColor: colors.surface },
+			]}
+		>
 			<Pressable
 				style={styles.cardHeader}
 				onPress={() =>
@@ -204,6 +221,14 @@ export default function InternalProductCard({
 				<View style={styles.headerLeft}>
 					<Text style={[styles.productName, { color: colors.text }]}>
 						{internalProduct.sparkys_product_name}
+						{isArchived && (
+							<Text
+								style={[styles.archivedLabel, { color: colors.textSecondary }]}
+							>
+								{" "}
+								(Archived)
+							</Text>
+						)}
 					</Text>
 					<Text style={[styles.externalCount, { color: colors.textSecondary }]}>
 						{relatedExternals.length} external product
@@ -212,10 +237,20 @@ export default function InternalProductCard({
 				</View>
 				<View style={styles.headerRight}>
 					<Text style={styles.quantity}>
-						<Text style={{ color: getQuantityColorValue(quantityColorType) }}>
+						<Text
+							style={{
+								color: isArchived
+									? colors.textSecondary
+									: getQuantityColorValue(quantityColorType),
+							}}
+						>
 							{totalQuantity}
 						</Text>
-						<Text style={{ color: colors.primary }}>
+						<Text
+							style={{
+								color: isArchived ? colors.textSecondary : colors.primary,
+							}}
+						>
 							{" "}
 							/ {internalProduct.threshold_quantity ?? 0}
 						</Text>
@@ -316,6 +351,18 @@ export default function InternalProductCard({
 							// Apply external product filters only for display
 							return Object.entries(selectedFilters?.external || {}).every(
 								([key, selectedValues]) => {
+									if (key === "showArchived") {
+										// Handle showArchived filter (boolean)
+										const isProductArchived =
+											(externalProduct.status || "active") === "archived";
+										if (selectedValues === true) {
+											// Show all products (both active and archived)
+											return true;
+										} else {
+											// Show only active products (exclude archived)
+											return !isProductArchived;
+										}
+									}
 									if (!selectedValues || selectedValues.length === 0)
 										return true;
 									if (key === "distributors") {
@@ -411,6 +458,11 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		fontWeight: "500",
 		color: "#495057",
+	},
+	archivedLabel: {
+		fontSize: 12,
+		fontWeight: "400",
+		fontStyle: "italic",
 	},
 	metadataGrid: {
 		flexDirection: "row",

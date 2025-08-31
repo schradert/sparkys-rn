@@ -18,6 +18,7 @@ import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import { Colors } from "@/constants/Colors";
 import {
 	convertProductToSheet,
+	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 	type Product,
 } from "@/constants/Products";
@@ -40,6 +41,42 @@ export default function ProductDetail() {
 	const { updateProduct: updateProductInSheets } = useSheetsData();
 	const { theme } = useTheme();
 	const colors = Colors[theme];
+
+	// Helper function to add (Archived) labels to metadata options
+	const addArchivedLabels = (options: string[], fieldKey: string): string[] => {
+		return options.map((option) => {
+			const isArchived = isMetadataItemArchived(fieldKey, option);
+			return isArchived ? `${option} (Archived)` : option;
+		});
+	};
+
+	// Map field names to their corresponding metadata field keys
+	const getFieldKey = (field: string): string => {
+		switch (field) {
+			case "productType":
+				return "productType";
+			case "manufacturer_color":
+				return "manufacturer_color";
+			case "sparkys_color":
+				return "sparkys_color";
+			case "manufacturer":
+				return "manufacturer";
+			case "size":
+				return "size";
+			case "texture":
+				return "texture";
+			case "bagQuantity":
+				return "bagQuantity";
+			case "shape":
+				return "shape";
+			case "distributor":
+				return "distributor";
+			case "occasion":
+				return "occasion";
+			default:
+				return field;
+		}
+	};
 
 	if (!product) {
 		return (
@@ -273,10 +310,13 @@ export default function ProductDetail() {
 							<CollapsibleRadioSection
 								key={field}
 								title={formatCategoryTitle(field)}
-								options={options}
+								options={addArchivedLabels(options, getFieldKey(field))}
 								selectedValue={editedProduct[field as keyof Product] as string}
 								onSelectionChange={(value) =>
-									setEditedProduct((prev) => ({ ...prev, [field]: value }))
+									setEditedProduct((prev) => ({
+										...prev,
+										[field]: value.replace(" (Archived)", ""),
+									}))
 								}
 							/>
 						))}
