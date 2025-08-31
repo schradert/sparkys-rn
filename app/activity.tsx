@@ -170,7 +170,7 @@ export default function Activity() {
 						{item.object_name}
 					</Text>
 					<Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-						{formatTimestamp(item.timestamp)}
+						{formatTimestamp(item.timestamp)} • {item.user_email}
 					</Text>
 				</View>
 				<Ionicons
@@ -345,6 +345,15 @@ export default function Activity() {
 									{formatTimestamp(selectedEvent.timestamp)}
 								</Text>
 
+								<Text
+									style={[
+										styles.detailUserEmail,
+										{ color: colors.textSecondary },
+									]}
+								>
+									by {selectedEvent.user_email}
+								</Text>
+
 								{selectedEvent.changes && selectedEvent.changes !== "{}" && (
 									<View style={styles.changesSection}>
 										<Text style={[styles.changesTitle, { color: colors.text }]}>
@@ -517,6 +526,11 @@ const styles = StyleSheet.create({
 	},
 	detailTimestamp: {
 		fontSize: 14,
+		marginBottom: 8,
+	},
+	detailUserEmail: {
+		fontSize: 12,
+		fontStyle: "italic",
 		marginBottom: 20,
 	},
 	changesSection: {
