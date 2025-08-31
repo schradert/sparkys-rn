@@ -123,7 +123,7 @@ export default function ExternalProductDetail() {
 			status: externalProduct.status || "active",
 		};
 
-		const result = await updateExternalProductInSheet(productForSheet);
+		const result = await updateExternalProductInSheet(productForSheet, true);
 		if (result.success) {
 			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
 			setExternalProduct(updatedProduct);
@@ -154,7 +154,7 @@ export default function ExternalProductDetail() {
 			status: externalProduct.status || "active",
 		};
 
-		const result = await updateExternalProductInSheet(productForSheet);
+		const result = await updateExternalProductInSheet(productForSheet, true);
 		if (result.success) {
 			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
 			setExternalProduct(updatedProduct);
