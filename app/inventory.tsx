@@ -490,6 +490,7 @@ export default function Inventory() {
 	const [externalFilters, setExternalFilters] = useState<ExternalFilters>(
 		defaultExternalFilters,
 	);
+	const [metadataShowArchived, setMetadataShowArchived] = useState(false);
 	const [internalProducts, setInternalProductsState] = useState<
 		InternalProduct[]
 	>(getAllInternalProducts());
@@ -500,6 +501,8 @@ export default function Inventory() {
 
 	// UI state
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+	const [isMetadataFilterModalVisible, setIsMetadataFilterModalVisible] =
+		useState(false);
 	const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 	const [isScannerVisible, setIsScannerVisible] = useState(false);
 	const [isViewDropdownVisible, setIsViewDropdownVisible] = useState(false);
@@ -671,43 +674,47 @@ export default function Inventory() {
 					}) || []
 				);
 			case "productTypes":
-				return getMetadataItems("productType", showArchived).map(
+				return getMetadataItems("productType", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			case "colors": {
 				// Combine both manufacturer and sparkys colors
 				const manufacturerColors = getMetadataItems(
 					"manufacturer_color",
-					showArchived,
+					metadataShowArchived,
 				).map((item) => item.name);
 				const sparkysColors = getMetadataItems(
 					"sparkys_color",
-					showArchived,
+					metadataShowArchived,
 				).map((item) => item.name);
 				return [...new Set([...manufacturerColors, ...sparkysColors])].sort();
 			}
 			case "manufacturers":
-				return getMetadataItems("manufacturer", showArchived).map(
+				return getMetadataItems("manufacturer", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			case "sizes":
-				return getMetadataItems("size", showArchived).map((item) => item.name);
+				return getMetadataItems("size", metadataShowArchived).map(
+					(item) => item.name,
+				);
 			case "textures":
-				return getMetadataItems("texture", showArchived).map(
+				return getMetadataItems("texture", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			case "bagQuantities":
-				return getMetadataItems("bagQuantity", showArchived).map(
+				return getMetadataItems("bagQuantity", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			case "shapes":
-				return getMetadataItems("shape", showArchived).map((item) => item.name);
+				return getMetadataItems("shape", metadataShowArchived).map(
+					(item) => item.name,
+				);
 			case "distributors":
-				return getMetadataItems("distributor", showArchived).map(
+				return getMetadataItems("distributor", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			case "occasions":
-				return getMetadataItems("occasion", showArchived).map(
+				return getMetadataItems("occasion", metadataShowArchived).map(
 					(item) => item.name,
 				);
 			default:
@@ -1268,6 +1275,21 @@ export default function Inventory() {
 							{totalSelections > 0 && (
 								<View style={styles.filterBadge}>
 									<Text style={styles.filterBadgeText}>{totalSelections}</Text>
+								</View>
+							)}
+						</View>
+					)}
+					{currentView !== "products" && (
+						<View style={styles.filterButtonContainer}>
+							<Pressable
+								onPress={() => setIsMetadataFilterModalVisible(true)}
+								style={styles.addButton}
+							>
+								<Ionicons name="options-outline" size={24} color="white" />
+							</Pressable>
+							{metadataShowArchived && (
+								<View style={styles.filterBadge}>
+									<Text style={styles.filterBadgeText}>1</Text>
 								</View>
 							)}
 						</View>
@@ -1982,6 +2004,124 @@ export default function Inventory() {
 								</View>
 							</View>
 						)}
+					</ScrollView>
+				</View>
+			</Modal>
+
+			<Modal
+				visible={isMetadataFilterModalVisible}
+				animationType="slide"
+				presentationStyle="pageSheet"
+				onRequestClose={() => setIsMetadataFilterModalVisible(false)}
+			>
+				<View
+					style={[
+						styles.modalContainer,
+						{ backgroundColor: colors.background },
+					]}
+				>
+					<View
+						style={[
+							styles.modalHeader,
+							{
+								backgroundColor: colors.cardBackground,
+								borderBottomColor: colors.borderLight,
+							},
+						]}
+					>
+						<Text style={[styles.modalTitle, { color: colors.text }]}>
+							Filter{" "}
+							{currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+						</Text>
+						<View style={styles.modalHeaderActions}>
+							{metadataShowArchived && (
+								<Pressable
+									onPress={() => setMetadataShowArchived(false)}
+									style={[
+										styles.clearButton,
+										{ backgroundColor: colors.error },
+									]}
+								>
+									<Text style={styles.clearText}>Clear All</Text>
+								</Pressable>
+							)}
+							<Pressable
+								onPress={() => setIsMetadataFilterModalVisible(false)}
+								style={[
+									styles.closeButton,
+									{ backgroundColor: colors.surface },
+								]}
+							>
+								<Ionicons name="close" size={24} color={colors.textSecondary} />
+							</Pressable>
+						</View>
+					</View>
+
+					<ScrollView
+						style={styles.modalScrollView}
+						showsVerticalScrollIndicator={false}
+					>
+						{/* Show Archived Filter */}
+						<View
+							style={[
+								styles.filterSection,
+								{ backgroundColor: colors.cardBackground },
+							]}
+						>
+							<Pressable
+								style={[
+									styles.filterHeader,
+									{ backgroundColor: colors.cardBackground },
+								]}
+								onPress={() => setMetadataShowArchived(!metadataShowArchived)}
+							>
+								<View style={styles.understockedHeader}>
+									<Ionicons
+										name="archive-outline"
+										size={20}
+										color={metadataShowArchived ? colors.primary : colors.icon}
+									/>
+									<Text
+										style={[
+											styles.filterHeaderText,
+											{
+												color: metadataShowArchived
+													? colors.primary
+													: colors.text,
+											},
+										]}
+									>
+										Show Archived Items
+									</Text>
+								</View>
+								<View
+									style={[
+										styles.toggleSwitch,
+										{
+											backgroundColor: metadataShowArchived
+												? colors.primary
+												: colors.surface,
+										},
+									]}
+								>
+									<View
+										style={[
+											styles.toggleThumb,
+											{
+												backgroundColor: metadataShowArchived
+													? "white"
+													: colors.textSecondary,
+												transform: [
+													{
+														translateX: metadataShowArchived ? 20 : 2,
+													},
+												],
+											},
+										]}
+									/>
+								</View>
+							</Pressable>
+						</View>
 					</ScrollView>
 				</View>
 			</Modal>
