@@ -57,8 +57,8 @@ type ViewMode =
 const VIEW_OPTIONS = [
 	{ key: "products" as ViewMode, label: "Products" },
 	{ key: "productTypes" as ViewMode, label: "Product Types" },
-	{ key: "manufacturerColors" as ViewMode, label: "Manufacturer Colors" },
-	{ key: "sparkysColors" as ViewMode, label: "Sparky's Colors" },
+	{ key: "manufacturerColors" as ViewMode, label: "External Colors" },
+	{ key: "sparkysColors" as ViewMode, label: "Internal Colors" },
 	{ key: "manufacturers" as ViewMode, label: "Brands" },
 	{ key: "sizes" as ViewMode, label: "Sizes" },
 	{ key: "textures" as ViewMode, label: "Textures" },
@@ -563,20 +563,62 @@ export default function Inventory() {
 	useEffect(() => {
 		const unsubscribe = subscribeToMetadataChanges((change) => {
 			const { fieldKey, oldValue, newValue } = change;
-			setFilters((prevFilters) => {
-				const currentSelectedValues = prevFilters[fieldKey as Field];
-				if (currentSelectedValues && currentSelectedValues.includes(oldValue)) {
-					// Replace old value with new value in the filter
-					const updatedValues = currentSelectedValues.map((value) =>
-						value === oldValue ? newValue : value,
-					);
-					return {
-						...prevFilters,
-						[fieldKey]: updatedValues,
-					};
-				}
-				return prevFilters;
-			});
+
+			// Update internal filters if applicable
+			if (
+				[
+					"product_type",
+					"texture",
+					"shape",
+					"occasions",
+					"sparkys_color",
+				].includes(fieldKey)
+			) {
+				setInternalFilters((prevFilters) => {
+					const currentSelectedValues =
+						prevFilters[fieldKey as keyof InternalFilters];
+					if (
+						currentSelectedValues &&
+						Array.isArray(currentSelectedValues) &&
+						currentSelectedValues.includes(oldValue)
+					) {
+						const updatedValues = currentSelectedValues.map((value) =>
+							value === oldValue ? newValue : value,
+						);
+						return {
+							...prevFilters,
+							[fieldKey]: updatedValues,
+						};
+					}
+					return prevFilters;
+				});
+			}
+
+			// Update external filters if applicable
+			if (
+				["manufacturer_color", "brand", "size", "distributors"].includes(
+					fieldKey,
+				)
+			) {
+				setExternalFilters((prevFilters) => {
+					const currentSelectedValues =
+						prevFilters[fieldKey as keyof ExternalFilters];
+					if (
+						currentSelectedValues &&
+						Array.isArray(currentSelectedValues) &&
+						currentSelectedValues.includes(oldValue)
+					) {
+						const updatedValues = currentSelectedValues.map((value) =>
+							value === oldValue ? newValue : value,
+						);
+						return {
+							...prevFilters,
+							[fieldKey]: updatedValues,
+						};
+					}
+					return prevFilters;
+				});
+			}
 		});
 
 		return unsubscribe;

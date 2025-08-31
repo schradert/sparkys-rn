@@ -761,39 +761,86 @@ export class GoogleSheetsService {
 			`DEBUG: Starting cascade update for ${metadataSheetName}: "${oldValue}" -> "${newValue}"`,
 		);
 
-		// Get the column name in products sheet based on metadata sheet name
-		const productColumnName =
-			this.getProductColumnForMetadataSheet(metadataSheetName);
-		if (!productColumnName) {
+		// Determine which product sheets need updating based on metadata type
+		const sheetsToUpdate = this.getProductSheetsForMetadata(metadataSheetName);
+		if (sheetsToUpdate.length === 0) {
 			console.log(
-				`No corresponding product column for metadata sheet: ${metadataSheetName}`,
+				`No product sheets to update for metadata sheet: ${metadataSheetName}`,
 			);
 			return;
 		}
-		console.log(`DEBUG: Product column name: ${productColumnName}`);
 
-		const products = await this.getSheetData("products", accessToken);
+		// Update each relevant product sheet
+		for (const sheetInfo of sheetsToUpdate) {
+			await this.updateProductSheetWithMetadataChange(
+				sheetInfo.sheetName,
+				sheetInfo.columnName,
+				oldValue,
+				newValue,
+				accessToken,
+			);
+		}
+	}
+
+	private getProductSheetsForMetadata(metadataSheetName: string): Array<{
+		sheetName: string;
+		columnName: string;
+	}> {
+		switch (metadataSheetName) {
+			case "product_types":
+				return [{ sheetName: "internal_products", columnName: "product_type" }];
+			case "sparkys_colors":
+				return [
+					{ sheetName: "internal_products", columnName: "sparkys_color" },
+				];
+			case "textures":
+				return [{ sheetName: "internal_products", columnName: "texture" }];
+			case "shapes":
+				return [{ sheetName: "internal_products", columnName: "shape" }];
+			case "occasions":
+				return [{ sheetName: "internal_products", columnName: "occasions" }];
+			case "manufacturer_colors":
+				return [
+					{ sheetName: "external_products", columnName: "manufacturer_color" },
+				];
+			case "brands":
+				return [{ sheetName: "external_products", columnName: "brand" }];
+			case "bag_quantities":
+				return [{ sheetName: "external_products", columnName: "bag_quantity" }];
+			case "distributors":
+				return [{ sheetName: "external_products", columnName: "distributors" }];
+			default:
+				return [];
+		}
+	}
+
+	private async updateProductSheetWithMetadataChange(
+		sheetName: string,
+		columnName: string,
+		oldValue: string,
+		newValue: string,
+		accessToken: string,
+	): Promise<void> {
+		console.log(`DEBUG: Updating ${sheetName} sheet, column ${columnName}`);
+
+		const products = await this.getSheetData(sheetName, accessToken);
 		if (products.length === 0) {
-			console.log("DEBUG: No products found");
+			console.log(`DEBUG: No products found in ${sheetName}`);
 			return;
 		}
-		console.log(`DEBUG: Found ${products.length - 1} product rows`);
 
 		const headerRow = products[0];
-		console.log(`DEBUG: Header row:`, headerRow);
-
 		const columnIndex = headerRow.findIndex(
-			(header) => header.toLowerCase() === productColumnName.toLowerCase(),
+			(header) => header.toLowerCase() === columnName.toLowerCase(),
 		);
 
 		if (columnIndex === -1) {
 			console.log(
-				`DEBUG: Column ${productColumnName} not found in products sheet. Available columns:`,
+				`DEBUG: Column ${columnName} not found in ${sheetName}. Available columns:`,
 				headerRow,
 			);
 			return;
 		}
-		console.log(`DEBUG: Found column at index ${columnIndex}`);
 
 		// Find all products that need updating
 		const rowsToUpdate: { rowNumber: number; values: string[] }[] = [];
@@ -801,31 +848,41 @@ export class GoogleSheetsService {
 		for (let i = 1; i < products.length; i++) {
 			const row = products[i];
 			const currentValue = row[columnIndex];
-			console.log(
-				`DEBUG: Row ${i} - Current value in column ${columnIndex}: "${currentValue}", comparing to "${oldValue}"`,
-			);
 
-			if (currentValue === oldValue) {
-				console.log(`DEBUG: Found match! Updating row ${i}`);
-				// Create updated row with new metadata value
+			// Handle comma-separated values (for occasions, distributors)
+			if (columnName === "occasions" || columnName === "distributors") {
+				const values = currentValue
+					? currentValue.split(",").map((v) => v.trim())
+					: [];
+				if (values.includes(oldValue)) {
+					const updatedValues = values.map((v) =>
+						v === oldValue ? newValue : v,
+					);
+					const updatedRow = [...row];
+					updatedRow[columnIndex] = updatedValues.join(", ");
+					rowsToUpdate.push({
+						rowNumber: i + 1,
+						values: updatedRow,
+					});
+				}
+			} else if (currentValue === oldValue) {
 				const updatedRow = [...row];
 				updatedRow[columnIndex] = newValue;
 				rowsToUpdate.push({
-					rowNumber: i + 1, // 1-based for sheets API
+					rowNumber: i + 1,
 					values: updatedRow,
 				});
 			}
 		}
 
-		console.log(`DEBUG: Found ${rowsToUpdate.length} products to update`);
+		console.log(
+			`DEBUG: Found ${rowsToUpdate.length} products to update in ${sheetName}`,
+		);
 
 		// Update all rows that need changing
 		for (const update of rowsToUpdate) {
-			console.log(
-				`DEBUG: Updating row ${update.rowNumber} with new value "${newValue}"`,
-			);
 			await this.updateRow(
-				"products",
+				sheetName,
 				update.rowNumber,
 				update.values,
 				accessToken,
@@ -833,33 +890,8 @@ export class GoogleSheetsService {
 		}
 
 		console.log(
-			`Updated ${rowsToUpdate.length} products with metadata change from "${oldValue}" to "${newValue}"`,
+			`Updated ${rowsToUpdate.length} products in ${sheetName} with metadata change from "${oldValue}" to "${newValue}"`,
 		);
-	}
-
-	private getProductColumnForMetadataSheet(
-		metadataSheetName: string,
-	): string | null {
-		switch (metadataSheetName) {
-			case "product_types":
-				return "product_type";
-			case "colors":
-				return "manufacturer_color";
-			case "brands":
-				return "brand";
-			case "textures":
-				return "texture";
-			case "shapes":
-				return "shape";
-			case "distributors":
-				return "distributor";
-			case "occasions":
-				return "occasion";
-			case "bag_quantities":
-				return "bag_quantity";
-			default:
-				return null;
-		}
 	}
 
 	async archiveMetadataItem(
