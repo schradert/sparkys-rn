@@ -44,7 +44,8 @@ import {
 type ViewMode =
 	| "products" // Internal products (hierarchical view)
 	| "productTypes"
-	| "colors"
+	| "manufacturerColors"
+	| "sparkysColors"
 	| "manufacturers"
 	| "sizes"
 	| "textures"
@@ -56,7 +57,8 @@ type ViewMode =
 const VIEW_OPTIONS = [
 	{ key: "products" as ViewMode, label: "Products" },
 	{ key: "productTypes" as ViewMode, label: "Product Types" },
-	{ key: "colors" as ViewMode, label: "Colors" },
+	{ key: "manufacturerColors" as ViewMode, label: "Manufacturer Colors" },
+	{ key: "sparkysColors" as ViewMode, label: "Sparky's Colors" },
 	{ key: "manufacturers" as ViewMode, label: "Brands" },
 	{ key: "sizes" as ViewMode, label: "Sizes" },
 	{ key: "textures" as ViewMode, label: "Textures" },
@@ -397,8 +399,10 @@ function MetadataCard({
 		switch (viewMode) {
 			case "productTypes":
 				return "productType";
-			case "colors":
-				return "manufacturer_color"; // Use manufacturer_color as primary
+			case "manufacturerColors":
+				return "manufacturer_color";
+			case "sparkysColors":
+				return "sparkys_color";
 			case "manufacturers":
 				return "manufacturer";
 			case "sizes":
@@ -677,18 +681,14 @@ export default function Inventory() {
 				return getMetadataItems("productType", metadataShowArchived).map(
 					(item) => item.name,
 				);
-			case "colors": {
-				// Combine both manufacturer and sparkys colors
-				const manufacturerColors = getMetadataItems(
-					"manufacturer_color",
-					metadataShowArchived,
-				).map((item) => item.name);
-				const sparkysColors = getMetadataItems(
-					"sparkys_color",
-					metadataShowArchived,
-				).map((item) => item.name);
-				return [...new Set([...manufacturerColors, ...sparkysColors])].sort();
-			}
+			case "manufacturerColors":
+				return getMetadataItems("manufacturer_color", metadataShowArchived).map(
+					(item) => item.name,
+				);
+			case "sparkysColors":
+				return getMetadataItems("sparkys_color", metadataShowArchived).map(
+					(item) => item.name,
+				);
 			case "manufacturers":
 				return getMetadataItems("manufacturer", metadataShowArchived).map(
 					(item) => item.name,
@@ -883,9 +883,9 @@ export default function Inventory() {
 			case "product_type":
 				return "Type";
 			case "sparkys_color":
-				return "Color";
+				return "Sparky's Color";
 			case "manufacturer_color":
-				return "Color";
+				return "Manufacturer Color";
 			case "bag_quantity":
 				return "Bag Quantity";
 			case "manufacturer":
@@ -956,8 +956,10 @@ export default function Inventory() {
 		switch (viewMode) {
 			case "productTypes":
 				return "product_types";
-			case "colors":
-				return "colors";
+			case "manufacturerColors":
+				return "manufacturer_colors";
+			case "sparkysColors":
+				return "sparkys_colors";
 			case "manufacturers":
 				return "brands";
 			case "sizes":
@@ -987,23 +989,25 @@ export default function Inventory() {
 		const fieldKey =
 			currentView === "productTypes"
 				? "productType"
-				: currentView === "colors"
-					? "color"
-					: currentView === "manufacturers"
-						? "manufacturer"
-						: currentView === "sizes"
-							? "size"
-							: currentView === "textures"
-								? "texture"
-								: currentView === "bagQuantities"
-									? "bagQuantity"
-									: currentView === "shapes"
-										? "shape"
-										: currentView === "distributors"
-											? "distributor"
-											: currentView === "occasions"
-												? "occasion"
-												: null;
+				: currentView === "manufacturerColors"
+					? "manufacturer_color"
+					: currentView === "sparkysColors"
+						? "sparkys_color"
+						: currentView === "manufacturers"
+							? "manufacturer"
+							: currentView === "sizes"
+								? "size"
+								: currentView === "textures"
+									? "texture"
+									: currentView === "bagQuantities"
+										? "bagQuantity"
+										: currentView === "shapes"
+											? "shape"
+											: currentView === "distributors"
+												? "distributor"
+												: currentView === "occasions"
+													? "occasion"
+													: null;
 
 		if (!fieldKey) return;
 
