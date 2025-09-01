@@ -571,6 +571,86 @@ export function useSheetsData() {
 		}
 	};
 
+	const archiveExternalProduct = async (sku: string) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			await sheetsService.archiveExternalProduct(sku, accessToken);
+			return { success: true };
+		} catch (error: any) {
+			console.error("Error archiving external product:", error);
+			return {
+				success: false,
+				error: error.message || "Failed to archive external product",
+			};
+		}
+	};
+
+	const unarchiveExternalProduct = async (sku: string) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			await sheetsService.unarchiveExternalProduct(sku, accessToken);
+			return { success: true };
+		} catch (error: any) {
+			console.error("Error unarchiving external product:", error);
+			return {
+				success: false,
+				error: error.message || "Failed to unarchive external product",
+			};
+		}
+	};
+
+	const archiveInternalProduct = async (name: string) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			await sheetsService.archiveInternalProduct(name, accessToken);
+			return { success: true };
+		} catch (error: any) {
+			console.error("Error archiving internal product:", error);
+			return {
+				success: false,
+				error: error.message || "Failed to archive internal product",
+			};
+		}
+	};
+
+	const unarchiveInternalProduct = async (name: string) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		try {
+			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+			await sheetsService.unarchiveInternalProduct(name, accessToken);
+			return { success: true };
+		} catch (error: any) {
+			console.error("Error unarchiving internal product:", error);
+			return {
+				success: false,
+				error: error.message || "Failed to unarchive internal product",
+			};
+		}
+	};
+
 	return {
 		...globalSheetsState,
 		refresh,
@@ -584,6 +664,10 @@ export function useSheetsData() {
 		updateExternalProduct,
 		archiveMetadata,
 		unarchiveMetadata,
+		archiveExternalProduct,
+		unarchiveExternalProduct,
+		archiveInternalProduct,
+		unarchiveInternalProduct,
 		subscribeToMetadataChanges,
 		logAuditEvent,
 		getAuditEvents,
