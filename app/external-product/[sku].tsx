@@ -663,39 +663,72 @@ export default function ExternalProductDetail() {
 										Product Details
 									</Text>
 									<View style={styles.metadataGrid}>
-										{metadataItems.map((item) => (
-											<View
-												key={item.field}
-												style={[
-													styles.metadataItem,
-													{ backgroundColor: colors.surface },
-												]}
-											>
-												<Ionicons
-													name={item.icon as any}
-													size={20}
-													color={colors.primary}
-												/>
-												<View style={styles.metadataContent}>
-													<Text
-														style={[
-															styles.metadataLabel,
-															{ color: colors.textSecondary },
-														]}
-													>
-														{item.label}
-													</Text>
-													<Text
-														style={[
-															styles.metadataValue,
-															{ color: colors.text },
-														]}
-													>
-														{item.value}
-													</Text>
-												</View>
-											</View>
-										))}
+										{metadataItems.map((item) => {
+											const getMetadataRoute = (
+												field: string,
+												value: string,
+											) => {
+												switch (field) {
+													case "manufacturer_color":
+														return `/metadata/colors/${encodeURIComponent(value)}`;
+													case "brand":
+														return `/metadata/manufacturers/${encodeURIComponent(value)}`;
+													case "size":
+														return `/metadata/sizes/${encodeURIComponent(value)}`;
+													case "bag_quantity":
+														return `/metadata/bagQuantities/${encodeURIComponent(value)}`;
+													default:
+														return null;
+												}
+											};
+
+											const route = getMetadataRoute(item.field, item.value);
+											const MetadataComponent = route ? Pressable : View;
+
+											return (
+												<MetadataComponent
+													key={item.field}
+													style={[
+														styles.metadataItem,
+														{ backgroundColor: colors.surface },
+													]}
+													{...(route
+														? { onPress: () => router.push(route) }
+														: {})}
+												>
+													<Ionicons
+														name={item.icon as any}
+														size={20}
+														color={colors.primary}
+													/>
+													<View style={styles.metadataContent}>
+														<Text
+															style={[
+																styles.metadataLabel,
+																{ color: colors.textSecondary },
+															]}
+														>
+															{item.label}
+														</Text>
+														<Text
+															style={[
+																styles.metadataValue,
+																{ color: route ? colors.primary : colors.text },
+															]}
+														>
+															{item.value}
+														</Text>
+													</View>
+													{route && (
+														<Ionicons
+															name="chevron-forward"
+															size={16}
+															color={colors.primary}
+														/>
+													)}
+												</MetadataComponent>
+											);
+										})}
 									</View>
 								</View>
 							</>

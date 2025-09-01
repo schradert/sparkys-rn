@@ -475,6 +475,15 @@ export default function Activity() {
 
 								<Text
 									style={[
+										styles.detailObjectType,
+										{ color: colors.textSecondary },
+									]}
+								>
+									{selectedEvent.object_type.replace("_", " ").toUpperCase()}
+								</Text>
+
+								<Text
+									style={[
 										styles.detailTimestamp,
 										{ color: colors.textSecondary },
 									]}
@@ -540,8 +549,56 @@ export default function Activity() {
 																			return "calendar-outline";
 																		case "status":
 																			return "flag-outline";
+																		case "name":
+																			return "pricetag-outline";
 																		default:
 																			return "information-circle-outline";
+																	}
+																};
+
+																const isClickableField = (
+																	fieldName: string,
+																) => {
+																	return [
+																		"manufacturer_color",
+																		"brand",
+																		"size",
+																		"bag_quantity",
+																		"distributors",
+																		"product_type",
+																		"sparkys_color",
+																		"texture",
+																		"shape",
+																		"occasions",
+																	].includes(fieldName);
+																};
+
+																const getMetadataRoute = (
+																	fieldName: string,
+																	newValue: string,
+																) => {
+																	switch (fieldName) {
+																		case "manufacturer_color":
+																		case "sparkys_color":
+																			return `/metadata/colors/${encodeURIComponent(newValue)}`;
+																		case "brand":
+																			return `/metadata/manufacturers/${encodeURIComponent(newValue)}`;
+																		case "size":
+																			return `/metadata/sizes/${encodeURIComponent(newValue)}`;
+																		case "bag_quantity":
+																			return `/metadata/bagQuantities/${encodeURIComponent(newValue)}`;
+																		case "distributors":
+																			return `/metadata/distributors/${encodeURIComponent(newValue)}`;
+																		case "product_type":
+																			return `/metadata/productTypes/${encodeURIComponent(newValue)}`;
+																		case "texture":
+																			return `/metadata/textures/${encodeURIComponent(newValue)}`;
+																		case "shape":
+																			return `/metadata/shapes/${encodeURIComponent(newValue)}`;
+																		case "occasions":
+																			return `/metadata/occasions/${encodeURIComponent(newValue)}`;
+																		default:
+																			return null;
 																	}
 																};
 
@@ -576,21 +633,51 @@ export default function Activity() {
 																				{oldValue?.toString() || "—"}
 																			</Text>
 																		</View>
-																		<View style={styles.changeArrowContainer}>
-																			<Ionicons
-																				name="arrow-forward"
-																				size={16}
-																				color={colors.primary}
-																			/>
-																			<Text
-																				style={[
-																					styles.changeNewValue,
-																					{ color: colors.primary },
-																				]}
+																		{isClickableField(field) ? (
+																			<Pressable
+																				style={styles.changeArrowContainer}
+																				onPress={() => {
+																					const route = getMetadataRoute(
+																						field,
+																						newValue?.toString() || "",
+																					);
+																					if (route) {
+																						setIsDetailModalVisible(false);
+																						router.push(route);
+																					}
+																				}}
 																			>
-																				{newValue?.toString() || "—"}
-																			</Text>
-																		</View>
+																				<Ionicons
+																					name="arrow-forward"
+																					size={16}
+																					color={colors.primary}
+																				/>
+																				<Text
+																					style={[
+																						styles.changeNewValue,
+																						{ color: colors.primary },
+																					]}
+																				>
+																					{newValue?.toString() || "—"}
+																				</Text>
+																			</Pressable>
+																		) : (
+																			<View style={styles.changeArrowContainer}>
+																				<Ionicons
+																					name="arrow-forward"
+																					size={16}
+																					color={colors.textSecondary}
+																				/>
+																				<Text
+																					style={[
+																						styles.changeNewValue,
+																						{ color: colors.text },
+																					]}
+																				>
+																					{newValue?.toString() || "—"}
+																				</Text>
+																			</View>
+																		)}
 																	</View>
 																);
 															})}
@@ -764,6 +851,12 @@ const styles = StyleSheet.create({
 	detailObjectName: {
 		fontSize: 20,
 		fontWeight: "bold",
+		marginBottom: 4,
+	},
+	detailObjectType: {
+		fontSize: 12,
+		fontWeight: "600",
+		textTransform: "uppercase",
 		marginBottom: 8,
 	},
 	detailTimestamp: {
