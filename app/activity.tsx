@@ -79,12 +79,41 @@ export default function Activity() {
 		setIsDetailModalVisible(true);
 	};
 
-	const getEventIcon = (eventType: string, objectType: string) => {
+	const getEventIcon = (
+		eventType: string,
+		objectType: string,
+		changes?: string,
+		beforeState?: string,
+	) => {
 		switch (eventType) {
 			case "create":
 				return "add-circle-outline";
 			case "edit":
 				return "pencil-outline";
+			case "quantity_update":
+				// Check if quantity increased or decreased
+				if (changes && beforeState) {
+					try {
+						const changesObj = JSON.parse(changes);
+						const beforeObj = JSON.parse(beforeState);
+						if (
+							changesObj.quantity !== undefined &&
+							beforeObj.quantity !== undefined
+						) {
+							return changesObj.quantity > beforeObj.quantity
+								? "arrow-up"
+								: "arrow-down";
+						}
+					} catch (e) {
+						console.log(
+							"Failed to parse quantity changes for icon:",
+							e,
+							changes,
+							beforeState,
+						);
+					}
+				}
+				return "arrow-down"; // Default to down arrow if parsing fails
 			case "archive":
 				return "archive-outline";
 			case "unarchive":
@@ -94,16 +123,44 @@ export default function Activity() {
 		}
 	};
 
-	const getEventColor = (eventType: string) => {
+	const getEventColor = (
+		eventType: string,
+		changes?: string,
+		beforeState?: string,
+	) => {
 		switch (eventType) {
 			case "create":
 				return colors.success;
 			case "edit":
 				return colors.primary;
+			case "quantity_update":
+				// Check if quantity increased or decreased
+				if (changes && beforeState) {
+					try {
+						const changesObj = JSON.parse(changes);
+						const beforeObj = JSON.parse(beforeState);
+						if (
+							changesObj.quantity !== undefined &&
+							beforeObj.quantity !== undefined
+						) {
+							return changesObj.quantity > beforeObj.quantity
+								? colors.success
+								: colors.error;
+						}
+					} catch (e) {
+						console.log(
+							"Failed to parse quantity changes:",
+							e,
+							changes,
+							beforeState,
+						);
+					}
+				}
+				return colors.error; // Default to red if parsing fails
 			case "archive":
-				return colors.error;
+				return "#ff6b35"; // Orange
 			case "unarchive":
-				return colors.success;
+				return "#ffc107"; // Yellow
 			default:
 				return colors.textSecondary;
 		}
@@ -148,19 +205,58 @@ export default function Activity() {
 				<View style={styles.eventInfo}>
 					<View style={styles.eventTitleRow}>
 						<Ionicons
-							name={getEventIcon(item.event_type, item.object_type)}
+							name={getEventIcon(
+								item.event_type,
+								item.object_type,
+								item.changes,
+								item.before_state,
+							)}
 							size={20}
-							color={getEventColor(item.event_type)}
+							color={getEventColor(
+								item.event_type,
+								item.changes,
+								item.before_state,
+							)}
 						/>
 						<Text
 							style={[
 								styles.eventType,
-								{ color: getEventColor(item.event_type) },
+								{
+									color: getEventColor(
+										item.event_type,
+										item.changes,
+										item.before_state,
+									),
+								},
 							]}
 						>
-							{item.event_type.charAt(0).toUpperCase() +
-								item.event_type.slice(1)}
-							d
+							{item.event_type === "quantity_update"
+								? // Check if deposited or withdrew
+									(() => {
+										try {
+											const changesObj = JSON.parse(item.changes);
+											const beforeObj = JSON.parse(item.before_state);
+											if (
+												changesObj.quantity !== undefined &&
+												beforeObj.quantity !== undefined
+											) {
+												return changesObj.quantity > beforeObj.quantity
+													? "Deposited"
+													: "Withdrew";
+											}
+										} catch (e) {
+											console.log(
+												"Failed to parse quantity changes for label:",
+												e,
+												item.changes,
+												item.before_state,
+											);
+										}
+										return "Withdrew"; // Default to withdrew if parsing fails
+									})()
+								: item.event_type.charAt(0).toUpperCase() +
+									item.event_type.slice(1) +
+									(item.event_type === "edit" ? "ed" : "d")}
 						</Text>
 						<Text style={[styles.objectType, { color: colors.textSecondary }]}>
 							{item.object_type.replace("_", " ")}
@@ -316,19 +412,60 @@ export default function Activity() {
 										name={getEventIcon(
 											selectedEvent.event_type,
 											selectedEvent.object_type,
+											selectedEvent.changes,
+											selectedEvent.before_state,
 										)}
 										size={24}
-										color={getEventColor(selectedEvent.event_type)}
+										color={getEventColor(
+											selectedEvent.event_type,
+											selectedEvent.changes,
+											selectedEvent.before_state,
+										)}
 									/>
 									<Text
 										style={[
 											styles.detailEventType,
-											{ color: getEventColor(selectedEvent.event_type) },
+											{
+												color: getEventColor(
+													selectedEvent.event_type,
+													selectedEvent.changes,
+													selectedEvent.before_state,
+												),
+											},
 										]}
 									>
-										{selectedEvent.event_type.charAt(0).toUpperCase() +
-											selectedEvent.event_type.slice(1)}
-										d {selectedEvent.object_type.replace("_", " ")}
+										{selectedEvent.event_type === "quantity_update"
+											? // Check if deposited or withdrew
+												(() => {
+													try {
+														const changesObj = JSON.parse(
+															selectedEvent.changes,
+														);
+														const beforeObj = JSON.parse(
+															selectedEvent.before_state,
+														);
+														if (
+															changesObj.quantity !== undefined &&
+															beforeObj.quantity !== undefined
+														) {
+															return changesObj.quantity > beforeObj.quantity
+																? "Deposited"
+																: "Withdrew";
+														}
+													} catch (e) {
+														console.log(
+															"Failed to parse quantity changes for detail label:",
+															e,
+															selectedEvent.changes,
+															selectedEvent.before_state,
+														);
+													}
+													return "Withdrew"; // Default to withdrew if parsing fails
+												})()
+											: selectedEvent.event_type.charAt(0).toUpperCase() +
+												selectedEvent.event_type.slice(1) +
+												(selectedEvent.event_type === "edit" ? "ed" : "d")}{" "}
+										{selectedEvent.object_type.replace("_", " ")}
 									</Text>
 								</View>
 
@@ -354,21 +491,126 @@ export default function Activity() {
 									by {selectedEvent.user_email}
 								</Text>
 
-								{selectedEvent.changes && selectedEvent.changes !== "{}" && (
-									<View style={styles.changesSection}>
-										<Text style={[styles.changesTitle, { color: colors.text }]}>
-											Changes:
-										</Text>
-										<Text
-											style={[
-												styles.changesText,
-												{ color: colors.textSecondary },
-											]}
-										>
-											{selectedEvent.changes}
-										</Text>
-									</View>
-								)}
+								{selectedEvent.changes &&
+									selectedEvent.changes !== "{}" &&
+									selectedEvent.before_state &&
+									selectedEvent.before_state !== "{}" && (
+										<View style={styles.changesSection}>
+											<Text
+												style={[styles.changesTitle, { color: colors.text }]}
+											>
+												Changes:
+											</Text>
+											{(() => {
+												try {
+													const changesObj = JSON.parse(selectedEvent.changes);
+													const beforeObj = JSON.parse(
+														selectedEvent.before_state,
+													);
+
+													return (
+														<View style={styles.changesGrid}>
+															{Object.keys(changesObj).map((field) => {
+																const oldValue = beforeObj[field];
+																const newValue = changesObj[field];
+
+																const getFieldIcon = (fieldName: string) => {
+																	switch (fieldName) {
+																		case "quantity":
+																			return "calculator-outline";
+																		case "manufacturer_color":
+																			return "color-palette-outline";
+																		case "brand":
+																			return "business-outline";
+																		case "size":
+																			return "resize-outline";
+																		case "bag_quantity":
+																			return "bag-outline";
+																		case "distributors":
+																			return "storefront-outline";
+																		case "product_type":
+																			return "shapes-outline";
+																		case "sparkys_color":
+																			return "color-palette-outline";
+																		case "texture":
+																			return "hand-left-outline";
+																		case "shape":
+																			return "diamond-outline";
+																		case "occasions":
+																			return "calendar-outline";
+																		case "status":
+																			return "flag-outline";
+																		default:
+																			return "information-circle-outline";
+																	}
+																};
+
+																return (
+																	<View
+																		key={field}
+																		style={[
+																			styles.changeItem,
+																			{ backgroundColor: colors.surface },
+																		]}
+																	>
+																		<Ionicons
+																			name={getFieldIcon(field) as any}
+																			size={20}
+																			color={colors.primary}
+																		/>
+																		<View style={styles.changeContent}>
+																			<Text
+																				style={[
+																					styles.changeLabel,
+																					{ color: colors.textSecondary },
+																				]}
+																			>
+																				{field.replace(/_/g, " ").toUpperCase()}
+																			</Text>
+																			<Text
+																				style={[
+																					styles.changeValue,
+																					{ color: colors.text },
+																				]}
+																			>
+																				{oldValue?.toString() || "—"}
+																			</Text>
+																		</View>
+																		<View style={styles.changeArrowContainer}>
+																			<Ionicons
+																				name="arrow-forward"
+																				size={16}
+																				color={colors.primary}
+																			/>
+																			<Text
+																				style={[
+																					styles.changeNewValue,
+																					{ color: colors.primary },
+																				]}
+																			>
+																				{newValue?.toString() || "—"}
+																			</Text>
+																		</View>
+																	</View>
+																);
+															})}
+														</View>
+													);
+												} catch (e) {
+													return (
+														<Text
+															style={[
+																styles.changesText,
+																{ color: colors.textSecondary },
+															]}
+														>
+															{selectedEvent.changes}
+														</Text>
+													);
+												}
+											})()}
+										</View>
+									)}
 
 								<Pressable
 									style={[
@@ -547,6 +789,39 @@ const styles = StyleSheet.create({
 		backgroundColor: "#f8f9fa",
 		padding: 12,
 		borderRadius: 8,
+	},
+	changesGrid: {
+		gap: 12,
+		marginTop: 8,
+	},
+	changeItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		padding: 16,
+		borderRadius: 8,
+		gap: 12,
+	},
+	changeContent: {
+		flex: 1,
+	},
+	changeLabel: {
+		fontSize: 12,
+		textTransform: "uppercase",
+		fontWeight: "500",
+		marginBottom: 2,
+	},
+	changeValue: {
+		fontSize: 16,
+		fontWeight: "500",
+	},
+	changeArrowContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	changeNewValue: {
+		fontSize: 16,
+		fontWeight: "600",
 	},
 	viewItemButton: {
 		flexDirection: "row",

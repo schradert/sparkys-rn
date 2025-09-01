@@ -12,11 +12,12 @@ interface SheetsResponse {
 export interface AuditEvent {
 	id: number;
 	timestamp: string;
-	event_type: "create" | "edit" | "archive" | "unarchive";
+	event_type: "create" | "archive" | "unarchive" | "quantity_update" | "edit";
 	object_type: "internal_product" | "external_product" | "metadata";
 	object_id: string;
 	object_name: string;
-	changes: string; // JSON string
+	changes: string; // JSON string - only actual changes
+	before_state: string; // JSON string - old state of updated item
 	sheet_name: string;
 	user_email: string;
 }
@@ -29,6 +30,7 @@ export interface AuditEventSheet {
 	object_id: string;
 	object_name: string;
 	changes: string;
+	before_state: string;
 	sheet_name: string;
 	user_email: string;
 }
@@ -496,7 +498,8 @@ export class GoogleSheetsService {
 				object_type: "metadata",
 				object_id: nextId.toString(),
 				object_name: name,
-				changes: JSON.stringify({ created: { name } }),
+				changes: JSON.stringify({ name }),
+				before_state: "",
 				sheet_name: sheetName,
 			},
 			accessToken,
@@ -550,7 +553,8 @@ export class GoogleSheetsService {
 				object_type: "external_product",
 				object_id: product.unique_id_sku,
 				object_name: product.unique_id_sku,
-				changes: JSON.stringify({ created: product }),
+				changes: JSON.stringify(product),
+				before_state: "",
 				sheet_name: "external_products",
 			},
 			accessToken,
@@ -562,6 +566,11 @@ export class GoogleSheetsService {
 		accessToken: string,
 		skipAuditLog: boolean = false,
 	): Promise<void> {
+		// Get the current state before updating for audit log
+		const currentData = await this.getSheetData(
+			"external_products",
+			accessToken,
+		);
 		const rowNumber = await this.findRowByValue(
 			"external_products",
 			"unique_id_sku",
@@ -570,6 +579,21 @@ export class GoogleSheetsService {
 		);
 		if (!rowNumber) {
 			throw new Error(`External product "${product.unique_id_sku}" not found`);
+		}
+
+		let beforeState: any = {};
+		if (!skipAuditLog && currentData.length > rowNumber - 1) {
+			const currentRow = currentData[rowNumber - 1];
+			beforeState = {
+				unique_id_sku: currentRow[0] || "",
+				manufacturer_color: currentRow[1] || "",
+				brand: currentRow[2] || "",
+				size: currentRow[3] || "",
+				bag_quantity: parseInt(currentRow[4] || "0", 10),
+				distributors: currentRow[5] || "",
+				quantity: parseInt(currentRow[6] || "0", 10),
+				status: currentRow[7] || "active",
+			};
 		}
 
 		const updatedRow = [
@@ -592,19 +616,173 @@ export class GoogleSheetsService {
 		console.log(`Updated external product: ${product.unique_id_sku}`);
 
 		// Log audit event only if not skipped
-		if (!skipAuditLog) {
-			await this.logEvent(
-				{
-					timestamp: new Date().toISOString(),
-					event_type: "edit",
-					object_type: "external_product",
-					object_id: product.unique_id_sku,
-					object_name: product.unique_id_sku,
-					changes: JSON.stringify({ updated: product }),
-					sheet_name: "external_products",
-				},
-				accessToken,
-			);
+		if (!skipAuditLog && Object.keys(beforeState).length > 0) {
+			const changes: any = {};
+			const before: any = {};
+
+			let hasQuantityChange = false;
+			let hasStatusChange = false;
+			let hasOtherChanges = false;
+
+			// Check for quantity changes
+			if (beforeState.quantity !== product.quantity) {
+				hasQuantityChange = true;
+				changes.quantity = product.quantity;
+				before.quantity = beforeState.quantity;
+			}
+
+			// Check for status changes (archive/unarchive)
+			if (beforeState.status !== (product.status || "active")) {
+				hasStatusChange = true;
+				changes.status = product.status || "active";
+				before.status = beforeState.status;
+			}
+
+			// Check for other field changes
+			if (beforeState.manufacturer_color !== product.manufacturer_color) {
+				hasOtherChanges = true;
+				changes.manufacturer_color = product.manufacturer_color;
+				before.manufacturer_color = beforeState.manufacturer_color;
+			}
+			if (beforeState.brand !== product.brand) {
+				hasOtherChanges = true;
+				changes.brand = product.brand;
+				before.brand = beforeState.brand;
+			}
+			if (beforeState.size !== product.size) {
+				hasOtherChanges = true;
+				changes.size = product.size;
+				before.size = beforeState.size;
+			}
+			if (beforeState.bag_quantity !== product.bag_quantity) {
+				hasOtherChanges = true;
+				changes.bag_quantity = product.bag_quantity;
+				before.bag_quantity = beforeState.bag_quantity;
+			}
+			if (beforeState.distributors !== product.distributors) {
+				hasOtherChanges = true;
+				changes.distributors = product.distributors;
+				before.distributors = beforeState.distributors;
+			}
+
+			// Log appropriate events based on what changed
+			if (hasStatusChange && !hasQuantityChange && !hasOtherChanges) {
+				// Pure archive/unarchive
+				const eventType =
+					(product.status || "active") === "archived" ? "archive" : "unarchive";
+				await this.logEvent(
+					{
+						timestamp: new Date().toISOString(),
+						event_type: eventType,
+						object_type: "external_product",
+						object_id: product.unique_id_sku,
+						object_name: product.unique_id_sku,
+						changes: JSON.stringify({ status: changes.status }),
+						before_state: JSON.stringify({ status: before.status }),
+						sheet_name: "external_products",
+					},
+					accessToken,
+				);
+			} else if (hasQuantityChange && !hasStatusChange && !hasOtherChanges) {
+				// Pure quantity update
+				await this.logEvent(
+					{
+						timestamp: new Date().toISOString(),
+						event_type: "quantity_update",
+						object_type: "external_product",
+						object_id: product.unique_id_sku,
+						object_name: product.unique_id_sku,
+						changes: JSON.stringify({ quantity: changes.quantity }),
+						before_state: JSON.stringify({ quantity: before.quantity }),
+						sheet_name: "external_products",
+					},
+					accessToken,
+				);
+			} else if (hasOtherChanges && !hasStatusChange && !hasQuantityChange) {
+				// Pure field update
+				const fieldChanges = { ...changes };
+				const fieldBefore = { ...before };
+				delete fieldChanges.quantity;
+				delete fieldChanges.status;
+				delete fieldBefore.quantity;
+				delete fieldBefore.status;
+
+				await this.logEvent(
+					{
+						timestamp: new Date().toISOString(),
+						event_type: "edit",
+						object_type: "external_product",
+						object_id: product.unique_id_sku,
+						object_name: product.unique_id_sku,
+						changes: JSON.stringify(fieldChanges),
+						before_state: JSON.stringify(fieldBefore),
+						sheet_name: "external_products",
+					},
+					accessToken,
+				);
+			} else {
+				// Mixed update - log multiple events
+				if (hasStatusChange) {
+					const eventType =
+						(product.status || "active") === "archived"
+							? "archive"
+							: "unarchive";
+					await this.logEvent(
+						{
+							timestamp: new Date().toISOString(),
+							event_type: eventType,
+							object_type: "external_product",
+							object_id: product.unique_id_sku,
+							object_name: product.unique_id_sku,
+							changes: JSON.stringify({ status: changes.status }),
+							before_state: JSON.stringify({ status: before.status }),
+							sheet_name: "external_products",
+						},
+						accessToken,
+					);
+				}
+
+				if (hasQuantityChange) {
+					await this.logEvent(
+						{
+							timestamp: new Date().toISOString(),
+							event_type: "quantity_update",
+							object_type: "external_product",
+							object_id: product.unique_id_sku,
+							object_name: product.unique_id_sku,
+							changes: JSON.stringify({ quantity: changes.quantity }),
+							before_state: JSON.stringify({ quantity: before.quantity }),
+							sheet_name: "external_products",
+						},
+						accessToken,
+					);
+				}
+
+				if (hasOtherChanges) {
+					const fieldChanges = { ...changes };
+					const fieldBefore = { ...before };
+					delete fieldChanges.quantity;
+					delete fieldChanges.status;
+					delete fieldBefore.quantity;
+					delete fieldBefore.status;
+
+					if (Object.keys(fieldChanges).length > 0) {
+						await this.logEvent(
+							{
+								timestamp: new Date().toISOString(),
+								event_type: "edit",
+								object_type: "external_product",
+								object_id: product.unique_id_sku,
+								object_name: product.unique_id_sku,
+								changes: JSON.stringify(fieldChanges),
+								before_state: JSON.stringify(fieldBefore),
+								sheet_name: "external_products",
+							},
+							accessToken,
+						);
+					}
+				}
+			}
 		}
 	}
 
@@ -612,6 +790,11 @@ export class GoogleSheetsService {
 		product: any,
 		accessToken: string,
 	): Promise<void> {
+		// Get current state before updating
+		const currentData = await this.getSheetData(
+			"internal_products",
+			accessToken,
+		);
 		const rowNumber = await this.findRowByValue(
 			"internal_products",
 			"sparkys_product_name",
@@ -622,6 +805,23 @@ export class GoogleSheetsService {
 			throw new Error(
 				`Internal product "${product.sparkys_product_name}" not found`,
 			);
+		}
+
+		// Capture current state for audit log
+		let beforeState: any = {};
+		if (currentData.length > rowNumber - 1) {
+			const currentRow = currentData[rowNumber - 1];
+			beforeState = {
+				sparkys_product_name: currentRow[0] || "",
+				product_type: currentRow[1] || "",
+				sparkys_color: currentRow[2] || "",
+				texture: currentRow[3] || "",
+				shape: currentRow[4] || "",
+				occasions: currentRow[5] || "",
+				products: currentRow[6] || "",
+				threshold_quantity: parseInt(currentRow[7] || "0", 10),
+				status: currentRow[8] || "active",
+			};
 		}
 
 		const updatedRow = [
@@ -644,15 +844,238 @@ export class GoogleSheetsService {
 		);
 		console.log(`Updated internal product: ${product.sparkys_product_name}`);
 
-		// Log audit event
+		// Log audit event with actual changes only
+		if (Object.keys(beforeState).length > 0) {
+			const changes: any = {};
+			const before: any = {};
+
+			// Compare fields and only include actual changes
+			if (beforeState.product_type !== product.product_type) {
+				changes.product_type = product.product_type;
+				before.product_type = beforeState.product_type;
+			}
+			if (beforeState.sparkys_color !== product.sparkys_color) {
+				changes.sparkys_color = product.sparkys_color;
+				before.sparkys_color = beforeState.sparkys_color;
+			}
+			if (beforeState.texture !== product.texture) {
+				changes.texture = product.texture;
+				before.texture = beforeState.texture;
+			}
+			if (beforeState.shape !== product.shape) {
+				changes.shape = product.shape;
+				before.shape = beforeState.shape;
+			}
+			if (beforeState.occasions !== product.occasions) {
+				changes.occasions = product.occasions;
+				before.occasions = beforeState.occasions;
+			}
+			if (beforeState.products !== product.products) {
+				changes.products = product.products;
+				before.products = beforeState.products;
+			}
+			if (beforeState.threshold_quantity !== product.threshold_quantity) {
+				changes.threshold_quantity = product.threshold_quantity;
+				before.threshold_quantity = beforeState.threshold_quantity;
+			}
+			if (beforeState.status !== (product.status || "active")) {
+				changes.status = product.status || "active";
+				before.status = beforeState.status;
+			}
+
+			// Only log if there are actual changes
+			if (Object.keys(changes).length > 0) {
+				await this.logEvent(
+					{
+						timestamp: new Date().toISOString(),
+						event_type: "edit",
+						object_type: "internal_product",
+						object_id: product.sparkys_product_name,
+						object_name: product.sparkys_product_name,
+						changes: JSON.stringify(changes),
+						before_state: JSON.stringify(before),
+						sheet_name: "internal_products",
+					},
+					accessToken,
+				);
+			}
+		}
+	}
+
+	async archiveExternalProduct(
+		sku: string,
+		accessToken: string,
+	): Promise<void> {
+		const currentData = await this.getSheetData(
+			"external_products",
+			accessToken,
+		);
+		const rowNumber = await this.findRowByValue(
+			"external_products",
+			"unique_id_sku",
+			sku,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`External product "${sku}" not found`);
+		}
+
+		const currentRow = currentData[rowNumber - 1];
+		const updatedRow = [...currentRow];
+		updatedRow[7] = "archived"; // status column
+
+		await this.updateRow(
+			"external_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Archived external product: ${sku}`);
+
 		await this.logEvent(
 			{
 				timestamp: new Date().toISOString(),
-				event_type: "edit",
+				event_type: "archive",
+				object_type: "external_product",
+				object_id: sku,
+				object_name: sku,
+				changes: JSON.stringify({ status: "archived" }),
+				before_state: JSON.stringify({ status: "active" }),
+				sheet_name: "external_products",
+			},
+			accessToken,
+		);
+	}
+
+	async unarchiveExternalProduct(
+		sku: string,
+		accessToken: string,
+	): Promise<void> {
+		const currentData = await this.getSheetData(
+			"external_products",
+			accessToken,
+		);
+		const rowNumber = await this.findRowByValue(
+			"external_products",
+			"unique_id_sku",
+			sku,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`External product "${sku}" not found`);
+		}
+
+		const currentRow = currentData[rowNumber - 1];
+		const updatedRow = [...currentRow];
+		updatedRow[7] = "active"; // status column
+
+		await this.updateRow(
+			"external_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Unarchived external product: ${sku}`);
+
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "unarchive",
+				object_type: "external_product",
+				object_id: sku,
+				object_name: sku,
+				changes: JSON.stringify({ status: "active" }),
+				before_state: JSON.stringify({ status: "archived" }),
+				sheet_name: "external_products",
+			},
+			accessToken,
+		);
+	}
+
+	async archiveInternalProduct(
+		name: string,
+		accessToken: string,
+	): Promise<void> {
+		const currentData = await this.getSheetData(
+			"internal_products",
+			accessToken,
+		);
+		const rowNumber = await this.findRowByValue(
+			"internal_products",
+			"sparkys_product_name",
+			name,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Internal product "${name}" not found`);
+		}
+
+		const currentRow = currentData[rowNumber - 1];
+		const updatedRow = [...currentRow];
+		updatedRow[8] = "archived"; // status column
+
+		await this.updateRow(
+			"internal_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Archived internal product: ${name}`);
+
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "archive",
 				object_type: "internal_product",
-				object_id: product.sparkys_product_name,
-				object_name: product.sparkys_product_name,
-				changes: JSON.stringify({ updated: product }),
+				object_id: name,
+				object_name: name,
+				changes: JSON.stringify({ status: "archived" }),
+				before_state: JSON.stringify({ status: "active" }),
+				sheet_name: "internal_products",
+			},
+			accessToken,
+		);
+	}
+
+	async unarchiveInternalProduct(
+		name: string,
+		accessToken: string,
+	): Promise<void> {
+		const currentData = await this.getSheetData(
+			"internal_products",
+			accessToken,
+		);
+		const rowNumber = await this.findRowByValue(
+			"internal_products",
+			"sparkys_product_name",
+			name,
+			accessToken,
+		);
+		if (!rowNumber) {
+			throw new Error(`Internal product "${name}" not found`);
+		}
+
+		const currentRow = currentData[rowNumber - 1];
+		const updatedRow = [...currentRow];
+		updatedRow[8] = "active"; // status column
+
+		await this.updateRow(
+			"internal_products",
+			rowNumber,
+			updatedRow,
+			accessToken,
+		);
+		console.log(`Unarchived internal product: ${name}`);
+
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "unarchive",
+				object_type: "internal_product",
+				object_id: name,
+				object_name: name,
+				changes: JSON.stringify({ status: "active" }),
+				before_state: JSON.stringify({ status: "archived" }),
 				sheet_name: "internal_products",
 			},
 			accessToken,
@@ -762,7 +1185,8 @@ export class GoogleSheetsService {
 				object_type: "metadata",
 				object_id: id,
 				object_name: newName,
-				changes: JSON.stringify({ name: { from: oldName, to: newName } }),
+				changes: JSON.stringify({ name: newName }),
+				before_state: JSON.stringify({ name: oldName }),
 				sheet_name: sheetName,
 			},
 			accessToken,
@@ -953,7 +1377,8 @@ export class GoogleSheetsService {
 				object_type: "metadata",
 				object_id: id,
 				object_name: name,
-				changes: JSON.stringify({ status: { from: "active", to: "archived" } }),
+				changes: JSON.stringify({ status: "archived" }),
+				before_state: JSON.stringify({ status: "active" }),
 				sheet_name: sheetName,
 			},
 			accessToken,
@@ -993,7 +1418,8 @@ export class GoogleSheetsService {
 				object_type: "metadata",
 				object_id: id,
 				object_name: name,
-				changes: JSON.stringify({ status: { from: "archived", to: "active" } }),
+				changes: JSON.stringify({ status: "active" }),
+				before_state: JSON.stringify({ status: "archived" }),
 				sheet_name: sheetName,
 			},
 			accessToken,
@@ -1052,6 +1478,7 @@ export class GoogleSheetsService {
 				event.object_id,
 				event.object_name,
 				event.changes,
+				event.before_state || "",
 				event.sheet_name,
 				userEmail,
 			];
@@ -1078,7 +1505,7 @@ export class GoogleSheetsService {
 			const events: AuditEvent[] = [];
 			for (let i = 1; i < values.length; i++) {
 				const row = values[i];
-				if (row.length >= 8) {
+				if (row.length >= 10) {
 					events.push({
 						id: parseInt(row[0] || "0", 10),
 						timestamp: row[1] || "",
@@ -1087,8 +1514,9 @@ export class GoogleSheetsService {
 						object_id: row[4] || "",
 						object_name: row[5] || "",
 						changes: row[6] || "",
-						sheet_name: row[7] || "",
-						user_email: row[8] || "unknown",
+						before_state: row[7] || "",
+						sheet_name: row[8] || "",
+						user_email: row[9] || "unknown",
 					});
 				}
 			}

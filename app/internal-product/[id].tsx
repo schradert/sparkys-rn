@@ -43,8 +43,11 @@ export default function InternalProductDetail() {
 			return isArchived ? `${option} (Archived)` : option;
 		});
 	};
-	const { updateInternalProduct: updateInternalProductInSheet } =
-		useSheetsData();
+	const {
+		updateInternalProduct: updateInternalProductInSheet,
+		archiveInternalProduct,
+		unarchiveInternalProduct,
+	} = useSheetsData();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const productName = decodeURIComponent(id || "");
 	const [internalProduct, setInternalProduct] =
@@ -59,6 +62,8 @@ export default function InternalProductDetail() {
 	const [editedProduct, setEditedProduct] = useState<InternalProduct | null>(
 		null,
 	);
+	const [originalProduct, setOriginalProduct] =
+		useState<InternalProduct | null>(null);
 
 	useEffect(() => {
 		if (!id) return;
@@ -68,12 +73,28 @@ export default function InternalProductDetail() {
 
 		setInternalProduct(internal || null);
 		setEditedProduct(internal || null);
+		setOriginalProduct(internal || null);
 		setExternalProducts(externals);
 		setLoading(false);
 	}, [id]);
 
 	const handleSave = async () => {
-		if (!editedProduct || !internalProduct) return;
+		if (!editedProduct || !internalProduct || !originalProduct) return;
+
+		// Check if there are any actual changes
+		const hasChanges =
+			editedProduct.product_type !== originalProduct.product_type ||
+			editedProduct.sparkys_color !== originalProduct.sparkys_color ||
+			editedProduct.texture !== originalProduct.texture ||
+			editedProduct.shape !== originalProduct.shape ||
+			JSON.stringify(editedProduct.occasions) !==
+				JSON.stringify(originalProduct.occasions) ||
+			editedProduct.threshold_quantity !== originalProduct.threshold_quantity;
+
+		if (!hasChanges) {
+			setIsEditing(false);
+			return;
+		}
 
 		setIsSaving(true);
 		try {
@@ -98,6 +119,7 @@ export default function InternalProductDetail() {
 					editedProduct,
 				);
 				setInternalProduct(editedProduct);
+				setOriginalProduct(editedProduct);
 				setIsEditing(false);
 				Alert.alert("Success", "Product updated successfully");
 			} else {
@@ -111,7 +133,7 @@ export default function InternalProductDetail() {
 	};
 
 	const handleCancel = () => {
-		setEditedProduct(internalProduct);
+		setEditedProduct(originalProduct);
 		setIsEditing(false);
 	};
 
@@ -159,24 +181,16 @@ export default function InternalProductDetail() {
 					onPress: async () => {
 						setIsArchiving(true);
 						try {
-							// Update spreadsheet with new status
-							const newStatus = isCurrentlyArchived ? "active" : "archived";
-							const productForSheet = {
-								sparkys_product_name: internalProduct.sparkys_product_name,
-								product_type: internalProduct.product_type,
-								sparkys_color: internalProduct.sparkys_color,
-								texture: internalProduct.texture,
-								shape: internalProduct.shape,
-								occasions: internalProduct.occasions.join(", "),
-								products: internalProduct.products.join(", "),
-								threshold_quantity: internalProduct.threshold_quantity,
-								status: newStatus,
-							};
+							const result = isCurrentlyArchived
+								? await unarchiveInternalProduct(
+										internalProduct.sparkys_product_name,
+									)
+								: await archiveInternalProduct(
+										internalProduct.sparkys_product_name,
+									);
 
-							const result =
-								await updateInternalProductInSheet(productForSheet);
 							if (result.success) {
-								// Update global store immediately
+								const newStatus = isCurrentlyArchived ? "active" : "archived";
 								const updatedProduct = {
 									...internalProduct,
 									status: newStatus,
@@ -185,11 +199,8 @@ export default function InternalProductDetail() {
 									internalProduct.sparkys_product_name,
 									updatedProduct,
 								);
-
-								// Update local component state
 								setInternalProduct(updatedProduct);
 								setEditedProduct(updatedProduct);
-
 								Alert.alert("Success", `Product ${action}d successfully!`);
 							} else {
 								Alert.alert(

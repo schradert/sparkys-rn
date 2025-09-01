@@ -42,8 +42,11 @@ export default function ExternalProductDetail() {
 			return isArchived ? `${option} (Archived)` : option;
 		});
 	};
-	const { updateExternalProduct: updateExternalProductInSheet } =
-		useSheetsData();
+	const {
+		updateExternalProduct: updateExternalProductInSheet,
+		archiveExternalProduct,
+		unarchiveExternalProduct,
+	} = useSheetsData();
 	const { sku } = useLocalSearchParams<{ sku: string }>();
 	const [externalProduct, setExternalProduct] =
 		useState<ExternalProduct | null>(null);
@@ -103,66 +106,28 @@ export default function ExternalProductDetail() {
 		Alert.alert("Success", "Quantity updated successfully");
 	};
 
-	const handleIncrementStock = async () => {
-		if (!externalProduct) return;
-		const newQuantity = externalProduct.quantity + externalProduct.bag_quantity;
-		const updatedProduct: ExternalProduct = {
-			...externalProduct,
-			quantity: newQuantity,
-		};
+	const handleIncrementStock = () => {
+		if (!externalProduct || !editedProduct) return;
+		const currentQuantity = editedProduct.quantity;
+		const newQuantity = currentQuantity + externalProduct.bag_quantity;
+		setEditedQuantity(newQuantity.toString());
 
-		// Update spreadsheet and global store immediately
-		const productForSheet = {
-			unique_id_sku: externalProduct.unique_id_sku,
-			manufacturer_color: externalProduct.manufacturer_color,
-			brand: externalProduct.brand,
-			size: externalProduct.size,
-			bag_quantity: externalProduct.bag_quantity,
-			distributors: externalProduct.distributors.join(", "),
+		setEditedProduct({
+			...editedProduct,
 			quantity: newQuantity,
-			status: externalProduct.status || "active",
-		};
-
-		const result = await updateExternalProductInSheet(productForSheet, true);
-		if (result.success) {
-			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
-			setExternalProduct(updatedProduct);
-			setEditedProduct(updatedProduct);
-			setOriginalProduct(updatedProduct);
-		} else {
-			Alert.alert("Error", "Failed to update quantity");
-		}
+		});
 	};
 
-	const handleDecrementStock = async () => {
-		if (!externalProduct) return;
-		const newQuantity = Math.max(0, externalProduct.quantity - 1);
-		const updatedProduct: ExternalProduct = {
-			...externalProduct,
-			quantity: newQuantity,
-		};
+	const handleDecrementStock = () => {
+		if (!externalProduct || !editedProduct) return;
+		const currentQuantity = editedProduct.quantity;
+		const newQuantity = Math.max(0, currentQuantity - 1);
+		setEditedQuantity(newQuantity.toString());
 
-		// Update spreadsheet and global store immediately
-		const productForSheet = {
-			unique_id_sku: externalProduct.unique_id_sku,
-			manufacturer_color: externalProduct.manufacturer_color,
-			brand: externalProduct.brand,
-			size: externalProduct.size,
-			bag_quantity: externalProduct.bag_quantity,
-			distributors: externalProduct.distributors.join(", "),
+		setEditedProduct({
+			...editedProduct,
 			quantity: newQuantity,
-			status: externalProduct.status || "active",
-		};
-
-		const result = await updateExternalProductInSheet(productForSheet, true);
-		if (result.success) {
-			updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
-			setExternalProduct(updatedProduct);
-			setEditedProduct(updatedProduct);
-			setOriginalProduct(updatedProduct);
-		} else {
-			Alert.alert("Error", "Failed to update quantity");
-		}
+		});
 	};
 
 	const handleCancelEdit = () => {
@@ -171,7 +136,22 @@ export default function ExternalProductDetail() {
 	};
 
 	const handleSave = async () => {
-		if (!editedProduct || !externalProduct) return;
+		if (!editedProduct || !externalProduct || !originalProduct) return;
+
+		// Check if there are any actual changes
+		const hasChanges =
+			editedProduct.manufacturer_color !== originalProduct.manufacturer_color ||
+			editedProduct.brand !== originalProduct.brand ||
+			editedProduct.size !== originalProduct.size ||
+			editedProduct.bag_quantity !== originalProduct.bag_quantity ||
+			JSON.stringify(editedProduct.distributors) !==
+				JSON.stringify(originalProduct.distributors) ||
+			editedProduct.quantity !== originalProduct.quantity;
+
+		if (!hasChanges) {
+			setIsEditing(false);
+			return;
+		}
 
 		setIsSaving(true);
 		try {
@@ -261,23 +241,12 @@ export default function ExternalProductDetail() {
 					onPress: async () => {
 						setIsArchiving(true);
 						try {
-							// Update spreadsheet with new status
-							const newStatus = isCurrentlyArchived ? "active" : "archived";
-							const productForSheet = {
-								unique_id_sku: externalProduct.unique_id_sku,
-								manufacturer_color: externalProduct.manufacturer_color,
-								brand: externalProduct.brand,
-								size: externalProduct.size,
-								bag_quantity: externalProduct.bag_quantity,
-								distributors: externalProduct.distributors.join(", "),
-								quantity: externalProduct.quantity,
-								status: newStatus,
-							};
+							const result = isCurrentlyArchived
+								? await unarchiveExternalProduct(externalProduct.unique_id_sku)
+								: await archiveExternalProduct(externalProduct.unique_id_sku);
 
-							const result =
-								await updateExternalProductInSheet(productForSheet);
 							if (result.success) {
-								// Update global store immediately
+								const newStatus = isCurrentlyArchived ? "active" : "archived";
 								const updatedProduct = {
 									...externalProduct,
 									status: newStatus,
@@ -286,11 +255,9 @@ export default function ExternalProductDetail() {
 									externalProduct.unique_id_sku,
 									updatedProduct,
 								);
-
-								// Update local component state
 								setExternalProduct(updatedProduct);
 								setEditedProduct(updatedProduct);
-
+								setOriginalProduct(updatedProduct);
 								Alert.alert("Success", `Product ${action}d successfully!`);
 							} else {
 								Alert.alert(
@@ -484,7 +451,7 @@ export default function ExternalProductDetail() {
 											<Ionicons name="remove" size={16} color="white" />
 										</Pressable>
 										<Text style={[styles.quantity, { color: colors.primary }]}>
-											{externalProduct.quantity}
+											{editedQuantity}
 										</Text>
 										<Pressable
 											onPress={handleIncrementStock}
