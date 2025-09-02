@@ -202,6 +202,7 @@ const styles = StyleSheet.create({
 	},
 	listContainer: {
 		paddingHorizontal: 16,
+		paddingVertical: 8,
 		flexGrow: 1,
 	},
 	emptyContainer: {

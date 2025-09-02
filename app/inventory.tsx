@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvatarDropdown from "@/components/AvatarDropdown";
+import CollapsibleMultiSelectSection from "@/components/CollapsibleMultiSelectSection";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import InfiniteScroll from "@/components/InfiniteScroll";
 import InternalProductCard from "@/components/InternalProductCard";
@@ -660,7 +661,7 @@ export default function Inventory() {
 								if (key === "occasions") {
 									// For occasions array, check if any selected occasion is in the product's occasions
 									return selectedValues.some((selectedValue) =>
-										internalProduct.occasions.includes(selectedValue),
+										(internalProduct.occasions || []).includes(selectedValue),
 									);
 								}
 								const productValue = internalProduct[
@@ -1816,7 +1817,7 @@ export default function Inventory() {
 										{/* Primary Info Section */}
 										<View style={styles.inputGroup}>
 											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Barcode (SKU) *
+												Barcode (SKU)
 											</Text>
 											<TextInput
 												style={[
@@ -1836,7 +1837,7 @@ export default function Inventory() {
 										</View>
 
 										<CollapsibleRadioSection
-											title="Assign to Internal Product *"
+											title="Assign to Internal Product"
 											options={internalProducts.map(
 												(p) => p.sparkys_product_name,
 											)}
@@ -1861,7 +1862,7 @@ export default function Inventory() {
 
 										{/* Product Details Section */}
 										<CollapsibleRadioSection
-											title="Manufacturer Color *"
+											title="Manufacturer Color"
 											options={PRODUCT_FIELD_OPTIONS.manufacturer_color || []}
 											selectedValue={newExternalProduct.manufacturer_color}
 											onSelectionChange={(color) =>
@@ -1873,7 +1874,7 @@ export default function Inventory() {
 										/>
 
 										<CollapsibleRadioSection
-											title="Brand *"
+											title="Brand"
 											options={PRODUCT_FIELD_OPTIONS.manufacturer || []}
 											selectedValue={newExternalProduct.brand}
 											onSelectionChange={(brand) =>
@@ -1882,7 +1883,7 @@ export default function Inventory() {
 										/>
 
 										<CollapsibleRadioSection
-											title="Size *"
+											title="Size"
 											options={PRODUCT_FIELD_OPTIONS.size || []}
 											selectedValue={newExternalProduct.size}
 											onSelectionChange={(size) =>
@@ -1896,7 +1897,7 @@ export default function Inventory() {
 												<Text
 													style={[styles.inputLabel, { color: colors.text }]}
 												>
-													Bag Quantity *
+													Bag Quantity
 												</Text>
 												<TextInput
 													style={[
@@ -1924,7 +1925,7 @@ export default function Inventory() {
 												<Text
 													style={[styles.inputLabel, { color: colors.text }]}
 												>
-													Current Quantity *
+													Current Quantity
 												</Text>
 												<TextInput
 													style={[
@@ -1954,7 +1955,7 @@ export default function Inventory() {
 									<>
 										<View style={styles.inputGroup}>
 											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Sparky's Product Name *
+												Sparky's Product Name
 											</Text>
 											<TextInput
 												style={[
@@ -1978,8 +1979,40 @@ export default function Inventory() {
 											/>
 										</View>
 
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Threshold Quantity
+											</Text>
+											<TextInput
+												style={[
+													styles.textInput,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+														color: colors.text,
+													},
+												]}
+												value={
+													newInternalProduct.threshold_quantity?.toString() ||
+													""
+												}
+												onChangeText={(text) => {
+													const threshold = parseInt(text, 10);
+													setNewInternalProduct((prev) => ({
+														...prev,
+														threshold_quantity: isNaN(threshold)
+															? 0
+															: threshold,
+													}));
+												}}
+												placeholder="Enter threshold quantity"
+												placeholderTextColor={colors.textSecondary}
+												keyboardType="numeric"
+											/>
+										</View>
+
 										<CollapsibleRadioSection
-											title="Product Type *"
+											title="Product Type"
 											options={PRODUCT_FIELD_OPTIONS.productType || []}
 											selectedValue={newInternalProduct.product_type}
 											onSelectionChange={(type) =>
@@ -1991,7 +2024,7 @@ export default function Inventory() {
 										/>
 
 										<CollapsibleRadioSection
-											title="Sparky's Color *"
+											title="Sparky's Color"
 											options={PRODUCT_FIELD_OPTIONS.sparkys_color || []}
 											selectedValue={newInternalProduct.sparkys_color}
 											onSelectionChange={(color) =>
@@ -2019,6 +2052,18 @@ export default function Inventory() {
 												setNewInternalProduct((prev) => ({ ...prev, shape }))
 											}
 										/>
+
+										<CollapsibleMultiSelectSection
+											title="Occasions"
+											options={PRODUCT_FIELD_OPTIONS.occasion || []}
+											selectedValues={newInternalProduct.occasions || []}
+											onSelectionChange={(occasions) =>
+												setNewInternalProduct((prev) => ({
+													...prev,
+													occasions,
+												}))
+											}
+										/>
 									</>
 								)}
 							</View>
@@ -2030,7 +2075,7 @@ export default function Inventory() {
 
 								<View style={styles.inputGroup}>
 									<Text style={[styles.inputLabel, { color: colors.text }]}>
-										{currentViewLabel.slice(0, -1)} Name *
+										{currentViewLabel.slice(0, -1)} Name
 									</Text>
 									<TextInput
 										style={[
@@ -2363,6 +2408,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingHorizontal: 16,
 		paddingTop: 16,
+		paddingBottom: 32,
 	},
 	filterSection: {
 		backgroundColor: "white",
@@ -2397,9 +2443,6 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		flexWrap: "wrap",
 		alignItems: "center",
-		padding: 16,
-		paddingTop: 0,
-		backgroundColor: "#f8f9fa",
 	},
 	pillSelected: {
 		backgroundColor: "#007bff",
@@ -2489,6 +2532,7 @@ const styles = StyleSheet.create({
 	formScrollView: {
 		flex: 1,
 		paddingHorizontal: 16,
+		paddingTop: 16,
 	},
 	formSection: {
 		marginBottom: 24,
@@ -2622,8 +2666,8 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		fontWeight: "bold",
 		color: "#1a1a1a",
-		marginTop: 20,
-		marginBottom: 12,
+		marginTop: 16,
+		marginBottom: 16,
 		marginLeft: 16,
 	},
 	instructions: {
@@ -2673,15 +2717,14 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	expandedContent: {
-		// Background color applied inline with theme
+		padding: 16,
 	},
 	searchContainer: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 16,
 		paddingVertical: 12,
-		marginHorizontal: 16,
-		marginTop: 8,
+		marginBottom: 16,
 		backgroundColor: "white",
 		borderRadius: 8,
 		borderWidth: 1,
