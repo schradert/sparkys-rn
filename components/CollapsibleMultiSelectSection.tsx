@@ -12,19 +12,19 @@ import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
-interface CollapsibleRadioSectionProps {
+interface CollapsibleMultiSelectSectionProps {
 	title: string;
 	options: string[];
-	selectedValue: string;
-	onSelectionChange: (value: string) => void;
+	selectedValues: string[];
+	onSelectionChange: (values: string[]) => void;
 }
 
-export default function CollapsibleRadioSection({
+export default function CollapsibleMultiSelectSection({
 	title,
 	options,
-	selectedValue,
+	selectedValues,
 	onSelectionChange,
-}: CollapsibleRadioSectionProps) {
+}: CollapsibleMultiSelectSectionProps) {
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const [searchQuery, setSearchQuery] = useState<string>("");
 	const { theme } = useTheme();
@@ -34,35 +34,29 @@ export default function CollapsibleRadioSection({
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 		setIsExpanded(!isExpanded);
 		if (!isExpanded) {
-			// Reset search when expanding
 			setSearchQuery("");
 		}
 	}
 
 	function handlePillPress(value: string): void {
-		onSelectionChange(value);
-		// Clear search and collapse
-		setSearchQuery("");
-		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-		setIsExpanded(false);
+		const newSelection = selectedValues.includes(value)
+			? selectedValues.filter((v) => v !== value)
+			: [...selectedValues, value];
+		onSelectionChange(newSelection);
 	}
 
-	// Simple fuzzy matching function
 	function fuzzyMatch(query: string, text: string): boolean {
 		if (!query) return true;
 		const queryLower = query.toLowerCase();
 		const textLower = text.toLowerCase();
-
-		// Simple substring match for now - could be enhanced with more sophisticated fuzzy matching
 		return textLower.includes(queryLower);
 	}
 
-	// Filter options based on search query
 	const filteredOptions = searchQuery
 		? options.filter((option) => fuzzyMatch(searchQuery, option))
 		: options;
 
-	const hasSelection = selectedValue !== "";
+	const hasSelections = selectedValues.length > 0;
 
 	return (
 		<View
@@ -76,22 +70,34 @@ export default function CollapsibleRadioSection({
 				onPress={toggleExpansion}
 			>
 				<Text style={[styles.filterHeaderText, { color: colors.text }]}>
-					{title}
+					{title} {hasSelections && `(${selectedValues.length})`}
 				</Text>
 				<View style={styles.headerRight}>
-					{!isExpanded && hasSelection && (
-						<View
-							style={[
-								styles.pill,
-								{
-									backgroundColor: colors.primary,
-									borderColor: colors.primary,
-								},
-							]}
-						>
-							<Text style={[styles.pillText, { color: "white" }]}>
-								{selectedValue}
-							</Text>
+					{!isExpanded && hasSelections && (
+						<View style={styles.selectedPillsContainer}>
+							{selectedValues.slice(0, 2).map((value) => (
+								<View
+									key={value}
+									style={[
+										styles.pill,
+										{
+											backgroundColor: colors.primary,
+											borderColor: colors.primary,
+										},
+									]}
+								>
+									<Text style={[styles.pillText, { color: "white" }]}>
+										{value}
+									</Text>
+								</View>
+							))}
+							{selectedValues.length > 2 && (
+								<Text
+									style={[styles.moreText, { color: colors.textSecondary }]}
+								>
+									+{selectedValues.length - 2} more
+								</Text>
+							)}
 						</View>
 					)}
 					<Ionicons
@@ -147,7 +153,7 @@ export default function CollapsibleRadioSection({
 							<PillCheckbox
 								key={option}
 								label={option}
-								selected={selectedValue === option}
+								selected={selectedValues.includes(option)}
 								onPress={() => handlePillPress(option)}
 							/>
 						))}
@@ -167,23 +173,34 @@ export default function CollapsibleRadioSection({
 
 const styles = StyleSheet.create({
 	pill: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 20,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 12,
 		borderWidth: 1.5,
 		borderColor: "#dee2e6",
 		backgroundColor: "white",
-		margin: 4,
+		marginRight: 4,
 	},
 	pillText: {
 		color: "#495057",
-		fontSize: 14,
+		fontSize: 12,
 		fontWeight: "500",
 	},
 	headerRight: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
+		flex: 1,
+		justifyContent: "flex-end",
+	},
+	selectedPillsContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	moreText: {
+		fontSize: 12,
+		fontWeight: "500",
 	},
 	filterHeaderText: {
 		fontSize: 16,

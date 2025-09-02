@@ -12,6 +12,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CollapsibleMultiSelectSection from "@/components/CollapsibleMultiSelectSection";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
@@ -86,7 +87,7 @@ export default function ExternalProductDetail() {
 	}, [sku]);
 
 	const handleSaveQuantity = () => {
-		if (!externalProduct) return;
+		if (!editedProduct) return;
 
 		const newQuantity = parseInt(editedQuantity, 10);
 		if (isNaN(newQuantity) || newQuantity < 0) {
@@ -94,16 +95,11 @@ export default function ExternalProductDetail() {
 			return;
 		}
 
-		const updatedProduct: ExternalProduct = {
-			...externalProduct,
+		setEditedProduct({
+			...editedProduct,
 			quantity: newQuantity,
-		};
-
-		updateExternalProduct(externalProduct.unique_id_sku, updatedProduct);
-		setExternalProduct(updatedProduct);
+		});
 		setIsEditingQuantity(false);
-
-		Alert.alert("Success", "Quantity updated successfully");
 	};
 
 	const handleIncrementStock = () => {
@@ -428,312 +424,296 @@ export default function ExternalProductDetail() {
 				]}
 			>
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					<View
-						style={[
-							styles.productCard,
-							{ backgroundColor: colors.cardBackground },
-						]}
-					>
-						<View style={styles.skuContainer}>
-							<Text style={[styles.skuValue, { color: colors.text }]}>
-								{externalProduct.unique_id_sku}
-							</Text>
-							<View style={styles.quantityHeaderContainer}>
-								{isEditing ? (
-									<View style={styles.quantityControls}>
-										<Pressable
-											onPress={handleDecrementStock}
-											style={[
-												styles.quantityButton,
-												{ backgroundColor: colors.error },
-											]}
-										>
-											<Ionicons name="remove" size={16} color="white" />
-										</Pressable>
-										<Text style={[styles.quantity, { color: colors.primary }]}>
-											{editedQuantity}
-										</Text>
-										<Pressable
-											onPress={handleIncrementStock}
-											style={[
-												styles.quantityButton,
-												{ backgroundColor: colors.success },
-											]}
-										>
-											<Ionicons name="add" size={16} color="white" />
-										</Pressable>
-									</View>
-								) : (
-									<Text style={[styles.quantity, { color: colors.primary }]}>
-										{externalProduct.quantity}
-									</Text>
-								)}
-							</View>
-						</View>
-
-						{/* Internal Product Link */}
-						{internalProduct && (
-							<Pressable
-								style={[
-									styles.internalProductLink,
-									{
-										backgroundColor: colors.surface,
-										borderColor: colors.border,
-									},
-								]}
-								onPress={() =>
-									router.push(
-										`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
-									)
-								}
-							>
-								<View style={styles.internalProductInfo}>
-									<Text
+					<View style={styles.skuContainer}>
+						<Text style={[styles.skuValue, { color: colors.text }]}>
+							{externalProduct.unique_id_sku}
+						</Text>
+						<View style={styles.quantityHeaderContainer}>
+							{isEditing ? (
+								<View style={styles.quantityControls}>
+									<Pressable
+										onPress={handleDecrementStock}
 										style={[
-											styles.internalLabel,
-											{ color: colors.textSecondary },
+											styles.quantityButton,
+											{ backgroundColor: colors.error },
 										]}
 									>
-										Grouped under Internal Product
-									</Text>
-									<Text
-										style={[styles.internalName, { color: colors.primary }]}
+										<Ionicons name="remove" size={16} color="white" />
+									</Pressable>
+									{isEditingQuantity ? (
+										<View style={styles.quantityEditContainer}>
+											<TextInput
+												style={[
+													styles.quantityInput,
+													{
+														color: colors.primary,
+														borderColor: colors.border,
+														backgroundColor: colors.cardBackground,
+													},
+												]}
+												value={editedQuantity}
+												onChangeText={setEditedQuantity}
+												keyboardType="numeric"
+												selectTextOnFocus
+												autoFocus
+											/>
+											<View style={styles.editActions}>
+												<Pressable
+													onPress={handleSaveQuantity}
+													style={styles.saveButton}
+												>
+													<Ionicons name="checkmark" size={14} color="white" />
+												</Pressable>
+												<Pressable
+													onPress={handleCancelEdit}
+													style={styles.cancelButton}
+												>
+													<Ionicons name="close" size={14} color="white" />
+												</Pressable>
+											</View>
+										</View>
+									) : (
+										<Pressable onPress={() => setIsEditingQuantity(true)}>
+											<Text
+												style={[styles.quantity, { color: colors.primary }]}
+											>
+												{editedQuantity}
+											</Text>
+										</Pressable>
+									)}
+									<Pressable
+										onPress={handleIncrementStock}
+										style={[
+											styles.quantityButton,
+											{ backgroundColor: colors.success },
+										]}
 									>
-										{internalProduct.sparkys_product_name}
-									</Text>
+										<Ionicons name="add" size={16} color="white" />
+									</Pressable>
 								</View>
-								<Ionicons
-									name="arrow-forward"
-									size={20}
-									color={colors.primary}
-								/>
-							</Pressable>
-						)}
+							) : (
+								<Text style={[styles.quantity, { color: colors.primary }]}>
+									{externalProduct.quantity}
+								</Text>
+							)}
+						</View>
+					</View>
 
-						{/* Editable Fields */}
-						{isEditing && editedProduct && (
-							<>
-								<CollapsibleRadioSection
-									title="Manufacturer Color"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.manufacturer_color,
-										"manufacturer_color",
-									)}
-									selectedValue={editedProduct.manufacturer_color}
-									onSelectionChange={(value) =>
-										handleFieldChange(
-											"manufacturer_color",
-											value.replace(" (Archived)", ""),
-										)
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Brand"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.manufacturer,
-										"manufacturer",
-									)}
-									selectedValue={editedProduct.brand}
-									onSelectionChange={(value) =>
-										handleFieldChange("brand", value.replace(" (Archived)", ""))
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Size"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.size,
-										"size",
-									)}
-									selectedValue={editedProduct.size}
-									onSelectionChange={(value) =>
-										handleFieldChange("size", value.replace(" (Archived)", ""))
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Bag Quantity"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.bagQuantity,
-										"bagQuantity",
-									)}
-									selectedValue={editedProduct.bag_quantity.toString()}
-									onSelectionChange={(value) =>
-										handleFieldChange(
-											"bag_quantity",
-											parseInt(value.replace(" (Archived)", ""), 10),
-										)
-									}
-								/>
-
-								{/* Distributors - Multi-select */}
-								<View
+					{/* Internal Product Link */}
+					{internalProduct && (
+						<Pressable
+							style={[
+								styles.internalProductLink,
+								{
+									backgroundColor: colors.surface,
+									borderColor: colors.border,
+								},
+							]}
+							onPress={() =>
+								router.push(
+									`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
+								)
+							}
+						>
+							<View style={styles.internalProductInfo}>
+								<Text
 									style={[
-										styles.multiSelectSection,
-										{ backgroundColor: colors.cardBackground },
+										styles.internalLabel,
+										{ color: colors.textSecondary },
 									]}
 								>
-									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Distributors (Multi-select)
-									</Text>
-									<View style={styles.distributorsEditContainer}>
-										{addArchivedLabels(
-											PRODUCT_FIELD_OPTIONS.distributor,
-											"distributor",
-										).map((distributorLabel) => {
-											const distributor = distributorLabel.replace(
-												" (Archived)",
-												"",
-											);
-											const isSelected =
-												editedProduct.distributors?.includes(distributor) ||
-												false;
-											return (
-												<Pressable
-													key={distributorLabel}
-													onPress={() => handleDistributorsChange(distributor)}
-													style={[
-														styles.distributorEditPill,
-														{
-															backgroundColor: isSelected
-																? colors.primary
-																: colors.surface,
-															borderColor: colors.border,
-														},
-													]}
-												>
+									Grouped under Internal Product
+								</Text>
+								<Text style={[styles.internalName, { color: colors.primary }]}>
+									{internalProduct.sparkys_product_name}
+								</Text>
+							</View>
+							<Ionicons name="arrow-forward" size={20} color={colors.primary} />
+						</Pressable>
+					)}
+
+					{/* Editable Fields */}
+					{isEditing && editedProduct && (
+						<>
+							<CollapsibleRadioSection
+								title="Manufacturer Color"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.manufacturer_color,
+									"manufacturer_color",
+								)}
+								selectedValue={editedProduct.manufacturer_color}
+								onSelectionChange={(value) =>
+									handleFieldChange(
+										"manufacturer_color",
+										value.replace(" (Archived)", ""),
+									)
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Brand"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.manufacturer,
+									"manufacturer",
+								)}
+								selectedValue={editedProduct.brand}
+								onSelectionChange={(value) =>
+									handleFieldChange("brand", value.replace(" (Archived)", ""))
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Size"
+								options={addArchivedLabels(PRODUCT_FIELD_OPTIONS.size, "size")}
+								selectedValue={editedProduct.size}
+								onSelectionChange={(value) =>
+									handleFieldChange("size", value.replace(" (Archived)", ""))
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Bag Quantity"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.bagQuantity,
+									"bagQuantity",
+								)}
+								selectedValue={editedProduct.bag_quantity.toString()}
+								onSelectionChange={(value) =>
+									handleFieldChange(
+										"bag_quantity",
+										parseInt(value.replace(" (Archived)", ""), 10),
+									)
+								}
+							/>
+
+							<CollapsibleMultiSelectSection
+								title="Distributors"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.distributor,
+									"distributor",
+								)}
+								selectedValues={editedProduct.distributors}
+								onSelectionChange={(values) =>
+									setEditedProduct({
+										...editedProduct,
+										distributors: values.map((v) =>
+											v.replace(" (Archived)", ""),
+										),
+									})
+								}
+							/>
+						</>
+					)}
+
+					{!isEditing && (
+						<>
+							{/* Read-only Metadata */}
+							<View style={styles.section}>
+								<Text style={[styles.sectionTitle, { color: colors.text }]}>
+									Product Details
+								</Text>
+								<View style={styles.metadataGrid}>
+									{metadataItems.map((item) => {
+										const getMetadataRoute = (field: string, value: string) => {
+											switch (field) {
+												case "manufacturer_color":
+													return `/metadata/colors/${encodeURIComponent(value)}`;
+												case "brand":
+													return `/metadata/manufacturers/${encodeURIComponent(value)}`;
+												case "size":
+													return `/metadata/sizes/${encodeURIComponent(value)}`;
+												case "bag_quantity":
+													return `/metadata/bagQuantities/${encodeURIComponent(value)}`;
+												default:
+													return null;
+											}
+										};
+
+										const route = getMetadataRoute(item.field, item.value);
+										const MetadataComponent = route ? Pressable : View;
+
+										return (
+											<MetadataComponent
+												key={item.field}
+												style={[
+													styles.metadataItem,
+													{ backgroundColor: colors.surface },
+												]}
+												{...(route
+													? { onPress: () => router.push(route) }
+													: {})}
+											>
+												<Ionicons
+													name={item.icon as any}
+													size={20}
+													color={colors.primary}
+												/>
+												<View style={styles.metadataContent}>
 													<Text
 														style={[
-															styles.distributorEditText,
-															{ color: isSelected ? "white" : colors.text },
+															styles.metadataLabel,
+															{ color: colors.textSecondary },
 														]}
 													>
-														{distributorLabel}
+														{item.label}
 													</Text>
-												</Pressable>
-											);
-										})}
-									</View>
-								</View>
-							</>
-						)}
-
-						{!isEditing && (
-							<>
-								{/* Read-only Distributors */}
-								{externalProduct.distributors.length > 0 && (
-									<View style={styles.section}>
-										<Text style={[styles.sectionTitle, { color: colors.text }]}>
-											Distributors
-										</Text>
-										<View style={styles.distributorsContainer}>
-											{externalProduct.distributors.map(
-												(distributor, index) => (
-													<View
-														key={`${distributor}-${index}`}
+													<Text
 														style={[
-															styles.distributorPill,
-															{
-																backgroundColor: colors.surface,
-																borderColor: colors.border,
-															},
+															styles.metadataValue,
+															{ color: route ? colors.primary : colors.text },
 														]}
 													>
-														<Ionicons
-															name="storefront-outline"
-															size={16}
-															color={colors.primary}
-														/>
-														<Text
-															style={[
-																styles.distributorText,
-																{ color: colors.primary },
-															]}
-														>
-															{distributor}
-														</Text>
-													</View>
-												),
-											)}
-										</View>
-									</View>
-								)}
-
-								{/* Read-only Metadata */}
-								<View style={styles.section}>
-									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Product Details
-									</Text>
-									<View style={styles.metadataGrid}>
-										{metadataItems.map((item) => {
-											const getMetadataRoute = (
-												field: string,
-												value: string,
-											) => {
-												switch (field) {
-													case "manufacturer_color":
-														return `/metadata/colors/${encodeURIComponent(value)}`;
-													case "brand":
-														return `/metadata/manufacturers/${encodeURIComponent(value)}`;
-													case "size":
-														return `/metadata/sizes/${encodeURIComponent(value)}`;
-													case "bag_quantity":
-														return `/metadata/bagQuantities/${encodeURIComponent(value)}`;
-													default:
-														return null;
-												}
-											};
-
-											const route = getMetadataRoute(item.field, item.value);
-											const MetadataComponent = route ? Pressable : View;
-
-											return (
-												<MetadataComponent
-													key={item.field}
-													style={[
-														styles.metadataItem,
-														{ backgroundColor: colors.surface },
-													]}
-													{...(route
-														? { onPress: () => router.push(route) }
-														: {})}
-												>
+														{item.value}
+													</Text>
+												</View>
+												{route && (
 													<Ionicons
-														name={item.icon as any}
-														size={20}
+														name="chevron-forward"
+														size={16}
 														color={colors.primary}
 													/>
-													<View style={styles.metadataContent}>
-														<Text
-															style={[
-																styles.metadataLabel,
-																{ color: colors.textSecondary },
-															]}
-														>
-															{item.label}
-														</Text>
-														<Text
-															style={[
-																styles.metadataValue,
-																{ color: route ? colors.primary : colors.text },
-															]}
-														>
-															{item.value}
-														</Text>
-													</View>
-													{route && (
-														<Ionicons
-															name="chevron-forward"
-															size={16}
-															color={colors.primary}
-														/>
-													)}
-												</MetadataComponent>
-											);
-										})}
+												)}
+											</MetadataComponent>
+										);
+									})}
+								</View>
+							</View>
+
+							{/* Read-only Distributors */}
+							{externalProduct.distributors.length > 0 && (
+								<View style={styles.section}>
+									<Text style={[styles.sectionTitle, { color: colors.text }]}>
+										Distributors
+									</Text>
+									<View style={styles.distributorsContainer}>
+										{externalProduct.distributors.map((distributor, index) => (
+											<View
+												key={`${distributor}-${index}`}
+												style={[
+													styles.distributorPill,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+													},
+												]}
+											>
+												<Ionicons
+													name="storefront-outline"
+													size={16}
+													color={colors.primary}
+												/>
+												<Text
+													style={[
+														styles.distributorText,
+														{ color: colors.primary },
+													]}
+												>
+													{distributor}
+												</Text>
+											</View>
+										))}
 									</View>
 								</View>
-							</>
-						)}
-					</View>
+							)}
+						</>
+					)}
 				</ScrollView>
 			</View>
 		</SafeAreaView>

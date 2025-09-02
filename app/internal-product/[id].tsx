@@ -8,9 +8,11 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CollapsibleMultiSelectSection from "@/components/CollapsibleMultiSelectSection";
 import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import ExternalProductCard from "@/components/ExternalProductCard";
 import { Colors } from "@/constants/Colors";
@@ -392,20 +394,16 @@ export default function InternalProductDetail() {
 				]}
 			>
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					<View
-						style={[
-							styles.productCard,
-							{ backgroundColor: colors.cardBackground },
-						]}
-					>
-						<Text style={[styles.productName, { color: colors.text }]}>
-							{internalProduct.sparkys_product_name}
-						</Text>
+					<Text style={[styles.productName, { color: colors.text }]}>
+						{internalProduct.sparkys_product_name}
+					</Text>
 
+					<View style={styles.quantityRow}>
 						<View
 							style={[
-								styles.quantityContainer,
+								styles.quantityBox,
 								{ backgroundColor: colors.surface },
+								isEditing && { opacity: 0.6 },
 							]}
 						>
 							<Text
@@ -413,249 +411,241 @@ export default function InternalProductDetail() {
 							>
 								Total Quantity
 							</Text>
-							<Text style={styles.quantity}>
-								<Text
-									style={{ color: getQuantityColorValue(quantityColorType) }}
-								>
-									{totalQuantity}
-								</Text>
-								<Text style={{ color: colors.primary }}>
-									{" "}
-									/ {internalProduct.threshold_quantity}
-								</Text>
+							<Text
+								style={[
+									styles.quantity,
+									{ color: getQuantityColorValue(quantityColorType) },
+								]}
+							>
+								{totalQuantity}
 							</Text>
 						</View>
 
-						{/* Editable Fields */}
-						{isEditing && editedProduct && (
-							<>
-								<CollapsibleRadioSection
-									title="Product Type"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.productType,
-										"productType",
-									)}
-									selectedValue={editedProduct.product_type}
-									onSelectionChange={(value) =>
-										handleFieldChange(
-											"product_type",
-											value.replace(" (Archived)", ""),
-										)
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Sparky's Color"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.sparkys_color,
-										"sparkys_color",
-									)}
-									selectedValue={editedProduct.sparkys_color}
-									onSelectionChange={(value) =>
-										handleFieldChange(
-											"sparkys_color",
-											value.replace(" (Archived)", ""),
-										)
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Texture"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.texture,
-										"texture",
-									)}
-									selectedValue={editedProduct.texture}
-									onSelectionChange={(value) =>
-										handleFieldChange(
-											"texture",
-											value.replace(" (Archived)", ""),
-										)
-									}
-								/>
-								<CollapsibleRadioSection
-									title="Shape"
-									options={addArchivedLabels(
-										PRODUCT_FIELD_OPTIONS.shape,
-										"shape",
-									)}
-									selectedValue={editedProduct.shape}
-									onSelectionChange={(value) =>
-										handleFieldChange("shape", value.replace(" (Archived)", ""))
-									}
-								/>
-
-								{/* Occasions - Multi-select */}
-								<View
+						<View
+							style={[styles.quantityBox, { backgroundColor: colors.surface }]}
+						>
+							<Text
+								style={[styles.quantityLabel, { color: colors.textSecondary }]}
+							>
+								Threshold Quantity
+							</Text>
+							{isEditing ? (
+								<TextInput
 									style={[
-										styles.multiSelectSection,
-										{ backgroundColor: colors.cardBackground },
+										styles.thresholdInput,
+										{
+											color: colors.primary,
+											borderColor: colors.border,
+											backgroundColor: colors.cardBackground,
+										},
 									]}
-								>
-									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Occasions (Multi-select)
-									</Text>
-									<View style={styles.occasionsEditContainer}>
-										{addArchivedLabels(
-											PRODUCT_FIELD_OPTIONS.occasion,
-											"occasion",
-										).map((occasionLabel) => {
-											const occasion = occasionLabel.replace(" (Archived)", "");
-											const isSelected =
-												editedProduct.occasions?.includes(occasion) || false;
-											return (
-												<Pressable
-													key={occasionLabel}
-													onPress={() => handleOccasionsChange(occasion)}
-													style={[
-														styles.occasionEditPill,
-														{
-															backgroundColor: isSelected
-																? colors.primary
-																: colors.surface,
-															borderColor: colors.border,
-														},
-													]}
-												>
-													<Text
-														style={[
-															styles.occasionEditText,
-															{ color: isSelected ? "white" : colors.text },
-														]}
-													>
-														{occasionLabel}
-													</Text>
-												</Pressable>
-											);
-										})}
-									</View>
-								</View>
-							</>
-						)}
+									value={editedProduct?.threshold_quantity?.toString() || ""}
+									onChangeText={(text) => {
+										if (!editedProduct) return;
+										const threshold = parseInt(text, 10);
+										setEditedProduct({
+											...editedProduct,
+											threshold_quantity: isNaN(threshold) ? 0 : threshold,
+										});
+									}}
+									keyboardType="numeric"
+									selectTextOnFocus
+								/>
+							) : (
+								<Text style={[styles.quantity, { color: colors.primary }]}>
+									{internalProduct.threshold_quantity}
+								</Text>
+							)}
+						</View>
+					</View>
 
-						{!isEditing && (
-							<>
-								{/* Read-only Occasions */}
-								{internalProduct.occasions.length > 0 && (
-									<View style={styles.section}>
-										<Text style={[styles.sectionTitle, { color: colors.text }]}>
-											Occasions
-										</Text>
-										<View style={styles.occasionsContainer}>
-											{internalProduct.occasions.map((occasion, index) => (
-												<View
-													key={`${occasion}-${index}`}
-													style={[
-														styles.occasionPill,
-														{
-															backgroundColor: colors.surface,
-															borderColor: colors.border,
-														},
-													]}
-												>
-													<Ionicons
-														name="calendar-outline"
-														size={14}
-														color={colors.primary}
-													/>
+					{/* Editable Fields */}
+					{isEditing && editedProduct && (
+						<>
+							<CollapsibleRadioSection
+								title="Product Type"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.productType,
+									"productType",
+								)}
+								selectedValue={editedProduct.product_type}
+								onSelectionChange={(value) =>
+									handleFieldChange(
+										"product_type",
+										value.replace(" (Archived)", ""),
+									)
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Sparky's Color"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.sparkys_color,
+									"sparkys_color",
+								)}
+								selectedValue={editedProduct.sparkys_color}
+								onSelectionChange={(value) =>
+									handleFieldChange(
+										"sparkys_color",
+										value.replace(" (Archived)", ""),
+									)
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Texture"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.texture,
+									"texture",
+								)}
+								selectedValue={editedProduct.texture}
+								onSelectionChange={(value) =>
+									handleFieldChange("texture", value.replace(" (Archived)", ""))
+								}
+							/>
+							<CollapsibleRadioSection
+								title="Shape"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.shape,
+									"shape",
+								)}
+								selectedValue={editedProduct.shape}
+								onSelectionChange={(value) =>
+									handleFieldChange("shape", value.replace(" (Archived)", ""))
+								}
+							/>
+
+							<CollapsibleMultiSelectSection
+								title="Occasions"
+								options={addArchivedLabels(
+									PRODUCT_FIELD_OPTIONS.occasion,
+									"occasion",
+								)}
+								selectedValues={editedProduct.occasions}
+								onSelectionChange={(values) =>
+									setEditedProduct({
+										...editedProduct,
+										occasions: values.map((v) => v.replace(" (Archived)", "")),
+									})
+								}
+							/>
+						</>
+					)}
+
+					{!isEditing && (
+						<>
+							{/* Read-only Metadata */}
+							<View style={styles.section}>
+								<Text style={[styles.sectionTitle, { color: colors.text }]}>
+									Product Details
+								</Text>
+								<View style={styles.metadataGrid}>
+									{metadataItems.map((item) => {
+										const getMetadataRoute = (field: string, value: string) => {
+											switch (field) {
+												case "product_type":
+													return `/metadata/productTypes/${encodeURIComponent(value)}`;
+												case "texture":
+													return `/metadata/textures/${encodeURIComponent(value)}`;
+												case "shape":
+													return `/metadata/shapes/${encodeURIComponent(value)}`;
+												case "sparkys_color":
+													return `/metadata/colors/${encodeURIComponent(value)}`;
+												default:
+													return null;
+											}
+										};
+
+										const route = getMetadataRoute(item.field, item.value);
+										const MetadataComponent = route ? Pressable : View;
+
+										return (
+											<MetadataComponent
+												key={item.field}
+												style={[
+													styles.metadataItem,
+													{ backgroundColor: colors.surface },
+												]}
+												{...(route
+													? { onPress: () => router.push(route) }
+													: {})}
+											>
+												<Ionicons
+													name={item.icon as any}
+													size={20}
+													color={colors.primary}
+												/>
+												<View style={styles.metadataContent}>
 													<Text
 														style={[
-															styles.occasionText,
-															{ color: colors.primary },
+															styles.metadataLabel,
+															{ color: colors.textSecondary },
 														]}
 													>
-														{occasion}
+														{item.label}
+													</Text>
+													<Text
+														style={[
+															styles.metadataValue,
+															{ color: route ? colors.primary : colors.text },
+														]}
+													>
+														{item.value}
 													</Text>
 												</View>
-											))}
-										</View>
-									</View>
-								)}
-
-								{/* Read-only Metadata */}
-								<View style={styles.section}>
-									<Text style={[styles.sectionTitle, { color: colors.text }]}>
-										Product Details
-									</Text>
-									<View style={styles.metadataGrid}>
-										{metadataItems.map((item) => {
-											const getMetadataRoute = (
-												field: string,
-												value: string,
-											) => {
-												switch (field) {
-													case "product_type":
-														return `/metadata/productTypes/${encodeURIComponent(value)}`;
-													case "texture":
-														return `/metadata/textures/${encodeURIComponent(value)}`;
-													case "shape":
-														return `/metadata/shapes/${encodeURIComponent(value)}`;
-													case "sparkys_color":
-														return `/metadata/colors/${encodeURIComponent(value)}`;
-													default:
-														return null;
-												}
-											};
-
-											const route = getMetadataRoute(item.field, item.value);
-											const MetadataComponent = route ? Pressable : View;
-
-											return (
-												<MetadataComponent
-													key={item.field}
-													style={[
-														styles.metadataItem,
-														{ backgroundColor: colors.surface },
-													]}
-													{...(route
-														? { onPress: () => router.push(route) }
-														: {})}
-												>
+												{route && (
 													<Ionicons
-														name={item.icon as any}
-														size={20}
+														name="chevron-forward"
+														size={16}
 														color={colors.primary}
 													/>
-													<View style={styles.metadataContent}>
-														<Text
-															style={[
-																styles.metadataLabel,
-																{ color: colors.textSecondary },
-															]}
-														>
-															{item.label}
-														</Text>
-														<Text
-															style={[
-																styles.metadataValue,
-																{ color: route ? colors.primary : colors.text },
-															]}
-														>
-															{item.value}
-														</Text>
-													</View>
-													{route && (
-														<Ionicons
-															name="chevron-forward"
-															size={16}
-															color={colors.primary}
-														/>
-													)}
-												</MetadataComponent>
-											);
-										})}
+												)}
+											</MetadataComponent>
+										);
+									})}
+								</View>
+							</View>
+
+							{/* Read-only Occasions */}
+							{internalProduct.occasions.length > 0 && (
+								<View style={styles.section}>
+									<Text style={[styles.sectionTitle, { color: colors.text }]}>
+										Occasions
+									</Text>
+									<View style={styles.occasionsContainer}>
+										{internalProduct.occasions.map((occasion, index) => (
+											<View
+												key={`${occasion}-${index}`}
+												style={[
+													styles.occasionPill,
+													{
+														backgroundColor: colors.surface,
+														borderColor: colors.border,
+													},
+												]}
+											>
+												<Ionicons
+													name="calendar-outline"
+													size={14}
+													color={colors.primary}
+												/>
+												<Text
+													style={[
+														styles.occasionText,
+														{ color: colors.primary },
+													]}
+												>
+													{occasion}
+												</Text>
+											</View>
+										))}
 									</View>
 								</View>
-							</>
-						)}
-					</View>
+							)}
+						</>
+					)}
 
 					{/* External Products */}
 					{externalProducts.length > 0 && (
-						<View
-							style={[
-								styles.externalProductsCard,
-								{ backgroundColor: colors.cardBackground },
-							]}
-						>
+						<View style={styles.section}>
 							<Text style={[styles.sectionTitle, { color: colors.text }]}>
 								External Products ({externalProducts.length})
 							</Text>
@@ -715,6 +705,7 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		padding: 16,
+		paddingBottom: 32,
 	},
 	productCard: {
 		backgroundColor: "white",
@@ -873,5 +864,30 @@ const styles = StyleSheet.create({
 	occasionEditText: {
 		fontSize: 14,
 		fontWeight: "500",
+	},
+	quantityRow: {
+		flexDirection: "row",
+		gap: 12,
+		marginBottom: 20,
+	},
+	quantityBox: {
+		flex: 1,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+	},
+	quantityDisplay: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	thresholdInput: {
+		borderWidth: 1,
+		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		fontSize: 24,
+		fontWeight: "bold",
+		minWidth: 60,
+		textAlign: "center",
 	},
 });

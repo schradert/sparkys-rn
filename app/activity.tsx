@@ -464,8 +464,7 @@ export default function Activity() {
 												})()
 											: selectedEvent.event_type.charAt(0).toUpperCase() +
 												selectedEvent.event_type.slice(1) +
-												(selectedEvent.event_type === "edit" ? "ed" : "d")}{" "}
-										{selectedEvent.object_type.replace("_", " ")}
+												(selectedEvent.event_type === "edit" ? "ed" : "d")}
 									</Text>
 								</View>
 
@@ -744,7 +743,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	eventsListContent: {
-		padding: 16,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		paddingBottom: 12,
 	},
 	eventCard: {
 		borderRadius: 12,
