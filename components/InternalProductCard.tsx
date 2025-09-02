@@ -95,7 +95,17 @@ export default function InternalProductCard({
 		internalProduct.products.includes(ext.unique_id_sku),
 	);
 
-	// Helper function to get most recent event timestamp for external products
+	// Helper functions for sorting external products
+	function getEventCount(
+		productId: string,
+		productType: "internal_product" | "external_product",
+	): number {
+		return events.filter(
+			(event) =>
+				event.object_type === productType && event.object_id === productId,
+		).length;
+	}
+
 	function getMostRecentEventTimestamp(
 		productId: string,
 		productType: "internal_product" | "external_product",
@@ -119,8 +129,18 @@ export default function InternalProductCard({
 				(ext) => (ext.status || "active") === "active",
 			);
 
-	// Sort external products by most recent activity
+	// Sort external products by frequency, then recency, then reverse alphabetical
 	const relatedExternals = filteredExternals.sort((a, b) => {
+		// Sort by: 1) most frequently updated, 2) most recently updated, 3) reverse alphabetical
+		const aEventCount = getEventCount(a.unique_id_sku, "external_product");
+		const bEventCount = getEventCount(b.unique_id_sku, "external_product");
+
+		// First sort by frequency (descending)
+		if (aEventCount !== bEventCount) {
+			return bEventCount - aEventCount;
+		}
+
+		// Then sort by most recent activity
 		const aTimestamp = getMostRecentEventTimestamp(
 			a.unique_id_sku,
 			"external_product",
@@ -130,15 +150,19 @@ export default function InternalProductCard({
 			"external_product",
 		);
 
-		// Handle cases where products have no events
 		if (!aTimestamp && !bTimestamp) {
-			return a.unique_id_sku.localeCompare(b.unique_id_sku);
+			// Finally sort by reverse alphabetical
+			return b.unique_id_sku.localeCompare(a.unique_id_sku);
 		}
-		if (!aTimestamp) return 1; // Move products without events to end
+		if (!aTimestamp) return 1;
 		if (!bTimestamp) return -1;
 
-		// Sort by timestamp descending (most recent first)
-		return new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
+		const timeDiff =
+			new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
+		if (timeDiff !== 0) return timeDiff;
+
+		// If same timestamp, use reverse alphabetical
+		return b.unique_id_sku.localeCompare(a.unique_id_sku);
 	});
 
 	console.log(
