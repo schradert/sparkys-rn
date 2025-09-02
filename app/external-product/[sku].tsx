@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -68,22 +68,25 @@ export default function ExternalProductDetail() {
 	useEffect(() => {
 		if (!sku) return;
 
-		const external = getExternalProductBySku(sku);
-		setExternalProduct(external || null);
+		// Use React.startTransition to batch updates and prevent cascading effects
+		React.startTransition(() => {
+			const external = getExternalProductBySku(sku);
+			setExternalProduct(external || null);
 
-		if (external) {
-			// Find the internal product that contains this external product's SKU
-			const allInternalProducts = getAllInternalProducts();
-			const internal = allInternalProducts.find((internal) =>
-				internal.products.includes(external.unique_id_sku),
-			);
-			setInternalProduct(internal || null);
-			setEditedQuantity(external.quantity.toString());
-			setEditedProduct(external);
-			setOriginalProduct(external);
-		}
+			if (external) {
+				// Find the internal product that contains this external product's SKU
+				const allInternalProducts = getAllInternalProducts();
+				const internal = allInternalProducts.find((internal) =>
+					internal.products.includes(external.unique_id_sku),
+				);
+				setInternalProduct(internal || null);
+				setEditedQuantity(external.quantity.toString());
+				setEditedProduct(external);
+				setOriginalProduct(external);
+			}
 
-		setLoading(false);
+			setLoading(false);
+		});
 	}, [sku]);
 
 	const handleSaveQuantity = () => {

@@ -193,7 +193,17 @@ async function addMetadataToSheet(
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.addMetadataItem(sheetName, name, accessToken);
 
-		await refreshSheetsData(accessToken);
+		// Update local store instead of full refresh
+		setMetadata((prevMetadata) => {
+			const fieldKey = getMetadataFieldKey(sheetName);
+			if (fieldKey && prevMetadata[fieldKey]) {
+				return {
+					...prevMetadata,
+					[fieldKey]: [...prevMetadata[fieldKey], { name, status: "active" }],
+				};
+			}
+			return prevMetadata;
+		});
 
 		return { success: true };
 	} catch (error: any) {
@@ -210,7 +220,8 @@ async function addProductToSheet(
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.addProduct(product, accessToken);
 
-		await refreshSheetsData(accessToken);
+		// Note: Product store updates happen via subscribeToStoreChanges
+		// No need for full refresh
 
 		return { success: true };
 	} catch (error: any) {
@@ -238,7 +249,19 @@ async function updateMetadataInSheet(
 			accessToken,
 		);
 
-		await refreshSheetsData(accessToken);
+		// Update local store instead of full refresh
+		setMetadata((prevMetadata) => {
+			const fieldKey = getMetadataFieldKey(sheetName);
+			if (fieldKey && prevMetadata[fieldKey]) {
+				return {
+					...prevMetadata,
+					[fieldKey]: prevMetadata[fieldKey].map((item) =>
+						item.name === oldName ? { ...item, name: newName } : item,
+					),
+				};
+			}
+			return prevMetadata;
+		});
 
 		// Notify subscribers of the metadata change
 		const fieldKey = getFieldKeyForSheetName(sheetName);
@@ -298,7 +321,8 @@ async function updateProductInSheet(
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.updateProduct(product, accessToken);
 
-		await refreshSheetsData(accessToken);
+		// Note: Product store updates happen via subscribeToStoreChanges
+		// No need for full refresh
 
 		return { success: true };
 	} catch (error: any) {
@@ -318,7 +342,8 @@ async function addExternalProductToSheet(
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.addExternalProduct(product, accessToken);
 
-		await refreshSheetsData(accessToken);
+		// Note: Product store updates happen via subscribeToStoreChanges
+		// No need for full refresh
 
 		return { success: true };
 	} catch (error: any) {
@@ -338,7 +363,8 @@ async function updateInternalProductInSheet(
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 		await sheetsService.updateInternalProduct(product, accessToken);
 
-		await refreshSheetsData(accessToken);
+		// Note: Product store updates happen via subscribeToStoreChanges
+		// No need for full refresh
 
 		return { success: true };
 	} catch (error: any) {
@@ -509,7 +535,21 @@ export function useSheetsData() {
 		try {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.archiveMetadataItem(sheetName, name, accessToken);
-			await refreshSheetsData(accessToken);
+
+			// Update local store instead of full refresh
+			setMetadata((prevMetadata) => {
+				const fieldKey = getMetadataFieldKey(sheetName);
+				if (fieldKey && prevMetadata[fieldKey]) {
+					return {
+						...prevMetadata,
+						[fieldKey]: prevMetadata[fieldKey].map((item) =>
+							item.name === name ? { ...item, status: "archived" } : item,
+						),
+					};
+				}
+				return prevMetadata;
+			});
+
 			return { success: true };
 		} catch (error: any) {
 			console.error("Error archiving metadata:", error);
@@ -530,7 +570,21 @@ export function useSheetsData() {
 		try {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.unarchiveMetadataItem(sheetName, name, accessToken);
-			await refreshSheetsData(accessToken);
+
+			// Update local store instead of full refresh
+			setMetadata((prevMetadata) => {
+				const fieldKey = getMetadataFieldKey(sheetName);
+				if (fieldKey && prevMetadata[fieldKey]) {
+					return {
+						...prevMetadata,
+						[fieldKey]: prevMetadata[fieldKey].map((item) =>
+							item.name === name ? { ...item, status: "active" } : item,
+						),
+					};
+				}
+				return prevMetadata;
+			});
+
 			return { success: true };
 		} catch (error: any) {
 			console.error("Error unarchiving metadata:", error);
