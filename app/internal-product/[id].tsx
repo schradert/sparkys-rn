@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -70,14 +70,19 @@ export default function InternalProductDetail() {
 	useEffect(() => {
 		if (!id) return;
 
-		const internal = getInternalProductByName(productName);
-		const externals = internal ? getExternalProductsForInternal(internal) : [];
+		// Use React.startTransition to batch updates and prevent cascading effects
+		React.startTransition(() => {
+			const internal = getInternalProductByName(productName);
+			const externals = internal
+				? getExternalProductsForInternal(internal)
+				: [];
 
-		setInternalProduct(internal || null);
-		setEditedProduct(internal || null);
-		setOriginalProduct(internal || null);
-		setExternalProducts(externals);
-		setLoading(false);
+			setInternalProduct(internal || null);
+			setEditedProduct(internal || null);
+			setOriginalProduct(internal || null);
+			setExternalProducts(externals);
+			setLoading(false);
+		});
 	}, [id]);
 
 	const handleSave = async () => {

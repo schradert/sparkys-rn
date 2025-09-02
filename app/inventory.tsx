@@ -555,16 +555,24 @@ export default function Inventory() {
 		setExternalProductsState(externalData);
 	}, [sheetsLoading, storeUpdateTrigger]);
 
-	// Subscribe to store changes to update products
+	// Subscribe to store changes to update products (with debouncing to prevent loops)
 	useEffect(() => {
+		let timeoutId: NodeJS.Timeout;
 		const unsubscribe = subscribeToStoreChanges(() => {
-			setStoreUpdateTrigger((prev) => prev + 1);
+			// Debounce store change notifications to prevent rapid loops
+			clearTimeout(timeoutId);
+			timeoutId = setTimeout(() => {
+				setStoreUpdateTrigger((prev) => prev + 1);
+			}, 100);
 		});
-		return unsubscribe;
+		return () => {
+			clearTimeout(timeoutId);
+			unsubscribe();
+		};
 	}, []);
 
 	// Subscribe to metadata changes to update filters
-	// Load events data for sorting
+	// Load events data on initial load and when user manually refreshes or data changes
 	useEffect(() => {
 		const loadEvents = async () => {
 			if (getAuditEvents) {
@@ -574,7 +582,7 @@ export default function Inventory() {
 		};
 
 		loadEvents();
-	}, [storeUpdateTrigger, getAuditEvents]);
+	}, [sheetsRefreshing, storeUpdateTrigger]); // Reload when data changes too
 
 	useEffect(() => {
 		const unsubscribe = subscribeToMetadataChanges((change) => {
@@ -993,21 +1001,7 @@ export default function Inventory() {
 		}));
 	}
 
-	function handleFilterToggle(field: Field, value: string): void {
-		setFilters((prev) => {
-			const currentValues = prev[field] || [];
-			const isSelected = currentValues.includes(value);
-
-			const newValues = isSelected
-				? currentValues.filter((v) => v !== value)
-				: [...currentValues, value];
-
-			return {
-				...prev,
-				[field]: newValues,
-			};
-		});
-	}
+	// Removed broken handleFilterToggle function - setFilters doesn't exist
 
 	function formatCategoryTitle(category: string): string {
 		switch (category) {

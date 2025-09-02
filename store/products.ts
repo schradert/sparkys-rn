@@ -51,6 +51,7 @@ export function updateInternalProduct(
 export function setInternalProducts(newProducts: InternalProduct[]): void {
 	console.log("Setting internal products:", newProducts);
 	internalProducts = [...newProducts];
+	notifyStoreChange();
 }
 
 // External Products Management
@@ -90,4 +91,5 @@ export function updateExternalProduct(
 export function setExternalProducts(newProducts: ExternalProduct[]): void {
 	console.log("Setting external products:", newProducts);
 	externalProducts = [...newProducts];
+	notifyStoreChange();
 }
