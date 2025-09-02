@@ -640,7 +640,17 @@ export default function Inventory() {
 		return unsubscribe;
 	}, [subscribeToMetadataChanges]);
 
-	// Helper function to get most recent event timestamp for a product
+	// Helper functions for sorting
+	function getEventCount(
+		productId: string,
+		productType: "internal_product" | "external_product",
+	): number {
+		return cachedEvents.filter(
+			(event) =>
+				event.object_type === productType && event.object_id === productId,
+		).length;
+	}
+
 	function getMostRecentEventTimestamp(
 		productId: string,
 		productType: "internal_product" | "external_product",
@@ -753,7 +763,22 @@ export default function Inventory() {
 							return filteredExternals.length > 0;
 						})
 						?.sort((a, b) => {
-							// Sort by most recent event timestamp, then by name
+							// Sort by: 1) most frequently updated, 2) most recently updated, 3) reverse alphabetical
+							const aEventCount = getEventCount(
+								a.sparkys_product_name,
+								"internal_product",
+							);
+							const bEventCount = getEventCount(
+								b.sparkys_product_name,
+								"internal_product",
+							);
+
+							// First sort by frequency (descending)
+							if (aEventCount !== bEventCount) {
+								return bEventCount - aEventCount;
+							}
+
+							// Then sort by most recent activity
 							const aTimestamp = getMostRecentEventTimestamp(
 								a.sparkys_product_name,
 								"internal_product",
@@ -763,18 +788,22 @@ export default function Inventory() {
 								"internal_product",
 							);
 
-							// Handle cases where products have no events
 							if (!aTimestamp && !bTimestamp) {
-								return a.sparkys_product_name.localeCompare(
-									b.sparkys_product_name,
+								// Finally sort by reverse alphabetical
+								return b.sparkys_product_name.localeCompare(
+									a.sparkys_product_name,
 								);
 							}
-							if (!aTimestamp) return 1; // Move products without events to end
+							if (!aTimestamp) return 1;
 							if (!bTimestamp) return -1;
 
-							// Sort by timestamp descending (most recent first)
-							return (
-								new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime()
+							const timeDiff =
+								new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
+							if (timeDiff !== 0) return timeDiff;
+
+							// If same timestamp, use reverse alphabetical
+							return b.sparkys_product_name.localeCompare(
+								a.sparkys_product_name,
 							);
 						}) || []
 				);
