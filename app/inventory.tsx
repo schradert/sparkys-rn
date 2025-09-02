@@ -35,6 +35,7 @@ import {
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
+import type { AuditEvent } from "@/services/googleSheets";
 import {
 	getAllExternalProducts,
 	getAllInternalProducts,
@@ -465,6 +466,7 @@ export default function Inventory() {
 		addExternalProduct,
 		updateInternalProduct,
 		subscribeToMetadataChanges,
+		getAuditEvents,
 	} = useSheetsData();
 
 	// Separate filters for internal and external products
@@ -503,6 +505,7 @@ export default function Inventory() {
 		ExternalProduct[]
 	>(getAllExternalProducts());
 	const [storeUpdateTrigger, setStoreUpdateTrigger] = useState(0);
+	const [cachedEvents, setCachedEvents] = useState<AuditEvent[]>([]);
 
 	// UI state
 	const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -561,6 +564,18 @@ export default function Inventory() {
 	}, []);
 
 	// Subscribe to metadata changes to update filters
+	// Load events data for sorting
+	useEffect(() => {
+		const loadEvents = async () => {
+			if (getAuditEvents) {
+				const events = await getAuditEvents(1000, 0);
+				setCachedEvents(events);
+			}
+		};
+
+		loadEvents();
+	}, [storeUpdateTrigger, getAuditEvents]);
+
 	useEffect(() => {
 		const unsubscribe = subscribeToMetadataChanges((change) => {
 			const { fieldKey, oldValue, newValue } = change;
@@ -625,100 +640,143 @@ export default function Inventory() {
 		return unsubscribe;
 	}, [subscribeToMetadataChanges]);
 
+	// Helper function to get most recent event timestamp for a product
+	function getMostRecentEventTimestamp(
+		productId: string,
+		productType: "internal_product" | "external_product",
+	): string | null {
+		const productEvents = cachedEvents.filter(
+			(event) =>
+				event.object_type === productType && event.object_id === productId,
+		);
+
+		if (productEvents.length === 0) return null;
+
+		// Events are already sorted by ID descending (most recent first)
+		return productEvents[0].timestamp;
+	}
+
 	function getCurrentData() {
 		switch (currentView) {
 			case "products":
 				// Return filtered internal products for hierarchical view
 				return (
-					internalProducts?.filter((internalProduct) => {
-						// Apply internal product filters
-						const matchesInternal = Object.entries(internalFilters).every(
-							([key, selectedValues]) => {
-								if (key === "understocked") {
-									// Handle understocked filter (boolean)
-									if (!selectedValues) return true;
-									const totalQuantity = getInternalProductTotalQuantity(
-										internalProduct,
-										externalProducts,
-									);
-									const isUnderstocked =
-										totalQuantity < internalProduct.threshold_quantity;
-									return isUnderstocked;
-								}
-								if (key === "showArchived") {
-									// Handle showArchived filter (boolean)
-									const isProductArchived =
-										(internalProduct.status || "active") === "archived";
-									if (selectedValues === true) {
-										// Show all products (both active and archived)
-										return true;
-									} else {
-										// Show only active products (exclude archived)
-										return !isProductArchived;
+					internalProducts
+						?.filter((internalProduct) => {
+							// Apply internal product filters
+							const matchesInternal = Object.entries(internalFilters).every(
+								([key, selectedValues]) => {
+									if (key === "understocked") {
+										// Handle understocked filter (boolean)
+										if (!selectedValues) return true;
+										const totalQuantity = getInternalProductTotalQuantity(
+											internalProduct,
+											externalProducts,
+										);
+										const isUnderstocked =
+											totalQuantity < internalProduct.threshold_quantity;
+										return isUnderstocked;
 									}
-								}
-								if (!selectedValues || selectedValues.length === 0) return true;
-								if (key === "occasions") {
-									// For occasions array, check if any selected occasion is in the product's occasions
-									return selectedValues.some((selectedValue) =>
-										(internalProduct.occasions || []).includes(selectedValue),
-									);
-								}
-								const productValue = internalProduct[
-									key as keyof InternalProduct
-								] as string;
-								return selectedValues.includes(productValue);
-							},
-						);
-
-						if (!matchesInternal) return false;
-
-						// If external filters are applied, check if any related external products match
-						const hasExternalFilters = Object.values(externalFilters).some(
-							(arr) => arr.length > 0,
-						);
-						if (!hasExternalFilters) return true;
-
-						const relatedExternals = externalProducts.filter((ext) =>
-							internalProduct.products.includes(ext.unique_id_sku),
-						);
-
-						// Filter the related externals with the same logic as in render
-						const filteredExternals = relatedExternals.filter(
-							(externalProduct) => {
-								return Object.entries(externalFilters).every(
-									([key, selectedValues]) => {
-										if (key === "showArchived") {
-											// Handle showArchived filter (boolean)
-											const isProductArchived =
-												(externalProduct.status || "active") === "archived";
-											if (selectedValues === true) {
-												// Show all products (both active and archived)
-												return true;
-											} else {
-												// Show only active products (exclude archived)
-												return !isProductArchived;
-											}
-										}
-										if (!selectedValues || selectedValues.length === 0)
+									if (key === "showArchived") {
+										// Handle showArchived filter (boolean)
+										const isProductArchived =
+											(internalProduct.status || "active") === "archived";
+										if (selectedValues === true) {
+											// Show all products (both active and archived)
 											return true;
-										if (key === "distributors") {
-											return selectedValues.some((selectedValue) =>
-												externalProduct.distributors.includes(selectedValue),
-											);
+										} else {
+											// Show only active products (exclude archived)
+											return !isProductArchived;
 										}
-										const productValue = externalProduct[
-											key as keyof ExternalProduct
-										] as string;
-										return selectedValues.includes(productValue);
-									},
-								);
-							},
-						);
+									}
+									if (!selectedValues || selectedValues.length === 0)
+										return true;
+									if (key === "occasions") {
+										// For occasions array, check if any selected occasion is in the product's occasions
+										return selectedValues.some((selectedValue) =>
+											(internalProduct.occasions || []).includes(selectedValue),
+										);
+									}
+									const productValue = internalProduct[
+										key as keyof InternalProduct
+									] as string;
+									return selectedValues.includes(productValue);
+								},
+							);
 
-						// Only show internal product if it has at least one matching external product
-						return filteredExternals.length > 0;
-					}) || []
+							if (!matchesInternal) return false;
+
+							// If external filters are applied, check if any related external products match
+							const hasExternalFilters = Object.values(externalFilters).some(
+								(arr) => arr.length > 0,
+							);
+							if (!hasExternalFilters) return true;
+
+							const relatedExternals = externalProducts.filter((ext) =>
+								internalProduct.products.includes(ext.unique_id_sku),
+							);
+
+							// Filter the related externals with the same logic as in render
+							const filteredExternals = relatedExternals.filter(
+								(externalProduct) => {
+									return Object.entries(externalFilters).every(
+										([key, selectedValues]) => {
+											if (key === "showArchived") {
+												// Handle showArchived filter (boolean)
+												const isProductArchived =
+													(externalProduct.status || "active") === "archived";
+												if (selectedValues === true) {
+													// Show all products (both active and archived)
+													return true;
+												} else {
+													// Show only active products (exclude archived)
+													return !isProductArchived;
+												}
+											}
+											if (!selectedValues || selectedValues.length === 0)
+												return true;
+											if (key === "distributors") {
+												return selectedValues.some((selectedValue) =>
+													externalProduct.distributors.includes(selectedValue),
+												);
+											}
+											const productValue = externalProduct[
+												key as keyof ExternalProduct
+											] as string;
+											return selectedValues.includes(productValue);
+										},
+									);
+								},
+							);
+
+							// Only show internal product if it has at least one matching external product
+							return filteredExternals.length > 0;
+						})
+						?.sort((a, b) => {
+							// Sort by most recent event timestamp, then by name
+							const aTimestamp = getMostRecentEventTimestamp(
+								a.sparkys_product_name,
+								"internal_product",
+							);
+							const bTimestamp = getMostRecentEventTimestamp(
+								b.sparkys_product_name,
+								"internal_product",
+							);
+
+							// Handle cases where products have no events
+							if (!aTimestamp && !bTimestamp) {
+								return a.sparkys_product_name.localeCompare(
+									b.sparkys_product_name,
+								);
+							}
+							if (!aTimestamp) return 1; // Move products without events to end
+							if (!bTimestamp) return -1;
+
+							// Sort by timestamp descending (most recent first)
+							return (
+								new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime()
+							);
+						}) || []
 				);
 			case "productTypes":
 				return getMetadataItems("productType", metadataShowArchived).map(
@@ -817,6 +875,7 @@ export default function Inventory() {
 						<InternalProductCard
 							internalProduct={item}
 							externalProducts={relatedExternals}
+							events={cachedEvents}
 							onMetadataPress={handleMetadataPress}
 							selectedFilters={{
 								internal: internalFilters,

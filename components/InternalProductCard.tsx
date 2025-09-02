@@ -19,6 +19,7 @@ import type {
 } from "@/constants/Products";
 import { getQuantityColor } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
+import type { AuditEvent } from "@/services/googleSheets";
 import ExternalProductCard from "./ExternalProductCard";
 
 if (
@@ -31,6 +32,7 @@ if (
 interface InternalProductCardProps {
 	internalProduct: InternalProduct;
 	externalProducts: ExternalProduct[];
+	events?: AuditEvent[];
 	onMetadataPress?: (field: string, value: string) => void;
 	selectedFilters?: {
 		internal?: {
@@ -52,6 +54,7 @@ interface InternalProductCardProps {
 export default function InternalProductCard({
 	internalProduct,
 	externalProducts,
+	events = [],
 	onMetadataPress,
 	selectedFilters,
 }: InternalProductCardProps) {
@@ -92,13 +95,51 @@ export default function InternalProductCard({
 		internalProduct.products.includes(ext.unique_id_sku),
 	);
 
+	// Helper function to get most recent event timestamp for external products
+	function getMostRecentEventTimestamp(
+		productId: string,
+		productType: "internal_product" | "external_product",
+	): string | null {
+		const productEvents = events.filter(
+			(event) =>
+				event.object_type === productType && event.object_id === productId,
+		);
+
+		if (productEvents.length === 0) return null;
+
+		// Events are already sorted by ID descending (most recent first)
+		return productEvents[0].timestamp;
+	}
+
 	// For display, respect the showArchived filter
 	const showArchived = selectedFilters?.external?.showArchived === true;
-	const relatedExternals = showArchived
+	const filteredExternals = showArchived
 		? allRelatedExternals
 		: allRelatedExternals.filter(
 				(ext) => (ext.status || "active") === "active",
 			);
+
+	// Sort external products by most recent activity
+	const relatedExternals = filteredExternals.sort((a, b) => {
+		const aTimestamp = getMostRecentEventTimestamp(
+			a.unique_id_sku,
+			"external_product",
+		);
+		const bTimestamp = getMostRecentEventTimestamp(
+			b.unique_id_sku,
+			"external_product",
+		);
+
+		// Handle cases where products have no events
+		if (!aTimestamp && !bTimestamp) {
+			return a.unique_id_sku.localeCompare(b.unique_id_sku);
+		}
+		if (!aTimestamp) return 1; // Move products without events to end
+		if (!bTimestamp) return -1;
+
+		// Sort by timestamp descending (most recent first)
+		return new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
+	});
 
 	console.log(
 		"RelatedExternals result for",
