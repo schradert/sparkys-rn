@@ -284,17 +284,27 @@ export default function InternalProductCard({
 				}
 			>
 				<View style={styles.headerLeft}>
-					<Text style={[styles.productName, { color: colors.text }]}>
-						{internalProduct.sparkys_product_name}
-						{isArchived && (
-							<Text
-								style={[styles.archivedLabel, { color: colors.textSecondary }]}
-							>
-								{" "}
-								(Archived)
-							</Text>
+					<View style={styles.productNameRow}>
+						<Text style={[styles.productName, { color: colors.text }]}>
+							{internalProduct.sparkys_product_name}
+							{isArchived && (
+								<Text
+									style={[
+										styles.archivedLabel,
+										{ color: colors.textSecondary },
+									]}
+								>
+									{" "}
+									(Archived)
+								</Text>
+							)}
+						</Text>
+						{internalProduct.never_out && (
+							<View style={styles.neverOutBadge}>
+								<Text style={styles.neverOutText}>Never Out</Text>
+							</View>
 						)}
-					</Text>
+					</View>
 					<Text style={[styles.externalCount, { color: colors.textSecondary }]}>
 						{relatedExternals.length} external product
 						{relatedExternals.length !== 1 ? "s" : ""}
@@ -478,6 +488,12 @@ const styles = StyleSheet.create({
 		flex: 1,
 		marginRight: 12,
 	},
+	productNameRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		flexWrap: "wrap",
+	},
 	headerRight: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -558,5 +574,18 @@ const styles = StyleSheet.create({
 		paddingTop: 12,
 		borderTopWidth: 1,
 		borderTopColor: "#e1e5e9",
+	},
+	neverOutBadge: {
+		backgroundColor: "#c026d3",
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 12,
+		alignSelf: "center",
+	},
+	neverOutText: {
+		fontSize: 10,
+		fontWeight: "600",
+		color: "white",
+		textTransform: "uppercase",
 	},
 });

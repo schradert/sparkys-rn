@@ -263,7 +263,7 @@ export class GoogleSheetsService {
 
 		const products: any[] = [];
 
-		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, status
+		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, never_out, status
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
@@ -277,7 +277,8 @@ export class GoogleSheetsService {
 				occasions: row[5] || "", // comma-separated
 				products: row[6] || "", // comma-separated barcodes
 				threshold_quantity: parseInt(row[7] || "0", 10), // Parse as integer
-				status: row[8] || "active", // status field
+				never_out: row[8] === "TRUE", // Parse boolean
+				status: row[9] || "active", // status field
 			};
 			console.log("Parsed internal product:", product);
 
@@ -820,7 +821,8 @@ export class GoogleSheetsService {
 				occasions: currentRow[5] || "",
 				products: currentRow[6] || "",
 				threshold_quantity: parseInt(currentRow[7] || "0", 10),
-				status: currentRow[8] || "active",
+				never_out: currentRow[8] === "TRUE",
+				status: currentRow[9] || "active",
 			};
 		}
 
@@ -833,6 +835,7 @@ export class GoogleSheetsService {
 			product.occasions,
 			product.products,
 			product.threshold_quantity.toString(),
+			product.never_out ? "TRUE" : "FALSE",
 			product.status || "active",
 		];
 
@@ -877,6 +880,10 @@ export class GoogleSheetsService {
 			if (beforeState.threshold_quantity !== product.threshold_quantity) {
 				changes.threshold_quantity = product.threshold_quantity;
 				before.threshold_quantity = beforeState.threshold_quantity;
+			}
+			if (beforeState.never_out !== product.never_out) {
+				changes.never_out = product.never_out;
+				before.never_out = beforeState.never_out;
 			}
 			if (beforeState.status !== (product.status || "active")) {
 				changes.status = product.status || "active";
@@ -1012,7 +1019,7 @@ export class GoogleSheetsService {
 
 		const currentRow = currentData[rowNumber - 1];
 		const updatedRow = [...currentRow];
-		updatedRow[8] = "archived"; // status column
+		updatedRow[9] = "archived"; // status column
 
 		await this.updateRow(
 			"internal_products",
@@ -1057,7 +1064,7 @@ export class GoogleSheetsService {
 
 		const currentRow = currentData[rowNumber - 1];
 		const updatedRow = [...currentRow];
-		updatedRow[8] = "active"; // status column
+		updatedRow[9] = "active"; // status column
 
 		await this.updateRow(
 			"internal_products",
