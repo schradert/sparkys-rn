@@ -804,9 +804,7 @@ export class GoogleSheetsService {
 			accessToken,
 		);
 		if (!rowNumber) {
-			throw new Error(
-				`Internal product with ID "${product.id}" not found`,
-			);
+			throw new Error(`Internal product with ID "${product.id}" not found`);
 		}
 
 		// Capture current state for audit log
@@ -1006,10 +1004,7 @@ export class GoogleSheetsService {
 		);
 	}
 
-	async archiveInternalProduct(
-		id: string,
-		accessToken: string,
-	): Promise<void> {
+	async archiveInternalProduct(id: string, accessToken: string): Promise<void> {
 		const currentData = await this.getSheetData(
 			"internal_products",
 			accessToken,

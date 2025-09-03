@@ -107,9 +107,28 @@ export default function InternalProductDetail() {
 	const handleSave = async () => {
 		if (!editedProduct || !internalProduct || !originalProduct) return;
 
+		// Check for duplicate names (excluding current product)
+		if (
+			editedProduct.sparkys_product_name !==
+			originalProduct.sparkys_product_name
+		) {
+			const allProducts = getAllInternalProducts();
+			const existingProduct = allProducts.find(
+				(p) =>
+					p.id !== editedProduct.id &&
+					p.sparkys_product_name.toLowerCase().trim() ===
+						editedProduct.sparkys_product_name.toLowerCase().trim(),
+			);
+			if (existingProduct) {
+				Alert.alert("Error", "A product with this name already exists");
+				return;
+			}
+		}
+
 		// Check if there are any actual changes
 		const hasChanges =
-			editedProduct.sparkys_product_name !== originalProduct.sparkys_product_name ||
+			editedProduct.sparkys_product_name !==
+				originalProduct.sparkys_product_name ||
 			editedProduct.product_type !== originalProduct.product_type ||
 			editedProduct.sparkys_color !== originalProduct.sparkys_color ||
 			editedProduct.texture !== originalProduct.texture ||
@@ -144,10 +163,7 @@ export default function InternalProductDetail() {
 			const result = await updateInternalProductInSheet(productForSheet);
 			if (result.success) {
 				// Update global store - use ID as lookup key
-				updateInternalProduct(
-					originalProduct.id,
-					editedProduct,
-				);
+				updateInternalProduct(originalProduct.id, editedProduct);
 				setInternalProduct(editedProduct);
 				setOriginalProduct(editedProduct);
 				setIsEditing(false);
@@ -212,12 +228,8 @@ export default function InternalProductDetail() {
 						setIsArchiving(true);
 						try {
 							const result = isCurrentlyArchived
-								? await unarchiveInternalProduct(
-										internalProduct.id,
-									)
-								: await archiveInternalProduct(
-										internalProduct.id,
-									);
+								? await unarchiveInternalProduct(internalProduct.id)
+								: await archiveInternalProduct(internalProduct.id);
 
 							if (result.success) {
 								const newStatus = isCurrentlyArchived ? "active" : "archived";
@@ -225,10 +237,7 @@ export default function InternalProductDetail() {
 									...internalProduct,
 									status: newStatus,
 								};
-								updateInternalProduct(
-									internalProduct.id,
-									updatedProduct,
-								);
+								updateInternalProduct(internalProduct.id, updatedProduct);
 								setInternalProduct(updatedProduct);
 								setEditedProduct(updatedProduct);
 								Alert.alert("Success", `Product ${action}d successfully!`);

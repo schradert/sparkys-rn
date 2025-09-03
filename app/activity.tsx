@@ -180,9 +180,7 @@ export default function Activity() {
 
 		switch (event.object_type) {
 			case "internal_product":
-				router.push(
-					`/internal-product/${encodeURIComponent(event.object_id)}`,
-				);
+				router.push(`/internal-product/${encodeURIComponent(event.object_id)}`);
 				break;
 			case "external_product":
 				router.push(`/external-product/${encodeURIComponent(event.object_id)}`);
