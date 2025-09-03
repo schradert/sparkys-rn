@@ -31,6 +31,7 @@ import {
 	getExternalProductsForInternal,
 	getInternalProductByName,
 	setInternalProducts,
+	subscribeToStoreChanges,
 	updateInternalProduct,
 } from "@/store/products";
 
@@ -84,6 +85,23 @@ export default function InternalProductDetail() {
 			setLoading(false);
 		});
 	}, [id]);
+
+	// Subscribe to store changes to refresh when external products are updated
+	useEffect(() => {
+		const unsubscribe = subscribeToStoreChanges(() => {
+			if (!id) return;
+
+			const internal = getInternalProductByName(productName);
+			const externals = internal
+				? getExternalProductsForInternal(internal)
+				: [];
+
+			setInternalProduct(internal || null);
+			setExternalProducts(externals);
+		});
+
+		return unsubscribe;
+	}, [id, productName]);
 
 	const handleSave = async () => {
 		if (!editedProduct || !internalProduct || !originalProduct) return;
