@@ -96,7 +96,8 @@ export default function InternalProductDetail() {
 			editedProduct.shape !== originalProduct.shape ||
 			JSON.stringify(editedProduct.occasions) !==
 				JSON.stringify(originalProduct.occasions) ||
-			editedProduct.threshold_quantity !== originalProduct.threshold_quantity;
+			editedProduct.threshold_quantity !== originalProduct.threshold_quantity ||
+			editedProduct.never_out !== originalProduct.never_out;
 
 		if (!hasChanges) {
 			setIsEditing(false);
@@ -115,6 +116,7 @@ export default function InternalProductDetail() {
 				occasions: editedProduct.occasions.join(", "),
 				products: editedProduct.products.join(", "),
 				threshold_quantity: editedProduct.threshold_quantity,
+				never_out: editedProduct.never_out,
 				status: editedProduct.status || "active",
 			};
 
@@ -399,9 +401,46 @@ export default function InternalProductDetail() {
 				]}
 			>
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					<Text style={[styles.productName, { color: colors.text }]}>
-						{internalProduct.sparkys_product_name}
-					</Text>
+					<View style={styles.productNameRow}>
+						<Text style={[styles.productName, { color: colors.text }]}>
+							{internalProduct.sparkys_product_name}
+						</Text>
+						{isEditing ? (
+							<Pressable
+								style={[
+									styles.neverOutToggleBadge,
+									editedProduct?.never_out
+										? styles.neverOutToggleActive
+										: styles.neverOutToggleInactive,
+								]}
+								onPress={() => {
+									if (editedProduct) {
+										setEditedProduct({
+											...editedProduct,
+											never_out: !editedProduct.never_out,
+										});
+									}
+								}}
+							>
+								<Text
+									style={[
+										styles.neverOutToggleText,
+										editedProduct?.never_out
+											? styles.neverOutToggleTextActive
+											: styles.neverOutToggleTextInactive,
+									]}
+								>
+									Never Out
+								</Text>
+							</Pressable>
+						) : (
+							internalProduct.never_out && (
+								<View style={styles.neverOutBadge}>
+									<Text style={styles.neverOutText}>Never Out</Text>
+								</View>
+							)
+						)}
+					</View>
 
 					<View style={styles.quantityRow}>
 						<View
@@ -723,11 +762,16 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 2,
 	},
+	productNameRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		marginBottom: 16,
+	},
 	productName: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "#1a1a1a",
-		marginBottom: 16,
 	},
 	quantityContainer: {
 		flexDirection: "row",
@@ -894,5 +938,55 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		minWidth: 60,
 		textAlign: "center",
+	},
+	inputGroup: {
+		marginBottom: 16,
+	},
+	inputLabel: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: "#495057",
+		marginBottom: 8,
+	},
+	neverOutToggleBadge: {
+		paddingHorizontal: 12,
+		paddingVertical: 4,
+		borderRadius: 16,
+		alignSelf: "flex-start",
+	},
+	neverOutToggleActive: {
+		backgroundColor: "#c026d3",
+		borderWidth: 2,
+		borderColor: "#c026d3",
+	},
+	neverOutToggleInactive: {
+		backgroundColor: "transparent",
+		borderWidth: 2,
+		borderColor: "#c026d3",
+		borderStyle: "dashed",
+	},
+	neverOutToggleText: {
+		fontSize: 12,
+		fontWeight: "600",
+		textTransform: "uppercase",
+	},
+	neverOutToggleTextActive: {
+		color: "white",
+	},
+	neverOutToggleTextInactive: {
+		color: "#9ca3af",
+	},
+	neverOutBadge: {
+		backgroundColor: "#c026d3",
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 16,
+		alignSelf: "center",
+	},
+	neverOutText: {
+		fontSize: 12,
+		fontWeight: "600",
+		color: "white",
+		textTransform: "uppercase",
 	},
 });

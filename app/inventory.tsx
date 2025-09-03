@@ -527,6 +527,8 @@ export default function Inventory() {
 		shape: "",
 		occasions: [] as string[],
 		products: [] as string[],
+		threshold_quantity: 0,
+		never_out: false,
 	});
 
 	// External Product Form State
@@ -1064,6 +1066,8 @@ export default function Inventory() {
 			shape: "",
 			occasions: [],
 			products: [],
+			threshold_quantity: 0,
+			never_out: false,
 		});
 		setNewExternalProduct({
 			unique_id_sku: "",
@@ -2093,6 +2097,61 @@ export default function Inventory() {
 											/>
 										</View>
 
+										<View style={styles.inputGroup}>
+											<Text style={[styles.inputLabel, { color: colors.text }]}>
+												Never Out
+											</Text>
+											<Pressable
+												style={[
+													styles.toggleContainer,
+													{
+														backgroundColor: newInternalProduct.never_out
+															? "#c026d3"
+															: colors.surface,
+														borderColor: newInternalProduct.never_out
+															? "#c026d3"
+															: colors.border,
+													},
+												]}
+												onPress={() =>
+													setNewInternalProduct((prev) => ({
+														...prev,
+														never_out: !prev.never_out,
+													}))
+												}
+											>
+												<View
+													style={[
+														styles.toggleSwitch,
+														{
+															backgroundColor: newInternalProduct.never_out
+																? "white"
+																: colors.textSecondary,
+															transform: [
+																{
+																	translateX: newInternalProduct.never_out
+																		? 20
+																		: 2,
+																},
+															],
+														},
+													]}
+												/>
+												<Text
+													style={[
+														styles.toggleLabel,
+														{
+															color: newInternalProduct.never_out
+																? "white"
+																: colors.text,
+														},
+													]}
+												>
+													{newInternalProduct.never_out ? "On" : "Off"}
+												</Text>
+											</Pressable>
+										</View>
+
 										<CollapsibleRadioSection
 											title="Product Type"
 											options={PRODUCT_FIELD_OPTIONS.productType || []}
@@ -2826,5 +2885,29 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		width: "100%",
 		paddingVertical: 20,
+	},
+	toggleContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#f8f9fa",
+		borderRadius: 24,
+		borderWidth: 1,
+		borderColor: "#dee2e6",
+		padding: 4,
+		minHeight: 48,
+		position: "relative",
+	},
+	toggleSwitch: {
+		width: 20,
+		height: 20,
+		borderRadius: 10,
+		position: "absolute",
+		left: 4,
+	},
+	toggleLabel: {
+		fontSize: 14,
+		fontWeight: "600",
+		paddingLeft: 28,
+		paddingRight: 12,
 	},
 });

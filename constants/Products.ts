@@ -118,8 +118,8 @@ export function getAllMetadataItems(
 		return activeItems;
 	}
 	const archivedItems = getMetadataItems(fieldKey, true)
-		.filter(item => item.status === "archived")
-		.map(item => item.name);
+		.filter((item) => item.status === "archived")
+		.map((item) => item.name);
 	return [...activeItems, ...archivedItems];
 }
 
@@ -219,6 +219,7 @@ export interface InternalProduct {
 	occasions: string[]; // multiple occasions
 	products: string[]; // comma-separated list of barcodes
 	threshold_quantity: number; // minimum stock threshold
+	never_out: boolean; // high priority marking for understocked items
 	status?: "active" | "archived"; // archive status
 }
 
@@ -243,6 +244,7 @@ export interface InternalProductSheet {
 	occasions: string; // comma-separated
 	products: string; // comma-separated barcodes
 	threshold_quantity: number;
+	never_out: boolean; // high priority marking for understocked items
 	status?: "active" | "archived"; // archive status
 }
 
@@ -282,6 +284,7 @@ export function convertInternalProductSheetToModel(
 		occasions: parseCommaSeparated(sheet.occasions),
 		products: parseCommaSeparated(sheet.products),
 		threshold_quantity: sheet.threshold_quantity,
+		never_out: sheet.never_out || false, // Default to false if not specified
 		status: sheet.status || "active", // Default to "active" if not specified
 	};
 }
@@ -298,6 +301,7 @@ export function convertInternalProductModelToSheet(
 		occasions: formatCommaSeparated(internal.occasions),
 		products: formatCommaSeparated(internal.products),
 		threshold_quantity: internal.threshold_quantity,
+		never_out: internal.never_out || false, // Default to false if not specified
 		status: internal.status || "active", // Default to "active" if not specified
 	};
 }

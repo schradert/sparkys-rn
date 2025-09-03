@@ -550,6 +550,8 @@ export default function Activity() {
 																			return "flag-outline";
 																		case "name":
 																			return "pricetag-outline";
+																		case "never_out":
+																			return "star-outline";
 																		default:
 																			return "information-circle-outline";
 																	}
