@@ -520,6 +520,7 @@ export default function Inventory() {
 
 	// Internal Product Form State
 	const [newInternalProduct, setNewInternalProduct] = useState({
+		id: "",
 		sparkys_product_name: "",
 		product_type: "",
 		sparkys_color: "",
@@ -775,11 +776,11 @@ export default function Inventory() {
 						?.sort((a, b) => {
 							// Sort by: 1) most frequently updated, 2) most recently updated, 3) reverse alphabetical
 							const aEventCount = getEventCount(
-								a.sparkys_product_name,
+								a.id,
 								"internal_product",
 							);
 							const bEventCount = getEventCount(
-								b.sparkys_product_name,
+								b.id,
 								"internal_product",
 							);
 
@@ -790,11 +791,11 @@ export default function Inventory() {
 
 							// Then sort by most recent activity
 							const aTimestamp = getMostRecentEventTimestamp(
-								a.sparkys_product_name,
+								a.id,
 								"internal_product",
 							);
 							const bTimestamp = getMostRecentEventTimestamp(
-								b.sparkys_product_name,
+								b.id,
 								"internal_product",
 							);
 
@@ -912,6 +913,7 @@ export default function Inventory() {
 
 					return (
 						<InternalProductCard
+							key={item.id}
 							internalProduct={item}
 							externalProducts={relatedExternals}
 							events={cachedEvents}
@@ -1055,10 +1057,17 @@ export default function Inventory() {
 			return sum + ((value as string[])?.length || 0);
 		}, 0);
 
+	function generateUniqueId(): string {
+		const existingIds = internalProducts.map(p => parseInt(p.id, 10)).filter(id => !isNaN(id));
+		const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+		return (maxId + 1).toString();
+	}
+
 	function resetNewProductForm(): void {
 		setScannedBarcode("");
 		setNewMetadataValue("");
 		setNewInternalProduct({
+			id: generateUniqueId(),
 			sparkys_product_name: "",
 			product_type: "",
 			sparkys_color: "",
@@ -1206,6 +1215,10 @@ export default function Inventory() {
 	}
 
 	function handleAddInternalProduct(): void {
+		setNewInternalProduct(prev => ({
+			...prev,
+			id: generateUniqueId(),
+		}));
 		setIsAddModalVisible(true);
 	}
 

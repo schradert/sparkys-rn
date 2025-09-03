@@ -25,6 +25,12 @@ export function getAllInternalProducts(): InternalProduct[] {
 	return internalProducts;
 }
 
+export function getInternalProductById(
+	id: string,
+): InternalProduct | undefined {
+	return internalProducts.find((p) => p.id === id);
+}
+
 export function getInternalProductByName(
 	name: string,
 ): InternalProduct | undefined {
@@ -36,6 +42,17 @@ export function addInternalProduct(product: InternalProduct): void {
 }
 
 export function updateInternalProduct(
+	id: string,
+	updatedProduct: InternalProduct,
+): void {
+	const index = internalProducts.findIndex((p) => p.id === id);
+	if (index !== -1) {
+		internalProducts[index] = updatedProduct;
+		notifyStoreChange();
+	}
+}
+
+export function updateInternalProductByName(
 	name: string,
 	updatedProduct: InternalProduct,
 ): void {

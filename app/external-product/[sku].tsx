@@ -475,7 +475,7 @@ export default function ExternalProductDetail() {
 							]}
 							onPress={() =>
 								router.push(
-									`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
+									`/internal-product/${encodeURIComponent(internalProduct.id)}`,
 								)
 							}
 						>
