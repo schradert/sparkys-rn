@@ -330,15 +330,13 @@ export default function InternalProductCard({
 							/ {internalProduct.threshold_quantity ?? 0}
 						</Text>
 					</Text>
-					{relatedExternals.length > 0 && (
-						<Pressable onPress={toggleExpansion} style={styles.expandButton}>
-							<Ionicons
-								name={isExpanded ? "chevron-up" : "chevron-down"}
-								size={20}
-								color={colors.icon}
-							/>
-						</Pressable>
-					)}
+					<Pressable onPress={toggleExpansion} style={styles.expandButton}>
+						<Ionicons
+							name={isExpanded ? "chevron-up" : "chevron-down"}
+							size={20}
+							color={colors.icon}
+						/>
+					</Pressable>
 				</View>
 			</Pressable>
 
@@ -419,47 +417,55 @@ export default function InternalProductCard({
 				)}
 
 			{/* Expandable external products */}
-			{isExpanded && relatedExternals.length > 0 && (
+			{isExpanded && (
 				<View style={styles.externalProductsContainer}>
-					{relatedExternals
-						.filter((externalProduct) => {
-							// Apply external product filters only for display
-							return Object.entries(selectedFilters?.external || {}).every(
-								([key, selectedValues]) => {
-									if (key === "showArchived") {
-										// Handle showArchived filter (boolean)
-										const isProductArchived =
-											(externalProduct.status || "active") === "archived";
-										if (selectedValues === true) {
-											// Show all products (both active and archived)
-											return true;
-										} else {
-											// Show only active products (exclude archived)
-											return !isProductArchived;
+					{relatedExternals.length > 0 ? (
+						relatedExternals
+							.filter((externalProduct) => {
+								// Apply external product filters only for display
+								return Object.entries(selectedFilters?.external || {}).every(
+									([key, selectedValues]) => {
+										if (key === "showArchived") {
+											// Handle showArchived filter (boolean)
+											const isProductArchived =
+												(externalProduct.status || "active") === "archived";
+											if (selectedValues === true) {
+												// Show all products (both active and archived)
+												return true;
+											} else {
+												// Show only active products (exclude archived)
+												return !isProductArchived;
+											}
 										}
-									}
-									if (!selectedValues || selectedValues.length === 0)
-										return true;
-									if (key === "distributors") {
-										return selectedValues.some((selectedValue) =>
-											externalProduct.distributors.includes(selectedValue),
-										);
-									}
-									const productValue = externalProduct[
-										key as keyof ExternalProduct
-									] as string;
-									return selectedValues.includes(productValue);
-								},
-							);
-						})
-						.map((externalProduct) => (
-							<ExternalProductCard
-								key={externalProduct.unique_id_sku}
-								externalProduct={externalProduct}
-								onMetadataPress={onMetadataPress}
-								selectedFilters={{ external: selectedFilters?.external }}
-							/>
-						))}
+										if (!selectedValues || selectedValues.length === 0)
+											return true;
+										if (key === "distributors") {
+											return selectedValues.some((selectedValue) =>
+												externalProduct.distributors.includes(selectedValue),
+											);
+										}
+										const productValue = externalProduct[
+											key as keyof ExternalProduct
+										] as string;
+										return selectedValues.includes(productValue);
+									},
+								);
+							})
+							.map((externalProduct) => (
+								<ExternalProductCard
+									key={externalProduct.unique_id_sku}
+									externalProduct={externalProduct}
+									onMetadataPress={onMetadataPress}
+									selectedFilters={{ external: selectedFilters?.external }}
+								/>
+							))
+					) : (
+						<View style={styles.emptyExternalProducts}>
+							<Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+								No external products assigned to this internal product yet
+							</Text>
+						</View>
+					)}
 				</View>
 			)}
 		</View>
@@ -587,5 +593,14 @@ const styles = StyleSheet.create({
 		fontWeight: "600",
 		color: "white",
 		textTransform: "uppercase",
+	},
+	emptyExternalProducts: {
+		padding: 16,
+		alignItems: "center",
+	},
+	emptyText: {
+		fontSize: 14,
+		fontStyle: "italic",
+		textAlign: "center",
 	},
 });

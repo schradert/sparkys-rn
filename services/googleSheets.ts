@@ -530,6 +530,54 @@ export class GoogleSheetsService {
 		);
 	}
 
+	async addInternalProduct(
+		product: InternalProductSheet,
+		accessToken: string,
+	): Promise<void> {
+		const newRow = [
+			product.id,
+			product.sparkys_product_name,
+			product.product_type,
+			product.sparkys_color,
+			product.texture,
+			product.shape,
+			product.occasions,
+			product.products,
+			(product.threshold_quantity || 0).toString(),
+			product.never_out ? "TRUE" : "FALSE",
+			product.status,
+		];
+
+		await this.appendToSheet("internal_products", [newRow], accessToken);
+		console.log(
+			`Added internal product: ${product.sparkys_product_name} (${product.id}) to internal_products sheet`,
+		);
+
+		// Log audit event for creation
+		await this.logEvent(
+			{
+				timestamp: new Date().toISOString(),
+				event_type: "create",
+				object_type: "internal_product",
+				object_id: product.id,
+				object_name: product.sparkys_product_name,
+				changes: JSON.stringify({
+					sparkys_product_name: product.sparkys_product_name,
+					product_type: product.product_type,
+					sparkys_color: product.sparkys_color,
+					texture: product.texture,
+					shape: product.shape,
+					occasions: product.occasions,
+					threshold_quantity: product.threshold_quantity,
+					never_out: product.never_out,
+				}),
+				before_state: "",
+				sheet_name: "internal_products",
+			},
+			accessToken,
+		);
+	}
+
 	async addExternalProduct(product: any, accessToken: string): Promise<void> {
 		const newRow = [
 			product.unique_id_sku,

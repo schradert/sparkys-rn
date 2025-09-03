@@ -39,6 +39,7 @@ export function getInternalProductByName(
 
 export function addInternalProduct(product: InternalProduct): void {
 	internalProducts = [...internalProducts, product];
+	notifyStoreChange();
 }
 
 export function updateInternalProduct(

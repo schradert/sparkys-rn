@@ -230,6 +230,27 @@ async function addProductToSheet(
 	}
 }
 
+async function addInternalProductToSheet(
+	product: InternalProductSheet,
+	accessToken: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+		await sheetsService.addInternalProduct(product, accessToken);
+
+		// Note: Product store updates happen via subscribeToStoreChanges
+		// No need for full refresh
+
+		return { success: true };
+	} catch (error: any) {
+		console.error("Error adding internal product to sheet:", error);
+		return {
+			success: false,
+			error: error?.toString() || "Failed to add internal product",
+		};
+	}
+}
+
 async function updateMetadataInSheet(
 	sheetName: string,
 	oldName: string,
@@ -435,6 +456,16 @@ export function useSheetsData() {
 		}
 
 		return await addProductToSheet(product, accessToken);
+	};
+
+	const addInternalProduct = async (product: InternalProductSheet) => {
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			Alert.alert("Error", "No access token available");
+			return { success: false, error: "No access token" };
+		}
+
+		return await addInternalProductToSheet(product, accessToken);
 	};
 
 	const updateMetadata = async (
@@ -711,6 +742,7 @@ export function useSheetsData() {
 		loadInitialData,
 		addMetadata,
 		addProduct,
+		addInternalProduct,
 		updateMetadata,
 		updateProduct,
 		addExternalProduct,
