@@ -37,6 +37,7 @@ import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
 import {
+	addInternalProduct as addInternalProductToStore,
 	getAllExternalProducts,
 	getAllInternalProducts,
 	getExternalProductBySku,
@@ -463,6 +464,7 @@ export default function Inventory() {
 		refresh,
 		addMetadata,
 		addProduct: addProductToSheets,
+		addInternalProduct,
 		addExternalProduct,
 		updateInternalProduct,
 		subscribeToMetadataChanges,
@@ -1052,8 +1054,8 @@ export default function Inventory() {
 		}, 0);
 
 	function generateUniqueId(): string {
-		const existingIds = internalProducts
-			.map((p) => parseInt(p.id, 10))
+		const existingIds = (internalProducts || [])
+			.map((p) => parseInt(p?.id || "0", 10))
 			.filter((id) => !isNaN(id));
 		const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
 		return (maxId + 1).toString();
@@ -1253,16 +1255,58 @@ export default function Inventory() {
 			Alert.alert("Error", "Please select a color");
 			return;
 		}
+		if (!newInternalProduct.texture) {
+			Alert.alert("Error", "Please select a texture");
+			return;
+		}
+		if (!newInternalProduct.shape) {
+			Alert.alert("Error", "Please select a shape");
+			return;
+		}
 
 		try {
-			// TODO: Add internal product to spreadsheet
-			// For now, just show success message
-			setIsAddModalVisible(false);
-			resetNewProductForm();
-			Alert.alert(
-				"Success",
-				`Internal product "${newInternalProduct.sparkys_product_name}" has been created!`,
-			);
+			// Create the product for the spreadsheet
+			const productForSheet = {
+				id: newInternalProduct.id,
+				sparkys_product_name: newInternalProduct.sparkys_product_name,
+				product_type: newInternalProduct.product_type,
+				sparkys_color: newInternalProduct.sparkys_color,
+				texture: newInternalProduct.texture,
+				shape: newInternalProduct.shape,
+				occasions: (newInternalProduct.occasions || []).join(", "),
+				products: (newInternalProduct.products || []).join(", "),
+				threshold_quantity: newInternalProduct.threshold_quantity,
+				never_out: newInternalProduct.never_out,
+				status: "active",
+			};
+
+			const result = await addInternalProduct(productForSheet);
+			if (result.success) {
+				// Add to store immediately so it shows up in list
+				const newProduct = {
+					id: newInternalProduct.id,
+					sparkys_product_name: newInternalProduct.sparkys_product_name,
+					product_type: newInternalProduct.product_type,
+					sparkys_color: newInternalProduct.sparkys_color,
+					texture: newInternalProduct.texture,
+					shape: newInternalProduct.shape,
+					occasions: newInternalProduct.occasions,
+					products: newInternalProduct.products,
+					threshold_quantity: newInternalProduct.threshold_quantity,
+					never_out: newInternalProduct.never_out,
+					status: "active" as const,
+				};
+				addInternalProductToStore(newProduct);
+
+				setIsAddModalVisible(false);
+				resetNewProductForm();
+				Alert.alert(
+					"Success",
+					`Internal product "${newInternalProduct.sparkys_product_name}" has been created!`,
+				);
+			} else {
+				Alert.alert("Error", result.error || "Failed to add internal product");
+			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to add internal product to spreadsheet");
 		}
@@ -2098,10 +2142,9 @@ export default function Inventory() {
 														color: colors.text,
 													},
 												]}
-												value={
-													newInternalProduct.threshold_quantity?.toString() ||
-													""
-												}
+												value={(
+													newInternalProduct.threshold_quantity || 0
+												).toString()}
 												onChangeText={(text) => {
 													const threshold = parseInt(text, 10);
 													setNewInternalProduct((prev) => ({
