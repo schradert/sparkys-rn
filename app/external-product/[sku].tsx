@@ -57,8 +57,6 @@ export default function ExternalProductDetail() {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isArchiving, setIsArchiving] = useState(false);
-	const [isEditingQuantity, setIsEditingQuantity] = useState(false);
-	const [editedQuantity, setEditedQuantity] = useState("");
 	const [editedProduct, setEditedProduct] = useState<ExternalProduct | null>(
 		null,
 	);
@@ -80,7 +78,6 @@ export default function ExternalProductDetail() {
 					internal.products.includes(external.unique_id_sku),
 				);
 				setInternalProduct(internal || null);
-				setEditedQuantity(external.quantity.toString());
 				setEditedProduct(external);
 				setOriginalProduct(external);
 			}
@@ -89,27 +86,10 @@ export default function ExternalProductDetail() {
 		});
 	}, [sku]);
 
-	const handleSaveQuantity = () => {
-		if (!editedProduct) return;
-
-		const newQuantity = parseInt(editedQuantity, 10);
-		if (isNaN(newQuantity) || newQuantity < 0) {
-			Alert.alert("Error", "Please enter a valid quantity");
-			return;
-		}
-
-		setEditedProduct({
-			...editedProduct,
-			quantity: newQuantity,
-		});
-		setIsEditingQuantity(false);
-	};
-
 	const handleIncrementStock = () => {
 		if (!externalProduct || !editedProduct) return;
 		const currentQuantity = editedProduct.quantity;
 		const newQuantity = currentQuantity + externalProduct.bag_quantity;
-		setEditedQuantity(newQuantity.toString());
 
 		setEditedProduct({
 			...editedProduct,
@@ -121,17 +101,11 @@ export default function ExternalProductDetail() {
 		if (!externalProduct || !editedProduct) return;
 		const currentQuantity = editedProduct.quantity;
 		const newQuantity = Math.max(0, currentQuantity - 1);
-		setEditedQuantity(newQuantity.toString());
 
 		setEditedProduct({
 			...editedProduct,
 			quantity: newQuantity,
 		});
-	};
-
-	const handleCancelEdit = () => {
-		setEditedQuantity(externalProduct?.quantity.toString() || "");
-		setIsEditingQuantity(false);
 	};
 
 	const handleSave = async () => {
@@ -443,46 +417,33 @@ export default function ExternalProductDetail() {
 									>
 										<Ionicons name="remove" size={16} color="white" />
 									</Pressable>
-									{isEditingQuantity ? (
-										<View style={styles.quantityEditContainer}>
-											<TextInput
-												style={[
-													styles.quantityInput,
-													{
-														color: colors.primary,
-														borderColor: colors.border,
-														backgroundColor: colors.cardBackground,
-													},
-												]}
-												value={editedQuantity}
-												onChangeText={setEditedQuantity}
-												keyboardType="numeric"
-												selectTextOnFocus
-												autoFocus
-											/>
-											<View style={styles.editActions}>
-												<Pressable
-													onPress={handleSaveQuantity}
-													style={styles.saveButton}
-												>
-													<Ionicons name="checkmark" size={14} color="white" />
-												</Pressable>
-												<Pressable
-													onPress={handleCancelEdit}
-													style={styles.cancelButton}
-												>
-													<Ionicons name="close" size={14} color="white" />
-												</Pressable>
-											</View>
-										</View>
+									{isEditing ? (
+										<TextInput
+											style={[
+												styles.quantityInputClickable,
+												{
+													color: colors.primary,
+													borderColor: colors.primary,
+													backgroundColor: colors.cardBackground,
+												},
+											]}
+											value={editedProduct?.quantity.toString() || ""}
+											onChangeText={(text) => {
+												if (editedProduct) {
+													const quantity = parseInt(text, 10);
+													setEditedProduct({
+														...editedProduct,
+														quantity: isNaN(quantity) ? 0 : quantity,
+													});
+												}
+											}}
+											keyboardType="numeric"
+											selectTextOnFocus
+										/>
 									) : (
-										<Pressable onPress={() => setIsEditingQuantity(true)}>
-											<Text
-												style={[styles.quantity, { color: colors.primary }]}
-											>
-												{editedQuantity}
-											</Text>
-										</Pressable>
+										<Text style={[styles.quantity, { color: colors.primary }]}>
+											{externalProduct?.quantity}
+										</Text>
 									)}
 									<Pressable
 										onPress={handleIncrementStock}
@@ -1030,5 +991,15 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	quantityInputClickable: {
+		borderWidth: 2,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		fontSize: 18,
+		fontWeight: "bold",
+		minWidth: 80,
+		textAlign: "center",
 	},
 });
