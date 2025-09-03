@@ -775,14 +775,8 @@ export default function Inventory() {
 						})
 						?.sort((a, b) => {
 							// Sort by: 1) most frequently updated, 2) most recently updated, 3) reverse alphabetical
-							const aEventCount = getEventCount(
-								a.id,
-								"internal_product",
-							);
-							const bEventCount = getEventCount(
-								b.id,
-								"internal_product",
-							);
+							const aEventCount = getEventCount(a.id, "internal_product");
+							const bEventCount = getEventCount(b.id, "internal_product");
 
 							// First sort by frequency (descending)
 							if (aEventCount !== bEventCount) {
@@ -1058,7 +1052,9 @@ export default function Inventory() {
 		}, 0);
 
 	function generateUniqueId(): string {
-		const existingIds = internalProducts.map(p => parseInt(p.id, 10)).filter(id => !isNaN(id));
+		const existingIds = internalProducts
+			.map((p) => parseInt(p.id, 10))
+			.filter((id) => !isNaN(id));
 		const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
 		return (maxId + 1).toString();
 	}
@@ -1215,7 +1211,7 @@ export default function Inventory() {
 	}
 
 	function handleAddInternalProduct(): void {
-		setNewInternalProduct(prev => ({
+		setNewInternalProduct((prev) => ({
 			...prev,
 			id: generateUniqueId(),
 		}));
@@ -1234,6 +1230,17 @@ export default function Inventory() {
 	async function handleAddInternalProductSubmit(): Promise<void> {
 		if (!newInternalProduct.sparkys_product_name.trim()) {
 			Alert.alert("Error", "Please enter a product name");
+			return;
+		}
+
+		// Check for duplicate names
+		const existingProduct = internalProducts.find(
+			(p) =>
+				p.sparkys_product_name.toLowerCase().trim() ===
+				newInternalProduct.sparkys_product_name.toLowerCase().trim(),
+		);
+		if (existingProduct) {
+			Alert.alert("Error", "A product with this name already exists");
 			return;
 		}
 
