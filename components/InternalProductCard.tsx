@@ -279,7 +279,7 @@ export default function InternalProductCard({
 				style={styles.cardHeader}
 				onPress={() =>
 					router.push(
-						`/internal-product/${encodeURIComponent(internalProduct.sparkys_product_name)}`,
+						`/internal-product/${encodeURIComponent(internalProduct.id)}`,
 					)
 				}
 			>

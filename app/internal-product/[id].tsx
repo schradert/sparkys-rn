@@ -29,6 +29,7 @@ import { useTheme } from "@/hooks/useTheme";
 import {
 	getAllInternalProducts,
 	getExternalProductsForInternal,
+	getInternalProductById,
 	getInternalProductByName,
 	setInternalProducts,
 	subscribeToStoreChanges,
@@ -52,7 +53,7 @@ export default function InternalProductDetail() {
 		unarchiveInternalProduct,
 	} = useSheetsData();
 	const { id } = useLocalSearchParams<{ id: string }>();
-	const productName = decodeURIComponent(id || "");
+	const productId = decodeURIComponent(id || "");
 	const [internalProduct, setInternalProduct] =
 		useState<InternalProduct | null>(null);
 	const [externalProducts, setExternalProducts] = useState<ExternalProduct[]>(
@@ -73,7 +74,7 @@ export default function InternalProductDetail() {
 
 		// Use React.startTransition to batch updates and prevent cascading effects
 		React.startTransition(() => {
-			const internal = getInternalProductByName(productName);
+			const internal = getInternalProductById(productId);
 			const externals = internal
 				? getExternalProductsForInternal(internal)
 				: [];
@@ -84,14 +85,14 @@ export default function InternalProductDetail() {
 			setExternalProducts(externals);
 			setLoading(false);
 		});
-	}, [id]);
+	}, [id, productId]);
 
 	// Subscribe to store changes to refresh when external products are updated
 	useEffect(() => {
 		const unsubscribe = subscribeToStoreChanges(() => {
 			if (!id) return;
 
-			const internal = getInternalProductByName(productName);
+			const internal = getInternalProductById(productId);
 			const externals = internal
 				? getExternalProductsForInternal(internal)
 				: [];
@@ -101,13 +102,14 @@ export default function InternalProductDetail() {
 		});
 
 		return unsubscribe;
-	}, [id, productName]);
+	}, [id, productId]);
 
 	const handleSave = async () => {
 		if (!editedProduct || !internalProduct || !originalProduct) return;
 
 		// Check if there are any actual changes
 		const hasChanges =
+			editedProduct.sparkys_product_name !== originalProduct.sparkys_product_name ||
 			editedProduct.product_type !== originalProduct.product_type ||
 			editedProduct.sparkys_color !== originalProduct.sparkys_color ||
 			editedProduct.texture !== originalProduct.texture ||
@@ -126,6 +128,7 @@ export default function InternalProductDetail() {
 		try {
 			// Update spreadsheet first
 			const productForSheet = {
+				id: editedProduct.id,
 				sparkys_product_name: editedProduct.sparkys_product_name,
 				product_type: editedProduct.product_type,
 				sparkys_color: editedProduct.sparkys_color,
@@ -140,9 +143,9 @@ export default function InternalProductDetail() {
 
 			const result = await updateInternalProductInSheet(productForSheet);
 			if (result.success) {
-				// Update global store
+				// Update global store - use ID as lookup key
 				updateInternalProduct(
-					internalProduct.sparkys_product_name,
+					originalProduct.id,
 					editedProduct,
 				);
 				setInternalProduct(editedProduct);
@@ -210,10 +213,10 @@ export default function InternalProductDetail() {
 						try {
 							const result = isCurrentlyArchived
 								? await unarchiveInternalProduct(
-										internalProduct.sparkys_product_name,
+										internalProduct.id,
 									)
 								: await archiveInternalProduct(
-										internalProduct.sparkys_product_name,
+										internalProduct.id,
 									);
 
 							if (result.success) {
@@ -223,7 +226,7 @@ export default function InternalProductDetail() {
 									status: newStatus,
 								};
 								updateInternalProduct(
-									internalProduct.sparkys_product_name,
+									internalProduct.id,
 									updatedProduct,
 								);
 								setInternalProduct(updatedProduct);
@@ -420,9 +423,33 @@ export default function InternalProductDetail() {
 			>
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 					<View style={styles.productNameRow}>
-						<Text style={[styles.productName, { color: colors.text }]}>
-							{internalProduct.sparkys_product_name}
-						</Text>
+						{isEditing ? (
+							<TextInput
+								style={[
+									styles.productNameInput,
+									{
+										color: colors.text,
+										borderColor: colors.border,
+										backgroundColor: colors.surface,
+									},
+								]}
+								value={editedProduct?.sparkys_product_name || ""}
+								onChangeText={(text) => {
+									if (editedProduct) {
+										setEditedProduct({
+											...editedProduct,
+											sparkys_product_name: text,
+										});
+									}
+								}}
+								placeholder="Enter product name"
+								placeholderTextColor={colors.textSecondary}
+							/>
+						) : (
+							<Text style={[styles.productName, { color: colors.text }]}>
+								{internalProduct.sparkys_product_name}
+							</Text>
+						)}
 						{isEditing ? (
 							<Pressable
 								style={[
@@ -791,6 +818,15 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#1a1a1a",
 	},
+	productNameInput: {
+		fontSize: 24,
+		fontWeight: "bold",
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		flex: 1,
+	},
 	quantityContainer: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -935,7 +971,7 @@ const styles = StyleSheet.create({
 	quantityRow: {
 		flexDirection: "row",
 		gap: 12,
-		marginBottom: 20,
+		marginBottom: 16,
 	},
 	quantityBox: {
 		flex: 1,
@@ -970,7 +1006,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 4,
 		borderRadius: 16,
-		alignSelf: "flex-start",
+		alignSelf: "center",
 	},
 	neverOutToggleActive: {
 		backgroundColor: "#c026d3",

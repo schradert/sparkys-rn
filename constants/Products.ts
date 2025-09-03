@@ -211,7 +211,8 @@ export type InternalProductField = (typeof INTERNAL_PRODUCT_FIELDS)[number];
 export type ExternalProductField = (typeof EXTERNAL_PRODUCT_FIELDS)[number];
 
 export interface InternalProduct {
-	sparkys_product_name: string; // unique identifier
+	id: string; // unique identifier
+	sparkys_product_name: string;
 	product_type: string;
 	sparkys_color: string;
 	texture: string;
@@ -236,6 +237,7 @@ export interface ExternalProduct {
 
 // Spreadsheet representations with comma-separated arrays
 export interface InternalProductSheet {
+	id: string; // unique identifier
 	sparkys_product_name: string;
 	product_type: string;
 	sparkys_color: string;
@@ -276,6 +278,7 @@ export function convertInternalProductSheetToModel(
 	sheet: InternalProductSheet,
 ): InternalProduct {
 	return {
+		id: sheet.id,
 		sparkys_product_name: sheet.sparkys_product_name,
 		product_type: sheet.product_type,
 		sparkys_color: sheet.sparkys_color,
@@ -293,6 +296,7 @@ export function convertInternalProductModelToSheet(
 	internal: InternalProduct,
 ): InternalProductSheet {
 	return {
+		id: internal.id,
 		sparkys_product_name: internal.sparkys_product_name,
 		product_type: internal.product_type,
 		sparkys_color: internal.sparkys_color,

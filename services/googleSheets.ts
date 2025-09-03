@@ -263,22 +263,23 @@ export class GoogleSheetsService {
 
 		const products: any[] = [];
 
-		// Header: sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, never_out, status
+		// Header: id, sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, never_out, status
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
 
 			const product: any = {
-				sparkys_product_name: row[0] || "",
-				product_type: row[1] || "",
-				sparkys_color: row[2] || "",
-				texture: row[3] || "",
-				shape: row[4] || "",
-				occasions: row[5] || "", // comma-separated
-				products: row[6] || "", // comma-separated barcodes
-				threshold_quantity: parseInt(row[7] || "0", 10), // Parse as integer
-				never_out: row[8] === "TRUE", // Parse boolean
-				status: row[9] || "active", // status field
+				id: row[0] || "",
+				sparkys_product_name: row[1] || "",
+				product_type: row[2] || "",
+				sparkys_color: row[3] || "",
+				texture: row[4] || "",
+				shape: row[5] || "",
+				occasions: row[6] || "", // comma-separated
+				products: row[7] || "", // comma-separated barcodes
+				threshold_quantity: parseInt(row[8] || "0", 10), // Parse as integer
+				never_out: row[9] === "TRUE", // Parse boolean
+				status: row[10] || "active", // status field
 			};
 			console.log("Parsed internal product:", product);
 
@@ -798,13 +799,13 @@ export class GoogleSheetsService {
 		);
 		const rowNumber = await this.findRowByValue(
 			"internal_products",
-			"sparkys_product_name",
-			product.sparkys_product_name,
+			"id",
+			product.id,
 			accessToken,
 		);
 		if (!rowNumber) {
 			throw new Error(
-				`Internal product "${product.sparkys_product_name}" not found`,
+				`Internal product with ID "${product.id}" not found`,
 			);
 		}
 
@@ -813,20 +814,22 @@ export class GoogleSheetsService {
 		if (currentData.length > rowNumber - 1) {
 			const currentRow = currentData[rowNumber - 1];
 			beforeState = {
-				sparkys_product_name: currentRow[0] || "",
-				product_type: currentRow[1] || "",
-				sparkys_color: currentRow[2] || "",
-				texture: currentRow[3] || "",
-				shape: currentRow[4] || "",
-				occasions: currentRow[5] || "",
-				products: currentRow[6] || "",
-				threshold_quantity: parseInt(currentRow[7] || "0", 10),
-				never_out: currentRow[8] === "TRUE",
-				status: currentRow[9] || "active",
+				id: currentRow[0] || "",
+				sparkys_product_name: currentRow[1] || "",
+				product_type: currentRow[2] || "",
+				sparkys_color: currentRow[3] || "",
+				texture: currentRow[4] || "",
+				shape: currentRow[5] || "",
+				occasions: currentRow[6] || "",
+				products: currentRow[7] || "",
+				threshold_quantity: parseInt(currentRow[8] || "0", 10),
+				never_out: currentRow[9] === "TRUE",
+				status: currentRow[10] || "active",
 			};
 		}
 
 		const updatedRow = [
+			product.id,
 			product.sparkys_product_name,
 			product.product_type,
 			product.sparkys_color,
@@ -853,6 +856,10 @@ export class GoogleSheetsService {
 			const before: any = {};
 
 			// Compare fields and only include actual changes
+			if (beforeState.sparkys_product_name !== product.sparkys_product_name) {
+				changes.sparkys_product_name = product.sparkys_product_name;
+				before.sparkys_product_name = beforeState.sparkys_product_name;
+			}
 			if (beforeState.product_type !== product.product_type) {
 				changes.product_type = product.product_type;
 				before.product_type = beforeState.product_type;
@@ -897,7 +904,7 @@ export class GoogleSheetsService {
 						timestamp: new Date().toISOString(),
 						event_type: "edit",
 						object_type: "internal_product",
-						object_id: product.sparkys_product_name,
+						object_id: product.id,
 						object_name: product.sparkys_product_name,
 						changes: JSON.stringify(changes),
 						before_state: JSON.stringify(before),
@@ -1000,7 +1007,7 @@ export class GoogleSheetsService {
 	}
 
 	async archiveInternalProduct(
-		name: string,
+		id: string,
 		accessToken: string,
 	): Promise<void> {
 		const currentData = await this.getSheetData(
@@ -1009,17 +1016,17 @@ export class GoogleSheetsService {
 		);
 		const rowNumber = await this.findRowByValue(
 			"internal_products",
-			"sparkys_product_name",
-			name,
+			"id",
+			id,
 			accessToken,
 		);
 		if (!rowNumber) {
-			throw new Error(`Internal product "${name}" not found`);
+			throw new Error(`Internal product with ID "${id}" not found`);
 		}
 
 		const currentRow = currentData[rowNumber - 1];
 		const updatedRow = [...currentRow];
-		updatedRow[9] = "archived"; // status column
+		updatedRow[10] = "archived"; // status column
 
 		await this.updateRow(
 			"internal_products",
@@ -1045,7 +1052,7 @@ export class GoogleSheetsService {
 	}
 
 	async unarchiveInternalProduct(
-		name: string,
+		id: string,
 		accessToken: string,
 	): Promise<void> {
 		const currentData = await this.getSheetData(
@@ -1054,17 +1061,17 @@ export class GoogleSheetsService {
 		);
 		const rowNumber = await this.findRowByValue(
 			"internal_products",
-			"sparkys_product_name",
-			name,
+			"id",
+			id,
 			accessToken,
 		);
 		if (!rowNumber) {
-			throw new Error(`Internal product "${name}" not found`);
+			throw new Error(`Internal product with ID "${id}" not found`);
 		}
 
 		const currentRow = currentData[rowNumber - 1];
 		const updatedRow = [...currentRow];
-		updatedRow[9] = "active"; // status column
+		updatedRow[10] = "active"; // status column
 
 		await this.updateRow(
 			"internal_products",
