@@ -9,7 +9,11 @@
 		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "com.sparkysballoons.invx"
+			"bundleIdentifier": "com.sparkysballoons.invx",
+			"infoPlist": {
+				"UIViewControllerBasedStatusBarAppearance": false,
+				"UIStatusBarHidden": false
+			}
 		},
 		"android": {
 			"adaptiveIcon": {
