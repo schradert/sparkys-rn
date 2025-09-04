@@ -288,7 +288,7 @@ export default function Activity() {
 	if (loading) {
 		return (
 			<SafeAreaView
-				style={[styles.container, { backgroundColor: colors.background }]}
+				style={[styles.container, { backgroundColor: colors.cardBackground }]}
 			>
 				<View
 					style={[
@@ -315,7 +315,7 @@ export default function Activity() {
 
 	return (
 		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
+			style={[styles.container, { backgroundColor: colors.cardBackground }]}
 		>
 			<View
 				style={[
