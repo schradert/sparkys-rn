@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View } from "react-native";
+import { Keyboard, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Colors } from "@/constants/Colors";
@@ -12,18 +12,20 @@ function ThemedRootLayout() {
 
 	return (
 		<SafeAreaProvider>
-			<View style={{ flex: 1, backgroundColor: colors.cardBackground }}>
-				<Stack screenOptions={{ headerShown: false }}>
-					<Stack.Screen name="login" />
-					<Stack.Screen name="inventory" />
-					<Stack.Screen name="product/[id]" />
-					<Stack.Screen name="metadata/[...params]" />
-				</Stack>
-				<StatusBar
-					style={theme === "dark" ? "light" : "dark"}
-					backgroundColor={colors.cardBackground}
-				/>
-			</View>
+			<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+				<View style={{ flex: 1, backgroundColor: colors.cardBackground }}>
+					<Stack screenOptions={{ headerShown: false }}>
+						<Stack.Screen name="login" />
+						<Stack.Screen name="inventory" />
+						<Stack.Screen name="product/[id]" />
+						<Stack.Screen name="metadata/[...params]" />
+					</Stack>
+					<StatusBar
+						style={theme === "dark" ? "light" : "dark"}
+						backgroundColor={colors.cardBackground}
+					/>
+				</View>
+			</TouchableWithoutFeedback>
 		</SafeAreaProvider>
 	);
 }
