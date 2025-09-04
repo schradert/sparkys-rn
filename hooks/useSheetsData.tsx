@@ -15,6 +15,7 @@ import { useAuth } from "./useAuth";
 interface SheetsDataState {
 	internalProducts: InternalProduct[];
 	externalProducts: ExternalProduct[];
+	metadata: Record<string, Array<{ name: string; status: string }>>;
 	isLoading: boolean;
 	isRefreshing: boolean;
 	error: string | null;
@@ -24,6 +25,7 @@ interface SheetsDataState {
 let globalSheetsState: SheetsDataState = {
 	internalProducts: [],
 	externalProducts: [],
+	metadata: {},
 	isLoading: false,
 	isRefreshing: false,
 	error: null,
@@ -68,6 +70,50 @@ function notifyMetadataChange(change: {
 function updateSheetsState(newState: Partial<SheetsDataState>) {
 	globalSheetsState = { ...globalSheetsState, ...newState };
 	sheetsSubscribers.forEach((callback) => callback());
+}
+
+function setMetadata(
+	updater: (
+		prev: Record<string, Array<{ name: string; status: string }>>,
+	) => Record<string, Array<{ name: string; status: string }>>,
+) {
+	const newMetadata = updater(globalSheetsState.metadata);
+	updateSheetsState({ metadata: newMetadata });
+
+	// Update field options and metadata items so components see the changes immediately
+	// Create filtered metadata for field options (active items only)
+	const activeOnlyMetadata: Record<string, string[]> = {};
+	for (const [key, items] of Object.entries(newMetadata)) {
+		activeOnlyMetadata[key] = items
+			.filter((item) => item.status === "active")
+			.map((item) => item.name);
+	}
+
+	updateFieldOptions(activeOnlyMetadata);
+	updateMetadataItems(newMetadata);
+}
+
+function getMetadataFieldKey(sheetName: string): string | null {
+	switch (sheetName) {
+		case "product_types":
+			return "productType";
+		case "colors":
+			return "color";
+		case "brands":
+			return "manufacturer";
+		case "textures":
+			return "texture";
+		case "bag_quantities":
+			return "bagQuantity";
+		case "shapes":
+			return "shape";
+		case "distributors":
+			return "distributor";
+		case "occasions":
+			return "occasion";
+		default:
+			return null;
+	}
 }
 
 // FIXME make dynamic (why isn't eas.json passing it?)
@@ -156,6 +202,7 @@ async function loadSheetsData(
 		updateSheetsState({
 			internalProducts,
 			externalProducts,
+			metadata: data.fullMetadata || {},
 			isLoading: false,
 			error: null,
 			lastUpdated: new Date(),
@@ -196,10 +243,13 @@ async function addMetadataToSheet(
 		// Update local store instead of full refresh
 		setMetadata((prevMetadata) => {
 			const fieldKey = getMetadataFieldKey(sheetName);
-			if (fieldKey && prevMetadata[fieldKey]) {
+			if (fieldKey) {
 				return {
 					...prevMetadata,
-					[fieldKey]: [...prevMetadata[fieldKey], { name, status: "active" }],
+					[fieldKey]: [
+						...(prevMetadata[fieldKey] || []),
+						{ name, status: "active" },
+					],
 				};
 			}
 			return prevMetadata;

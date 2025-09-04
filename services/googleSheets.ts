@@ -485,7 +485,7 @@ export class GoogleSheetsService {
 		accessToken: string,
 	): Promise<void> {
 		const nextId = await this.getNextId(sheetName, accessToken);
-		const newRow = [name, nextId.toString()];
+		const newRow = [name, nextId.toString(), "active"];
 
 		await this.appendToSheet(sheetName, [newRow], accessToken);
 		console.log(

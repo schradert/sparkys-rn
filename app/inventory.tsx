@@ -521,6 +521,7 @@ export default function Inventory() {
 	const [currentView, setCurrentView] = useState<ViewMode>("products");
 	const [scannedBarcode, setScannedBarcode] = useState("");
 	const [newMetadataValue, setNewMetadataValue] = useState("");
+	const [isSubmittingMetadata, setIsSubmittingMetadata] = useState(false);
 
 	// Internal Product Form State
 	const [newInternalProduct, setNewInternalProduct] = useState({
@@ -1068,6 +1069,7 @@ export default function Inventory() {
 		setScannedBarcode("");
 		setNewMetadataValue("");
 		setIsSubmittingExternal(false);
+		setIsSubmittingMetadata(false);
 		setNewInternalProduct({
 			id: generateUniqueId(),
 			sparkys_product_name: "",
@@ -1163,6 +1165,7 @@ export default function Inventory() {
 			return;
 		}
 
+		setIsSubmittingMetadata(true);
 		try {
 			const result = await addMetadata(sheetName, trimmedValue);
 			if (result.success) {
@@ -1174,6 +1177,8 @@ export default function Inventory() {
 			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to add item to spreadsheet");
+		} finally {
+			setIsSubmittingMetadata(false);
 		}
 	}
 
@@ -1983,11 +1988,18 @@ export default function Inventory() {
 								style={[
 									styles.saveButton,
 									{ backgroundColor: colors.primary },
-									scannedBarcode && isSubmittingExternal && { opacity: 0.6 },
+									((scannedBarcode && isSubmittingExternal) ||
+										(currentView !== "products" && isSubmittingMetadata)) && {
+										opacity: 0.6,
+									},
 								]}
-								disabled={!!scannedBarcode && isSubmittingExternal}
+								disabled={
+									(!!scannedBarcode && isSubmittingExternal) ||
+									(currentView !== "products" && isSubmittingMetadata)
+								}
 							>
-								{scannedBarcode && isSubmittingExternal ? (
+								{(scannedBarcode && isSubmittingExternal) ||
+								(currentView !== "products" && isSubmittingMetadata) ? (
 									<Ionicons name="hourglass" size={24} color="white" />
 								) : (
 									<Ionicons name="checkmark" size={24} color="white" />
@@ -3012,13 +3024,6 @@ const styles = StyleSheet.create({
 		padding: 4,
 		minHeight: 48,
 		position: "relative",
-	},
-	toggleSwitch: {
-		width: 20,
-		height: 20,
-		borderRadius: 10,
-		position: "absolute",
-		left: 4,
 	},
 	toggleLabel: {
 		fontSize: 14,
