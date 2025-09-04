@@ -1985,7 +1985,7 @@ export default function Inventory() {
 									{ backgroundColor: colors.primary },
 									scannedBarcode && isSubmittingExternal && { opacity: 0.6 },
 								]}
-								disabled={scannedBarcode && isSubmittingExternal}
+								disabled={!!scannedBarcode && isSubmittingExternal}
 							>
 								{scannedBarcode && isSubmittingExternal ? (
 									<Ionicons name="hourglass" size={24} color="white" />
