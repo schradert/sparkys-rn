@@ -37,11 +37,13 @@ import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
 import {
+	addExternalProduct as addExternalProductToStore,
 	addInternalProduct as addInternalProductToStore,
 	getAllExternalProducts,
 	getAllInternalProducts,
 	getExternalProductBySku,
 	subscribeToStoreChanges,
+	updateInternalProduct as updateInternalProductInStore,
 } from "@/store/products";
 
 type ViewMode =
@@ -545,6 +547,7 @@ export default function Inventory() {
 		quantity: 0,
 		assigned_internal_product: "",
 	});
+	const [isSubmittingExternal, setIsSubmittingExternal] = useState(false);
 
 	useEffect(() => {
 		// Update product data from store
@@ -1064,6 +1067,7 @@ export default function Inventory() {
 	function resetNewProductForm(): void {
 		setScannedBarcode("");
 		setNewMetadataValue("");
+		setIsSubmittingExternal(false);
 		setNewInternalProduct({
 			id: generateUniqueId(),
 			sparkys_product_name: "",
@@ -1346,6 +1350,7 @@ export default function Inventory() {
 			return;
 		}
 
+		setIsSubmittingExternal(true);
 		try {
 			// 1. Add the external product to external_products sheet
 			const externalProductForSheet = {
@@ -1374,8 +1379,11 @@ export default function Inventory() {
 					newExternalProduct.assigned_internal_product,
 			);
 
+			let linkingSucceeded = false;
+			let updatedInternalProduct;
+
 			if (assignedInternalProduct) {
-				const updatedInternalProduct = {
+				updatedInternalProduct = {
 					...assignedInternalProduct,
 					products: [
 						...assignedInternalProduct.products,
@@ -1385,6 +1393,7 @@ export default function Inventory() {
 
 				// Convert to sheet format for updating
 				const internalProductForSheet = {
+					id: updatedInternalProduct.id,
 					sparkys_product_name: updatedInternalProduct.sparkys_product_name,
 					product_type: updatedInternalProduct.product_type,
 					sparkys_color: updatedInternalProduct.sparkys_color,
@@ -1393,28 +1402,63 @@ export default function Inventory() {
 					occasions: updatedInternalProduct.occasions.join(", "),
 					products: updatedInternalProduct.products.join(", "),
 					threshold_quantity: updatedInternalProduct.threshold_quantity,
+					never_out: updatedInternalProduct.never_out,
+					status: updatedInternalProduct.status,
 				};
 
 				const updateResult = await updateInternalProduct(
 					internalProductForSheet,
 				);
 				if (!updateResult.success) {
-					Alert.alert(
-						"Warning",
-						"External product added but failed to link to internal product",
+					console.warn(
+						"Failed to link external product to internal product:",
+						updateResult.error,
 					);
-					return;
+					// Don't return - continue with success since external product was created
+				} else {
+					linkingSucceeded = true;
 				}
+			}
+
+			// Add external product to store immediately
+			const newExternal = {
+				unique_id_sku: newExternalProduct.unique_id_sku,
+				manufacturer_color: newExternalProduct.manufacturer_color,
+				brand: newExternalProduct.brand,
+				size: newExternalProduct.size,
+				bag_quantity: newExternalProduct.bag_quantity,
+				distributors: newExternalProduct.distributors,
+				quantity: newExternalProduct.quantity,
+				status: "active" as const,
+			};
+			addExternalProductToStore(newExternal);
+
+			// Update internal product in store if it was linked
+			if (assignedInternalProduct && updatedInternalProduct) {
+				updateInternalProductInStore(
+					assignedInternalProduct.id,
+					updatedInternalProduct,
+				);
 			}
 
 			setIsAddModalVisible(false);
 			resetNewProductForm();
-			Alert.alert(
-				"Success",
-				`External product "${newExternalProduct.unique_id_sku}" added and assigned to "${newExternalProduct.assigned_internal_product}"!`,
-			);
+
+			if (linkingSucceeded || !assignedInternalProduct) {
+				Alert.alert(
+					"Success",
+					`External product "${newExternalProduct.unique_id_sku}" added and assigned to "${newExternalProduct.assigned_internal_product}"!`,
+				);
+			} else {
+				Alert.alert(
+					"Partial Success",
+					`External product "${newExternalProduct.unique_id_sku}" was created but failed to link to "${newExternalProduct.assigned_internal_product}". You may need to link it manually.`,
+				);
+			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to add external product to spreadsheet");
+		} finally {
+			setIsSubmittingExternal(false);
 		}
 	}
 
@@ -1936,9 +1980,18 @@ export default function Inventory() {
 										handleAddMetadata();
 									}
 								}}
-								style={[styles.saveButton, { backgroundColor: colors.primary }]}
+								style={[
+									styles.saveButton,
+									{ backgroundColor: colors.primary },
+									scannedBarcode && isSubmittingExternal && { opacity: 0.6 },
+								]}
+								disabled={scannedBarcode && isSubmittingExternal}
 							>
-								<Ionicons name="checkmark" size={24} color="white" />
+								{scannedBarcode && isSubmittingExternal ? (
+									<Ionicons name="hourglass" size={24} color="white" />
+								) : (
+									<Ionicons name="checkmark" size={24} color="white" />
+								)}
 							</Pressable>
 							<Pressable
 								onPress={() => {
