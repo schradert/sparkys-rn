@@ -30,6 +30,7 @@ import {
 	getExternalProductBySku,
 	setExternalProducts,
 	updateExternalProduct,
+	updateInternalProduct as updateInternalProductInStore,
 } from "@/store/products";
 
 export default function ExternalProductDetail() {
@@ -45,6 +46,7 @@ export default function ExternalProductDetail() {
 	};
 	const {
 		updateExternalProduct: updateExternalProductInSheet,
+		updateInternalProduct: updateInternalProductInSheet,
 		archiveExternalProduct,
 		unarchiveExternalProduct,
 	} = useSheetsData();
@@ -52,6 +54,8 @@ export default function ExternalProductDetail() {
 	const [externalProduct, setExternalProduct] =
 		useState<ExternalProduct | null>(null);
 	const [internalProduct, setInternalProduct] =
+		useState<InternalProduct | null>(null);
+	const [originalInternalProduct, setOriginalInternalProduct] =
 		useState<InternalProduct | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [isEditing, setIsEditing] = useState(false);
@@ -78,6 +82,7 @@ export default function ExternalProductDetail() {
 					internal.products.includes(external.unique_id_sku),
 				);
 				setInternalProduct(internal || null);
+				setOriginalInternalProduct(internal || null);
 				setEditedProduct(external);
 				setOriginalProduct(external);
 			}
@@ -112,7 +117,7 @@ export default function ExternalProductDetail() {
 		if (!editedProduct || !externalProduct || !originalProduct) return;
 
 		// Check if there are any actual changes
-		const hasChanges =
+		const hasExternalChanges =
 			editedProduct.manufacturer_color !== originalProduct.manufacturer_color ||
 			editedProduct.brand !== originalProduct.brand ||
 			editedProduct.size !== originalProduct.size ||
@@ -121,36 +126,101 @@ export default function ExternalProductDetail() {
 				JSON.stringify(originalProduct.distributors) ||
 			editedProduct.quantity !== originalProduct.quantity;
 
-		if (!hasChanges) {
+		// Check if internal product assignment changed
+		const hasInternalProductChange =
+			internalProduct?.id !== originalInternalProduct?.id;
+
+		if (!hasExternalChanges && !hasInternalProductChange) {
 			setIsEditing(false);
 			return;
 		}
 
 		setIsSaving(true);
 		try {
-			// Update spreadsheet first
-			const productForSheet = {
-				unique_id_sku: editedProduct.unique_id_sku,
-				manufacturer_color: editedProduct.manufacturer_color,
-				brand: editedProduct.brand,
-				size: editedProduct.size,
-				bag_quantity: editedProduct.bag_quantity,
-				distributors: editedProduct.distributors.join(", "),
-				quantity: editedProduct.quantity,
-				status: editedProduct.status || "active",
-			};
+			// Update external product in spreadsheet
+			if (hasExternalChanges) {
+				const productForSheet = {
+					unique_id_sku: editedProduct.unique_id_sku,
+					manufacturer_color: editedProduct.manufacturer_color,
+					brand: editedProduct.brand,
+					size: editedProduct.size,
+					bag_quantity: editedProduct.bag_quantity,
+					distributors: editedProduct.distributors.join(", "),
+					quantity: editedProduct.quantity,
+					status: editedProduct.status || "active",
+				};
 
-			const result = await updateExternalProductInSheet(productForSheet);
-			if (result.success) {
-				// Update global store
-				updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
-				setExternalProduct(editedProduct);
-				setOriginalProduct(editedProduct);
-				setIsEditing(false);
-				Alert.alert("Success", "Product updated successfully");
-			} else {
-				Alert.alert("Error", result.error || "Failed to update product");
+				const result = await updateExternalProductInSheet(productForSheet);
+				if (!result.success) {
+					Alert.alert("Error", result.error || "Failed to update product");
+					return;
+				}
 			}
+
+			// Handle internal product reassignment
+			if (hasInternalProductChange) {
+				// Remove SKU from old internal product
+				if (originalInternalProduct) {
+					const updatedOldInternal = {
+						...originalInternalProduct,
+						products: originalInternalProduct.products.filter(
+							(sku) => sku !== externalProduct.unique_id_sku,
+						),
+					};
+					const oldInternalForSheet = {
+						id: updatedOldInternal.id,
+						sparkys_product_name: updatedOldInternal.sparkys_product_name,
+						product_type: updatedOldInternal.product_type,
+						sparkys_color: updatedOldInternal.sparkys_color,
+						texture: updatedOldInternal.texture,
+						shape: updatedOldInternal.shape,
+						occasions: updatedOldInternal.occasions.join(", "),
+						products: updatedOldInternal.products.join(", "),
+						threshold_quantity: updatedOldInternal.threshold_quantity,
+						never_out: updatedOldInternal.never_out,
+						status: updatedOldInternal.status,
+					};
+					await updateInternalProductInSheet(oldInternalForSheet);
+					updateInternalProductInStore(
+						originalInternalProduct.id,
+						updatedOldInternal,
+					);
+				}
+
+				// Add SKU to new internal product
+				if (internalProduct) {
+					const updatedNewInternal = {
+						...internalProduct,
+						products: [
+							...internalProduct.products,
+							externalProduct.unique_id_sku,
+						],
+					};
+					const newInternalForSheet = {
+						id: updatedNewInternal.id,
+						sparkys_product_name: updatedNewInternal.sparkys_product_name,
+						product_type: updatedNewInternal.product_type,
+						sparkys_color: updatedNewInternal.sparkys_color,
+						texture: updatedNewInternal.texture,
+						shape: updatedNewInternal.shape,
+						occasions: updatedNewInternal.occasions.join(", "),
+						products: updatedNewInternal.products.join(", "),
+						threshold_quantity: updatedNewInternal.threshold_quantity,
+						never_out: updatedNewInternal.never_out,
+						status: updatedNewInternal.status,
+					};
+					await updateInternalProductInSheet(newInternalForSheet);
+					updateInternalProductInStore(internalProduct.id, updatedNewInternal);
+				}
+			}
+
+			// Update global store
+			updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
+			setExternalProduct(editedProduct);
+			setOriginalProduct(editedProduct);
+			setOriginalInternalProduct(internalProduct);
+			setIsEditing(false);
+			Alert.alert("Success", "Product updated successfully");
 		} catch (error) {
 			Alert.alert("Error", "Failed to update product");
 		} finally {
@@ -163,6 +233,9 @@ export default function ExternalProductDetail() {
 		if (originalProduct) {
 			setExternalProduct(originalProduct);
 			setEditedProduct(originalProduct);
+		}
+		if (originalInternalProduct) {
+			setInternalProduct(originalInternalProduct);
 		}
 		setIsEditing(false);
 	};
@@ -464,7 +537,7 @@ export default function ExternalProductDetail() {
 					</View>
 
 					{/* Internal Product Link */}
-					{internalProduct && (
+					{internalProduct && !isEditing && (
 						<Pressable
 							style={[
 								styles.internalProductLink,
@@ -499,6 +572,21 @@ export default function ExternalProductDetail() {
 					{/* Editable Fields */}
 					{isEditing && editedProduct && (
 						<>
+							<CollapsibleRadioSection
+								title="Internal Product"
+								options={getAllInternalProducts()
+									.filter((p) => p.status === "active")
+									.map((p) => p.sparkys_product_name)}
+								selectedValue={internalProduct?.sparkys_product_name || ""}
+								onSelectionChange={(value) => {
+									const selectedInternal = getAllInternalProducts().find(
+										(p) => p.sparkys_product_name === value,
+									);
+									if (selectedInternal) {
+										setInternalProduct(selectedInternal);
+									}
+								}}
+							/>
 							<CollapsibleRadioSection
 								title="Manufacturer Color"
 								options={addArchivedLabels(
