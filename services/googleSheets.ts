@@ -38,6 +38,7 @@ export interface AuditEventSheet {
 export class GoogleSheetsService {
 	private baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
 	private spreadsheetId: string;
+	private globalProductState: any[] | null = null;
 
 	constructor(spreadsheetId: string) {
 		this.spreadsheetId = spreadsheetId;
@@ -840,7 +841,7 @@ export class GoogleSheetsService {
 		product: any,
 		accessToken: string,
 	): Promise<void> {
-		// Get current state before updating
+		// First, get the current row data for this specific product
 		const currentData = await this.getSheetData(
 			"internal_products",
 			accessToken,
@@ -926,10 +927,6 @@ export class GoogleSheetsService {
 				changes.occasions = product.occasions;
 				before.occasions = beforeState.occasions;
 			}
-			if (beforeState.products !== product.products) {
-				changes.products = product.products;
-				before.products = beforeState.products;
-			}
 			if (beforeState.threshold_quantity !== product.threshold_quantity) {
 				changes.threshold_quantity = product.threshold_quantity;
 				before.threshold_quantity = beforeState.threshold_quantity;
@@ -959,6 +956,74 @@ export class GoogleSheetsService {
 					accessToken,
 				);
 			}
+		}
+	}
+
+	private async handleExternalProductAssignmentChanges(
+		oldProducts: string,
+		newProducts: string,
+		oldInternalProductName: string,
+		newInternalProductName: string,
+		allProductsData: any[],
+		accessToken: string,
+	): Promise<void> {
+		const oldBarcodes = oldProducts
+			? oldProducts
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean)
+			: [];
+		const newBarcodes = newProducts
+			? newProducts
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean)
+			: [];
+
+		// Handle barcodes that were REMOVED from this internal product
+		const removedBarcodes = oldBarcodes.filter(
+			(barcode) => !newBarcodes.includes(barcode),
+		);
+
+		for (const barcode of removedBarcodes) {
+			// Create event showing this barcode was unassigned from this product
+			await this.logEvent(
+				{
+					timestamp: new Date().toISOString(),
+					event_type: "edit",
+					object_type: "external_product",
+					object_id: barcode,
+					object_name: barcode,
+					changes: JSON.stringify({ internal_product: "Unassigned" }),
+					before_state: JSON.stringify({
+						internal_product: oldInternalProductName,
+					}),
+					sheet_name: "external_products",
+				},
+				accessToken,
+			);
+		}
+
+		// Handle barcodes that were ADDED to this internal product
+		const addedBarcodes = newBarcodes.filter(
+			(barcode) => !oldBarcodes.includes(barcode),
+		);
+
+		for (const barcode of addedBarcodes) {
+			// Create event showing this barcode was assigned to this product
+			await this.logEvent(
+				{
+					timestamp: new Date().toISOString(),
+					event_type: "edit",
+					object_type: "external_product",
+					object_id: barcode,
+					object_name: barcode,
+					changes: JSON.stringify({ internal_product: newInternalProductName }),
+					before_state: JSON.stringify({ internal_product: "Unassigned" }),
+					sheet_name: "external_products",
+				},
+				accessToken,
+			);
 		}
 	}
 

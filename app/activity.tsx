@@ -16,6 +16,7 @@ import { Colors } from "@/constants/Colors";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
+import { getAllInternalProducts } from "@/store/products";
 
 export default function Activity() {
 	const { theme } = useTheme();
@@ -550,6 +551,8 @@ export default function Activity() {
 																			return "pricetag-outline";
 																		case "never_out":
 																			return "star-outline";
+																		case "internal_product":
+																			return "link-outline";
 																		default:
 																			return "information-circle-outline";
 																	}
@@ -569,6 +572,7 @@ export default function Activity() {
 																		"texture",
 																		"shape",
 																		"occasions",
+																		"internal_product",
 																	].includes(fieldName);
 																};
 
@@ -596,6 +600,18 @@ export default function Activity() {
 																			return `/metadata/shapes/${encodeURIComponent(newValue)}`;
 																		case "occasions":
 																			return `/metadata/occasions/${encodeURIComponent(newValue)}`;
+																		case "internal_product": {
+																			// Find internal product ID by name
+																			const internalProducts =
+																				getAllInternalProducts();
+																			const product = internalProducts.find(
+																				(p) =>
+																					p.sparkys_product_name === newValue,
+																			);
+																			return product
+																				? `/internal-product/${encodeURIComponent(product.id)}`
+																				: null;
+																		}
 																		default:
 																			return null;
 																	}
@@ -623,60 +639,187 @@ export default function Activity() {
 																			>
 																				{field.replace(/_/g, " ").toUpperCase()}
 																			</Text>
-																			<Text
-																				style={[
-																					styles.changeValue,
-																					{ color: colors.text },
-																				]}
-																			>
-																				{oldValue?.toString() || "—"}
-																			</Text>
-																		</View>
-																		{isClickableField(field) ? (
-																			<Pressable
-																				style={styles.changeArrowContainer}
-																				onPress={() => {
-																					const route = getMetadataRoute(
-																						field,
-																						newValue?.toString() || "",
-																					);
-																					if (route) {
-																						setIsDetailModalVisible(false);
-																						router.push(route);
-																					}
-																				}}
-																			>
-																				<Ionicons
-																					name="arrow-forward"
-																					size={16}
-																					color={colors.primary}
-																				/>
+																			{field === "distributors" ||
+																			field === "occasions" ? (
+																				<View style={styles.badgeContainer}>
+																					{(() => {
+																						const oldItems =
+																							oldValue?.toString()
+																								? oldValue
+																										.toString()
+																										.split(",")
+																										.map((s) => s.trim())
+																										.filter(Boolean)
+																								: [];
+																						const newItems =
+																							newValue?.toString()
+																								? newValue
+																										.toString()
+																										.split(",")
+																										.map((s) => s.trim())
+																										.filter(Boolean)
+																								: [];
+
+																						const removedItems =
+																							oldItems.filter(
+																								(item) =>
+																									!newItems.includes(item),
+																							);
+																						const addedItems = newItems.filter(
+																							(item) =>
+																								!oldItems.includes(item),
+																						);
+																						const constantItems =
+																							oldItems.filter((item) =>
+																								newItems.includes(item),
+																							);
+
+																						return (
+																							<>
+																								{constantItems.map((item) => (
+																									<View
+																										key={`constant-${item}`}
+																										style={[
+																											styles.badge,
+																											{
+																												backgroundColor:
+																													colors.surface,
+																												borderColor:
+																													colors.border,
+																											},
+																										]}
+																									>
+																										<Text
+																											style={[
+																												styles.badgeText,
+																												{ color: colors.text },
+																											]}
+																										>
+																											{item}
+																										</Text>
+																									</View>
+																								))}
+																								{removedItems.map((item) => (
+																									<View
+																										key={`removed-${item}`}
+																										style={[
+																											styles.badge,
+																											{
+																												backgroundColor:
+																													colors.error + "20",
+																												borderColor:
+																													colors.error,
+																											},
+																										]}
+																									>
+																										<Text
+																											style={[
+																												styles.badgeText,
+																												{ color: colors.error },
+																											]}
+																										>
+																											{item}
+																										</Text>
+																									</View>
+																								))}
+																								{addedItems.map((item) => (
+																									<View
+																										key={`added-${item}`}
+																										style={[
+																											styles.badge,
+																											{
+																												backgroundColor:
+																													colors.success + "20",
+																												borderColor:
+																													colors.success,
+																											},
+																										]}
+																									>
+																										<Text
+																											style={[
+																												styles.badgeText,
+																												{
+																													color: colors.success,
+																												},
+																											]}
+																										>
+																											{item}
+																										</Text>
+																									</View>
+																								))}
+																							</>
+																						);
+																					})()}
+																				</View>
+																			) : (
 																				<Text
 																					style={[
-																						styles.changeNewValue,
-																						{ color: colors.primary },
-																					]}
-																				>
-																					{newValue?.toString() || "—"}
-																				</Text>
-																			</Pressable>
-																		) : (
-																			<View style={styles.changeArrowContainer}>
-																				<Ionicons
-																					name="arrow-forward"
-																					size={16}
-																					color={colors.textSecondary}
-																				/>
-																				<Text
-																					style={[
-																						styles.changeNewValue,
+																						styles.changeValue,
 																						{ color: colors.text },
 																					]}
 																				>
-																					{newValue?.toString() || "—"}
+																					{oldValue?.toString() || "—"}
 																				</Text>
-																			</View>
-																		)}
+																			)}
+																		</View>
+																		{field !== "distributors" &&
+																			field !== "occasions" && (
+																				<>
+																					{isClickableField(field) ? (
+																						<Pressable
+																							style={
+																								styles.changeArrowContainer
+																							}
+																							onPress={() => {
+																								const route = getMetadataRoute(
+																									field,
+																									newValue?.toString() || "",
+																								);
+																								if (route) {
+																									setIsDetailModalVisible(
+																										false,
+																									);
+																									router.push(route);
+																								}
+																							}}
+																						>
+																							<Ionicons
+																								name="arrow-forward"
+																								size={16}
+																								color={colors.primary}
+																							/>
+																							<Text
+																								style={[
+																									styles.changeNewValue,
+																									{ color: colors.primary },
+																								]}
+																							>
+																								{newValue?.toString() || "—"}
+																							</Text>
+																						</Pressable>
+																					) : (
+																						<View
+																							style={
+																								styles.changeArrowContainer
+																							}
+																						>
+																							<Ionicons
+																								name="arrow-forward"
+																								size={16}
+																								color={colors.textSecondary}
+																							/>
+																							<Text
+																								style={[
+																									styles.changeNewValue,
+																									{ color: colors.text },
+																								]}
+																							>
+																								{newValue?.toString() || "—"}
+																							</Text>
+																						</View>
+																					)}
+																				</>
+																			)}
 																	</View>
 																);
 															})}
@@ -916,6 +1059,22 @@ const styles = StyleSheet.create({
 	changeNewValue: {
 		fontSize: 16,
 		fontWeight: "600",
+	},
+	badgeContainer: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 6,
+		marginTop: 4,
+	},
+	badge: {
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 12,
+		borderWidth: 1,
+	},
+	badgeText: {
+		fontSize: 12,
+		fontWeight: "500",
 	},
 	viewItemButton: {
 		flexDirection: "row",
