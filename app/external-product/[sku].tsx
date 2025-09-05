@@ -49,6 +49,7 @@ export default function ExternalProductDetail() {
 		updateInternalProduct: updateInternalProductInSheet,
 		archiveExternalProduct,
 		unarchiveExternalProduct,
+		logAuditEvent,
 	} = useSheetsData();
 	const { sku } = useLocalSearchParams<{ sku: string }>();
 	const [externalProduct, setExternalProduct] =
@@ -212,6 +213,24 @@ export default function ExternalProductDetail() {
 					await updateInternalProductInSheet(newInternalForSheet);
 					updateInternalProductInStore(internalProduct.id, updatedNewInternal);
 				}
+
+				// Create single event showing the assignment change
+				await logAuditEvent({
+					timestamp: new Date().toISOString(),
+					event_type: "edit",
+					object_type: "external_product",
+					object_id: externalProduct.unique_id_sku,
+					object_name: externalProduct.unique_id_sku,
+					changes: JSON.stringify({
+						internal_product:
+							internalProduct?.sparkys_product_name || "Unassigned",
+					}),
+					before_state: JSON.stringify({
+						internal_product:
+							originalInternalProduct?.sparkys_product_name || "Unassigned",
+					}),
+					sheet_name: "external_products",
+				});
 			}
 
 			// Update global store
