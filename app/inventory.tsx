@@ -522,6 +522,7 @@ export default function Inventory() {
 	const [scannedBarcode, setScannedBarcode] = useState("");
 	const [newMetadataValue, setNewMetadataValue] = useState("");
 	const [isSubmittingMetadata, setIsSubmittingMetadata] = useState(false);
+	const [isSubmittingInternal, setIsSubmittingInternal] = useState(false);
 
 	// Internal Product Form State
 	const [newInternalProduct, setNewInternalProduct] = useState({
@@ -1273,6 +1274,7 @@ export default function Inventory() {
 			return;
 		}
 
+		setIsSubmittingInternal(true);
 		try {
 			// Create the product for the spreadsheet
 			const productForSheet = {
@@ -1318,6 +1320,8 @@ export default function Inventory() {
 			}
 		} catch (error) {
 			Alert.alert("Error", "Failed to add internal product to spreadsheet");
+		} finally {
+			setIsSubmittingInternal(false);
 		}
 	}
 
@@ -1989,17 +1993,26 @@ export default function Inventory() {
 									styles.saveButton,
 									{ backgroundColor: colors.primary },
 									((scannedBarcode && isSubmittingExternal) ||
-										(currentView !== "products" && isSubmittingMetadata)) && {
+										(currentView !== "products" && isSubmittingMetadata) ||
+										(!scannedBarcode &&
+											currentView === "products" &&
+											isSubmittingInternal)) && {
 										opacity: 0.6,
 									},
 								]}
 								disabled={
 									(!!scannedBarcode && isSubmittingExternal) ||
-									(currentView !== "products" && isSubmittingMetadata)
+									(currentView !== "products" && isSubmittingMetadata) ||
+									(!scannedBarcode &&
+										currentView === "products" &&
+										isSubmittingInternal)
 								}
 							>
 								{(scannedBarcode && isSubmittingExternal) ||
-								(currentView !== "products" && isSubmittingMetadata) ? (
+								(currentView !== "products" && isSubmittingMetadata) ||
+								(!scannedBarcode &&
+									currentView === "products" &&
+									isSubmittingInternal) ? (
 									<Ionicons name="hourglass" size={24} color="white" />
 								) : (
 									<Ionicons name="checkmark" size={24} color="white" />
@@ -2168,78 +2181,35 @@ export default function Inventory() {
 								) : (
 									// Internal Product Form
 									<>
-										<View style={styles.inputGroup}>
-											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Sparky's Product Name
-											</Text>
-											<TextInput
-												style={[
-													styles.textInput,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-														color: colors.text,
-													},
-												]}
-												value={newInternalProduct.sparkys_product_name}
-												onChangeText={(text) =>
-													setNewInternalProduct((prev) => ({
-														...prev,
-														sparkys_product_name: text,
-													}))
-												}
-												placeholder="Enter product name"
-												placeholderTextColor={colors.textSecondary}
-												autoFocus
-											/>
-										</View>
-
-										<View style={styles.inputGroup}>
-											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Threshold Quantity
-											</Text>
-											<TextInput
-												style={[
-													styles.textInput,
-													{
-														backgroundColor: colors.surface,
-														borderColor: colors.border,
-														color: colors.text,
-													},
-												]}
-												value={(
-													newInternalProduct.threshold_quantity || 0
-												).toString()}
-												onChangeText={(text) => {
-													const threshold = parseInt(text, 10);
-													setNewInternalProduct((prev) => ({
-														...prev,
-														threshold_quantity: isNaN(threshold)
-															? 0
-															: threshold,
-													}));
-												}}
-												placeholder="Enter threshold quantity"
-												placeholderTextColor={colors.textSecondary}
-												keyboardType="numeric"
-											/>
-										</View>
-
-										<View style={styles.inputGroup}>
-											<Text style={[styles.inputLabel, { color: colors.text }]}>
-												Never Out
-											</Text>
+										<View style={styles.nameRow}>
+											<View style={styles.nameContainer}>
+												<TextInput
+													style={[
+														styles.nameInput,
+														{
+															backgroundColor: colors.surface,
+															borderColor: colors.border,
+															color: colors.text,
+														},
+													]}
+													value={newInternalProduct.sparkys_product_name}
+													onChangeText={(text) =>
+														setNewInternalProduct((prev) => ({
+															...prev,
+															sparkys_product_name: text,
+														}))
+													}
+													placeholder="Product Name..."
+													placeholderTextColor={colors.textSecondary}
+													autoFocus
+												/>
+											</View>
 											<Pressable
 												style={[
-													styles.toggleContainer,
-													{
-														backgroundColor: newInternalProduct.never_out
-															? "#c026d3"
-															: colors.surface,
-														borderColor: newInternalProduct.never_out
-															? "#c026d3"
-															: colors.border,
-													},
+													styles.neverOutToggleBadge,
+													newInternalProduct.never_out
+														? styles.neverOutToggleActive
+														: styles.neverOutToggleInactive,
 												]}
 												onPress={() =>
 													setNewInternalProduct((prev) => ({
@@ -2248,36 +2218,79 @@ export default function Inventory() {
 													}))
 												}
 											>
-												<View
-													style={[
-														styles.toggleSwitch,
-														{
-															backgroundColor: newInternalProduct.never_out
-																? "white"
-																: colors.textSecondary,
-															transform: [
-																{
-																	translateX: newInternalProduct.never_out
-																		? 20
-																		: 2,
-																},
-															],
-														},
-													]}
-												/>
 												<Text
 													style={[
-														styles.toggleLabel,
-														{
-															color: newInternalProduct.never_out
-																? "white"
-																: colors.text,
-														},
+														styles.neverOutToggleText,
+														newInternalProduct.never_out
+															? styles.neverOutToggleTextActive
+															: styles.neverOutToggleTextInactive,
 													]}
 												>
-													{newInternalProduct.never_out ? "On" : "Off"}
+													Never Out
 												</Text>
 											</Pressable>
+										</View>
+
+										<View style={styles.quantityRow}>
+											<View
+												style={[
+													styles.quantityBox,
+													{ backgroundColor: colors.surface },
+												]}
+											>
+												<Text
+													style={[
+														styles.quantityLabel,
+														{ color: colors.textSecondary },
+													]}
+												>
+													Total Quantity
+												</Text>
+												<Text style={[styles.quantity, { color: colors.text }]}>
+													0
+												</Text>
+											</View>
+											<View
+												style={[
+													styles.quantityBox,
+													{ backgroundColor: colors.surface },
+												]}
+											>
+												<Text
+													style={[
+														styles.quantityLabel,
+														{ color: colors.textSecondary },
+													]}
+												>
+													Threshold Quantity
+												</Text>
+												<TextInput
+													style={[
+														styles.thresholdInput,
+														{
+															backgroundColor: colors.cardBackground,
+															borderColor: colors.border,
+															color: colors.primary,
+														},
+													]}
+													value={(
+														newInternalProduct.threshold_quantity || 0
+													).toString()}
+													onChangeText={(text) => {
+														const threshold = parseInt(text, 10);
+														setNewInternalProduct((prev) => ({
+															...prev,
+															threshold_quantity: isNaN(threshold)
+																? 0
+																: threshold,
+														}));
+													}}
+													placeholder="0"
+													placeholderTextColor={colors.textSecondary}
+													keyboardType="numeric"
+													selectTextOnFocus
+												/>
+											</View>
 										</View>
 
 										<CollapsibleRadioSection
@@ -3030,5 +3043,79 @@ const styles = StyleSheet.create({
 		fontWeight: "600",
 		paddingLeft: 28,
 		paddingRight: 12,
+	},
+	nameRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		marginBottom: 16,
+	},
+	nameContainer: {
+		flex: 1,
+	},
+	nameInput: {
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+		fontSize: 18,
+		fontWeight: "600",
+		minHeight: 48,
+	},
+	quantityBox: {
+		flex: 1,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		marginBottom: 16,
+	},
+	quantityLabel: {
+		fontSize: 12,
+		fontWeight: "600",
+		marginBottom: 4,
+	},
+	quantity: {
+		fontSize: 24,
+		fontWeight: "bold",
+		minWidth: 60,
+		textAlign: "left",
+	},
+	thresholdInput: {
+		borderWidth: 1,
+		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		fontSize: 24,
+		fontWeight: "bold",
+		minWidth: 60,
+		textAlign: "center",
+	},
+	neverOutToggleBadge: {
+		paddingHorizontal: 12,
+		paddingVertical: 4,
+		borderRadius: 16,
+		alignSelf: "center",
+	},
+	neverOutToggleActive: {
+		backgroundColor: "#c026d3",
+		borderWidth: 2,
+		borderColor: "#c026d3",
+	},
+	neverOutToggleInactive: {
+		backgroundColor: "transparent",
+		borderWidth: 2,
+		borderColor: "#c026d3",
+		borderStyle: "dashed",
+	},
+	neverOutToggleText: {
+		fontSize: 12,
+		fontWeight: "600",
+		textTransform: "uppercase",
+	},
+	neverOutToggleTextActive: {
+		color: "white",
+	},
+	neverOutToggleTextInactive: {
+		color: "#9ca3af",
 	},
 });
