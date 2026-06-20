@@ -64,3 +64,21 @@ export const Colors = {
 		iconMuted: "#888888",
 	},
 };
+
+/** The available color schemes: "light" | "dark". */
+export type ColorScheme = keyof typeof Colors;
+
+/** A single scheme's palette (the keys shared by light and dark). */
+export type ColorKey = keyof typeof Colors.light;
+
+/** The resolved palette for one scheme (e.g. `Colors["light"]`). */
+export type ThemeColors = (typeof Colors)[ColorScheme];
+
+/**
+ * Coerce any platform color-scheme value to a known scheme. React Native's
+ * `useColorScheme()` can return `null`, `undefined`, or `"unspecified"`; we
+ * treat everything that isn't an explicit `"dark"` as light.
+ */
+export function toColorScheme(value: string | null | undefined): ColorScheme {
+	return value === "dark" ? "dark" : "light";
+}

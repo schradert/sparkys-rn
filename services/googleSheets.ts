@@ -143,114 +143,6 @@ export class GoogleSheetsService {
 			.filter((item) => item.name && item.name.trim() !== "");
 	}
 
-	async getProductData(accessToken: string): Promise<ProductSheet[]> {
-		const values = await this.getSheetData("products", accessToken);
-
-		if (values.length === 0) {
-			logger.debug("Sheets", "No data found in products sheet");
-			return [];
-		}
-
-		const headerRow = values[0];
-		const products: ProductSheet[] = [];
-
-		logger.debug("Sheets", "Raw headers:", headerRow);
-
-		const columnMap: { [key: string]: number } = {};
-		headerRow.forEach((header, index) => {
-			const normalizedHeader = header.toLowerCase().replace(/\s+/g, "_");
-			columnMap[normalizedHeader] = index;
-		});
-
-		logger.debug("Sheets", "Normalized column map:", columnMap);
-
-		const columnMappings = {
-			id: ["unique_id_sku"],
-			name: ["sparkys_product_name"],
-			product_type: ["product_type"],
-			occasion: ["occasion"],
-			color: ["manufacturer_color"],
-			manufacturer: ["brand"],
-			size: ["size"],
-			texture: ["texture"],
-			quantity: ["quantity"],
-			bag_quantity: ["bag_quantity"],
-			shape: ["shape"],
-			distributor: ["distributor"],
-		};
-
-		const resolvedColumns: { [key: string]: number } = {};
-
-		for (const [key, possibleHeaders] of Object.entries(columnMappings)) {
-			let foundIndex = -1;
-			for (const header of possibleHeaders) {
-				if (columnMap[header] !== undefined) {
-					foundIndex = columnMap[header];
-					break;
-				}
-			}
-			if (foundIndex !== -1) {
-				resolvedColumns[key] = foundIndex;
-			}
-		}
-
-		logger.debug("Sheets", "Resolved columns:", resolvedColumns);
-
-		const requiredColumns = [
-			"id",
-			"name",
-			"product_type",
-			"quantity",
-			"bag_quantity",
-		];
-		for (const column of requiredColumns) {
-			if (resolvedColumns[column] === undefined) {
-				logger.error("Sheets", `Missing required column: ${column}`);
-				throw new Error(
-					`Required column for '${column}' not found in products sheet`,
-				);
-			}
-		}
-
-		logger.debug("Sheets", `Processing ${values.length - 1} product rows...`);
-
-		for (let i = 1; i < values.length; i++) {
-			const row = values[i];
-
-			if (!row[resolvedColumns.id] || row[resolvedColumns.id].trim() === "") {
-				logger.debug("Sheets", `Skipping row ${i}: empty ID`);
-				continue;
-			}
-
-			try {
-				const product: ProductSheet = {
-					id: row[resolvedColumns.id],
-					name: row[resolvedColumns.name] || "",
-					product_type: row[resolvedColumns.product_type] || "",
-					occasion: row[resolvedColumns.occasion] || "",
-					color: row[resolvedColumns.color] || "",
-					manufacturer: row[resolvedColumns.manufacturer] || "",
-					size: row[resolvedColumns.size] || "",
-					texture: row[resolvedColumns.texture] || "",
-					quantity: parseInt(row[resolvedColumns.quantity] || "0", 10),
-					bag_quantity: parseInt(row[resolvedColumns.bag_quantity] || "50", 10),
-					shape: row[resolvedColumns.shape] || "",
-					distributor: row[resolvedColumns.distributor] || "",
-					image_url: undefined,
-				};
-
-				logger.debug("Sheets", `Parsed product ${i}:`, product);
-				products.push(product);
-			} catch (error) {
-				logger.warn("Sheets", `Error parsing product row ${i}:`, error);
-			}
-		}
-
-		logger.debug("Sheets", `Successfully parsed ${products.length} products`);
-
-		return products;
-	}
-
 	async getInternalProductData(accessToken: string): Promise<any[]> {
 		logger.debug("Sheets", "Fetching internal_products sheet...");
 		const data = await this.getSheetData("internal_products", accessToken);
@@ -520,29 +412,6 @@ export class GoogleSheetsService {
 		);
 	}
 
-	async addProduct(product: ProductSheet, accessToken: string): Promise<void> {
-		const newRow = [
-			product.id,
-			product.name,
-			product.product_type,
-			product.color,
-			product.manufacturer,
-			product.size,
-			product.texture,
-			product.bag_quantity.toString(),
-			product.shape,
-			product.distributor,
-			product.occasion,
-			product.quantity.toString(),
-		];
-
-		await this.appendToSheet("products", [newRow], accessToken);
-		logger.debug(
-			"Sheets",
-			`Added product: ${product.name} (${product.id}) to products sheet`,
-		);
-	}
-
 	async addInternalProduct(
 		product: InternalProductSheet,
 		accessToken: string,
@@ -558,7 +427,7 @@ export class GoogleSheetsService {
 			product.products,
 			(product.threshold_quantity || 0).toString(),
 			product.never_out ? "TRUE" : "FALSE",
-			product.status,
+			product.status || "active",
 		];
 
 		await this.appendToSheet("internal_products", [newRow], accessToken);
@@ -1581,39 +1450,6 @@ export class GoogleSheetsService {
 			},
 			accessToken,
 		);
-	}
-
-	async updateProduct(
-		product: ProductSheet,
-		accessToken: string,
-	): Promise<void> {
-		const rowNumber = await this.findRowByValue(
-			"products",
-			"unique_id_sku",
-			product.id,
-			accessToken,
-		);
-		if (!rowNumber) {
-			throw new Error(`Product with ID "${product.id}" not found`);
-		}
-
-		const updatedRow = [
-			product.id, // Keep existing ID
-			product.name, // Keep existing name (not editable)
-			product.product_type,
-			product.color,
-			product.manufacturer,
-			product.size,
-			product.texture,
-			product.bag_quantity.toString(),
-			product.shape,
-			product.distributor,
-			product.occasion,
-			product.quantity.toString(),
-		];
-
-		await this.updateRow("products", rowNumber, updatedRow, accessToken);
-		logger.debug("Sheets", `Updated product: ${product.name} (${product.id})`);
 	}
 
 	// Audit Log Functions

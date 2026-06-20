@@ -39,7 +39,9 @@ export default function InfiniteScroll<T>({
 
 	const flatListRef = useRef<FlatList>(null);
 	const overlayOpacity = useRef(new Animated.Value(0)).current;
-	const hideOverlayTimeout = useRef<NodeJS.Timeout>();
+	const hideOverlayTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
 
 	const visibleData = data.slice(0, visibleCount);
 	const hasMore = visibleCount < data.length;

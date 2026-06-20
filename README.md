@@ -1,50 +1,121 @@
-# Welcome to your Expo app 👋
+# InvX — Sparky's Inventory
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile inventory app for Sparky's Balloons, built with **Expo SDK 56** /
+**React Native 0.85** (TypeScript, managed workflow). Data lives in **Google
+Sheets** (the sole persistent datastore — there is no external SaaS backend),
+accessed with Google Sign-In.
 
-## Get started
+> New to the codebase? Read [ARCHITECTURE.md](ARCHITECTURE.md) for the screen
+> map and data model, and [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 
-1. Install dependencies
+## Prerequisites
 
-   ```bash
-   npm install
-   ```
+The whole toolchain (bun, the Expo CLI, the Android SDK/NDK, Java, fastlane,
+`eas`, scanners, LSPs) is provided by **[devenv](https://devenv.sh)** — you do
+not install Node, bun, or the Android SDK by hand.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+- [Nix](https://nixos.org/download) (with flakes)
+- [devenv](https://devenv.sh/getting-started/)
+- [direnv](https://direnv.net) (recommended — auto-loads the shell)
 
 ```bash
-npm run reset-project
+direnv allow      # one-time; loads the devenv shell on cd (uses .envrc)
+# …or, without direnv:
+devenv shell      # drop into the toolchain manually
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Everything below assumes you are inside the devenv shell. To run a one-off
+command from outside it: `devenv shell -- bash -c '<command>'`.
 
-## Learn more
+## Quick start
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+bootstrap         # install deps, generate typed-route types, run expo-doctor
+bun run dev       # start Metro for the development variant
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Then open the dev build on a simulator/device (press `i`/`a` in the Metro CLI,
+or scan the QR with a development build).
 
-## Join the community
+## Common commands
 
-Join our community of developers creating universal apps.
+Everyday JavaScript tasks are package.json scripts (`bun run <name>`):
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Command | What it does |
+| --- | --- |
+| `bun run dev` / `dev:preview` / `dev:prod` | Start Metro for a variant (sets `APP_VARIANT`) |
+| `bun run android` / `ios` | Native run on a device/emulator |
+| `bun run typecheck` | `tsc --noEmit` |
+| `bun run lint` / `lint:fix` | ESLint (React/Expo semantics) |
+| `bun run format` / `format:check` | Biome formatter |
+| `bun run check` / `check:fix` | Biome (format + lint + import organize) |
+| `bun run test` / `test:watch` / `test:coverage` | Jest |
+| `bun run docs` | Generate API docs (typedoc → `docs/api`) |
+
+Release / ops flows are devenv scripts (run by bare name in the shell):
+
+| Command | What it does |
+| --- | --- |
+| `bootstrap` | Install deps + generate types + expo-doctor |
+| `security` | CVE + secret scan (bun audit, osv-scanner, vulnix, gitleaks) |
+| `doctor` | `expo-doctor` |
+| `build-dev` / `build-preview` / `build-prod` | EAS cloud builds (per variant) |
+| `build-dev-local` | EAS local build (Android) |
+| `eas-update` | Publish an OTA update |
+| `devenv up` | Run the Metro process (and any others) |
+
+## Build variants
+
+`app.config.js` derives the app name + bundle id from `APP_VARIANT`
+(`development` → `.dev`, `preview` → `.preview`, unset → production). Build
+profiles and per-variant env (e.g. `EXPO_PUBLIC_SPREADSHEET_ID`) live in
+[`eas.json`](eas.json). So three variants can coexist on one device.
+
+## Tooling
+
+- **Lint/format:** Biome (formatting, import organization, general JS/TS lint)
+  plus ESLint (React/React Native/Expo semantics only). They are split so they
+  never double-report — see [`biome.json`](biome.json) and
+  [`eslint.config.js`](eslint.config.js).
+- **Types:** TypeScript (strict). `experiments.typedRoutes` is on, so route
+  types are generated by Metro — run `bun run dev` (or `bootstrap`) once before
+  trusting `tsc`.
+- **Tests:** Jest (`jest-expo` preset) + React Native Testing Library.
+- **Docs:** typedoc (`bun run docs`).
+- **Security:** `security` runs dependency-CVE (bun audit, osv-scanner),
+  Nix-toolchain CVE (vulnix), and secret (gitleaks) scans.
+- **Git hooks** (via devenv git-hooks): formatting/lint/typecheck/tests run on
+  push; secret + doctor scans are available on the `manual` stage. Commits to
+  `trunk` are blocked — branch first. Hooks run the **devDependency** binaries
+  (`node_modules/.bin/{biome,tsc,eslint,jest}`) so the versions pinned in
+  `package.json` are the single source of truth.
+
+## Editors
+
+Open the project from **inside the devenv shell** (direnv does this on `cd`) so
+each editor's language servers resolve from the toolchain — `node_modules/.bin`
+(Biome, `typescript-language-server`) and `nixd`. Config is provided for three:
+
+- **VS Code** — `.vscode/` (committed): Biome format-on-save, workspace TS SDK,
+  ESLint flat config, nixd; recommended extensions prompt on open.
+- **Zed** — `.zed/settings.json` (devenv-generated): vtsls + Biome for TS/JS,
+  Biome for JSON, nixd + alejandra for Nix; the Biome and Nix extensions
+  auto-install.
+- **Helix** — `.helix/languages.toml` (devenv-generated):
+  `typescript-language-server` + Biome (Biome formats), nixd + alejandra for Nix.
+
+`.zed/` and `.helix/` are generated by devenv (and git-ignored) — they appear
+once you enter the shell.
+
+## Dependency philosophy (two tracks — no wildcards)
+
+- **Expo-governed** deps (`expo`, `expo-*`, `react*`, RN community libs,
+  `@types/react`, `eslint-config-expo`, `jest-expo`, `@babel/core`): updated
+  with `expo install` only — it picks the SDK-validated version.
+- **Free tooling** (`@biomejs/biome`, `typescript-language-server`, `eslint`,
+  `typescript`, `typedoc`, `@testing-library/*`, `jest`, `@types/jest`): caret
+  ranges + `bun update`, pinning back any major the SDK toolchain can't handle
+  yet. These devDependencies drive both the git-hooks and the editor LSPs.
+
+Upgrading the SDK is scripted: see `scripts/upgrade-expo.sh` and the
+`upgrade-expo-sdk` skill in `.claude/skills/`.

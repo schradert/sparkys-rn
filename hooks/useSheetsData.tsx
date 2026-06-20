@@ -5,6 +5,7 @@ import {
 	convertInternalProductSheetToModel,
 	type ExternalProduct,
 	type InternalProduct,
+	type InternalProductSheet,
 	updateFieldOptions,
 	updateMetadataItems,
 } from "@/constants/Products";
@@ -267,24 +268,6 @@ async function addMetadataToSheet(
 	}
 }
 
-async function addProductToSheet(
-	product: ProductSheet,
-	accessToken: string,
-): Promise<{ success: boolean; error?: string }> {
-	try {
-		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
-		await sheetsService.addProduct(product, accessToken);
-
-		// Note: Product store updates happen via subscribeToStoreChanges
-		// No need for full refresh
-
-		return { success: true };
-	} catch (error: any) {
-		logger.error("Sheets", "Error adding product to sheet:", error);
-		return { success: false, error: error.message || "Failed to add product" };
-	}
-}
-
 async function addInternalProductToSheet(
 	product: InternalProductSheet,
 	accessToken: string,
@@ -389,27 +372,6 @@ function getFieldKeyForSheetName(sheetName: string): string | null {
 	}
 }
 
-async function updateProductInSheet(
-	product: ProductSheet,
-	accessToken: string,
-): Promise<{ success: boolean; error?: string }> {
-	try {
-		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
-		await sheetsService.updateProduct(product, accessToken);
-
-		// Note: Product store updates happen via subscribeToStoreChanges
-		// No need for full refresh
-
-		return { success: true };
-	} catch (error: any) {
-		logger.error("Sheets", "Error updating product in sheet:", error);
-		return {
-			success: false,
-			error: error.message || "Failed to update product",
-		};
-	}
-}
-
 async function addExternalProductToSheet(
 	product: any,
 	accessToken: string,
@@ -503,16 +465,6 @@ export function useSheetsData() {
 		return await addMetadataToSheet(sheetName, name, accessToken);
 	};
 
-	const addProduct = async (product: ProductSheet) => {
-		const accessToken = await getAccessToken();
-		if (!accessToken) {
-			Alert.alert("Error", "No access token available");
-			return { success: false, error: "No access token" };
-		}
-
-		return await addProductToSheet(product, accessToken);
-	};
-
 	const addInternalProduct = async (product: InternalProductSheet) => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
@@ -540,16 +492,6 @@ export function useSheetsData() {
 			newName,
 			accessToken,
 		);
-	};
-
-	const updateProduct = async (product: ProductSheet) => {
-		const accessToken = await getAccessToken();
-		if (!accessToken) {
-			Alert.alert("Error", "No access token available");
-			return { success: false, error: "No access token" };
-		}
-
-		return await updateProductInSheet(product, accessToken);
 	};
 
 	const addExternalProduct = async (product: any) => {
@@ -807,10 +749,8 @@ export function useSheetsData() {
 		refresh,
 		loadInitialData,
 		addMetadata,
-		addProduct,
 		addInternalProduct,
 		updateMetadata,
-		updateProduct,
 		addExternalProduct,
 		updateInternalProduct,
 		updateExternalProduct,
