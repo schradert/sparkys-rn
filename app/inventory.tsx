@@ -36,6 +36,7 @@ import {
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
+import { logger } from "@/services/logger";
 import {
 	addExternalProduct as addExternalProductToStore,
 	addInternalProduct as addInternalProductToStore,
@@ -555,7 +556,7 @@ export default function Inventory() {
 		// Update product data from store
 		const internalData = getAllInternalProducts();
 		const externalData = getAllExternalProducts();
-		console.log("Loading products from store:", {
+		logger.debug("Inventory", "Loading products from store:", {
 			internalCount: internalData?.length || 0,
 			externalCount: externalData?.length || 0,
 			internalData,
@@ -585,9 +586,12 @@ export default function Inventory() {
 	// Load events data on initial load and when user manually refreshes or data changes
 	useEffect(() => {
 		const loadEvents = async () => {
-			if (getAuditEvents) {
+			if (!getAuditEvents) return;
+			try {
 				const events = await getAuditEvents(1000, 0);
 				setCachedEvents(events);
+			} catch (error) {
+				logger.error("Inventory", "Failed to load audit events", { error });
 			}
 		};
 
@@ -867,7 +871,11 @@ export default function Inventory() {
 	function getCurrentRenderItem() {
 		return currentView === "products"
 			? ({ item }: { item: InternalProduct }) => {
-					console.log("Rendering InternalProductCard with item:", item);
+					logger.debug(
+						"Inventory",
+						"Rendering InternalProductCard with item:",
+						item,
+					);
 
 					// Get all external products for this internal product
 					const relatedExternals = externalProducts.filter((ext) =>
@@ -907,7 +915,8 @@ export default function Inventory() {
 						},
 					);
 
-					console.log(
+					logger.debug(
+						"Inventory",
 						`External products for ${item.sparkys_product_name}:`,
 						`${relatedExternals.length} total, ${filteredExternals.length} after filters`,
 					);
@@ -1177,6 +1186,7 @@ export default function Inventory() {
 				Alert.alert("Error", result.error || "Failed to add item");
 			}
 		} catch (error) {
+			logger.error("Inventory", "Failed to add metadata item", { error });
 			Alert.alert("Error", "Failed to add item to spreadsheet");
 		} finally {
 			setIsSubmittingMetadata(false);
@@ -1189,6 +1199,10 @@ export default function Inventory() {
 
 		// Check if external product exists
 		const existingExternal = getExternalProductBySku(data);
+		logger.info("Inventory", "Barcode scanned", {
+			data,
+			known: !!existingExternal,
+		});
 		if (existingExternal) {
 			router.push(`/external-product/${data}`);
 		} else {
@@ -1319,6 +1333,7 @@ export default function Inventory() {
 				Alert.alert("Error", result.error || "Failed to add internal product");
 			}
 		} catch (error) {
+			logger.error("Inventory", "Failed to add internal product", { error });
 			Alert.alert("Error", "Failed to add internal product to spreadsheet");
 		} finally {
 			setIsSubmittingInternal(false);
@@ -1419,7 +1434,8 @@ export default function Inventory() {
 					internalProductForSheet,
 				);
 				if (!updateResult.success) {
-					console.warn(
+					logger.warn(
+						"Inventory",
 						"Failed to link external product to internal product:",
 						updateResult.error,
 					);
@@ -1465,6 +1481,7 @@ export default function Inventory() {
 				);
 			}
 		} catch (error) {
+			logger.error("Inventory", "Failed to add external product", { error });
 			Alert.alert("Error", "Failed to add external product to spreadsheet");
 		} finally {
 			setIsSubmittingExternal(false);
@@ -2531,6 +2548,9 @@ export default function Inventory() {
 						style={styles.camera}
 						barcodeScannerSettings={{ barcodeTypes: ["ean13"] }}
 						onBarcodeScanned={({ data }) => handleBarcodeScanned(data)}
+						onMountError={(event) =>
+							logger.error("Inventory", "Camera failed to mount", { event })
+						}
 					/>
 				</SafeAreaView>
 			</Modal>

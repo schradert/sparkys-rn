@@ -9,6 +9,7 @@ import {
 	updateMetadataItems,
 } from "@/constants/Products";
 import { GoogleSheetsService } from "@/services/googleSheets";
+import { logger } from "@/services/logger";
 import { setExternalProducts, setInternalProducts } from "@/store/products";
 import { useAuth } from "./useAuth";
 
@@ -155,18 +156,22 @@ async function loadSheetsData(
 				"Please set EXPO_PUBLIC_SPREADSHEET_ID to database sheet ID.",
 			);
 
-		console.log("Loading sheets data with spreadsheet ID:", SPREADSHEET_ID);
-		console.log("Access token length:", accessToken?.length);
+		logger.debug(
+			"Sheets",
+			"Loading sheets data with spreadsheet ID:",
+			SPREADSHEET_ID,
+		);
+		logger.debug("Sheets", "Access token length:", accessToken?.length);
 
 		if (!isRefresh) {
 			updateSheetsState({ isLoading: true, error: null });
 		}
 
 		const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
-		console.log("Fetching data from sheets...");
+		logger.debug("Sheets", "Fetching data from sheets...");
 		const data = await sheetsService.getAllSheetsData(accessToken);
 
-		console.log("Received data:", {
+		logger.debug("Sheets", "Received data:", {
 			internalProductCount: data.internalProducts?.length || 0,
 			externalProductCount: data.externalProducts?.length || 0,
 			metadata: Object.keys(data.metadata),
@@ -186,7 +191,7 @@ async function loadSheetsData(
 			convertExternalProductSheetToModel,
 		);
 
-		console.log("Converted products:", {
+		logger.debug("Sheets", "Converted products:", {
 			internalProducts,
 			externalProducts,
 			internalProductsWithBarcodes: internalProducts.map((ip) => ({
@@ -208,10 +213,10 @@ async function loadSheetsData(
 			lastUpdated: new Date(),
 		});
 
-		console.log("Successfully loaded sheets data");
+		logger.debug("Sheets", "Successfully loaded sheets data");
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error loading sheets data:", error);
+		logger.error("Sheets", "Error loading sheets data:", error);
 		const errorMessage =
 			error.message || "Failed to load data from spreadsheet";
 		updateSheetsState({
@@ -257,7 +262,7 @@ async function addMetadataToSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error adding metadata to sheet:", error);
+		logger.error("Sheets", "Error adding metadata to sheet:", error);
 		return { success: false, error: error.message || "Failed to add item" };
 	}
 }
@@ -275,7 +280,7 @@ async function addProductToSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error adding product to sheet:", error);
+		logger.error("Sheets", "Error adding product to sheet:", error);
 		return { success: false, error: error.message || "Failed to add product" };
 	}
 }
@@ -293,7 +298,7 @@ async function addInternalProductToSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error adding internal product to sheet:", error);
+		logger.error("Sheets", "Error adding internal product to sheet:", error);
 		return {
 			success: false,
 			error: error?.toString() || "Failed to add internal product",
@@ -353,7 +358,7 @@ async function updateMetadataInSheet(
 			},
 		};
 	} catch (error: any) {
-		console.error("Error updating metadata in sheet:", error);
+		logger.error("Sheets", "Error updating metadata in sheet:", error);
 		return {
 			success: false,
 			error: error.message || "Failed to update metadata",
@@ -397,7 +402,7 @@ async function updateProductInSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error updating product in sheet:", error);
+		logger.error("Sheets", "Error updating product in sheet:", error);
 		return {
 			success: false,
 			error: error.message || "Failed to update product",
@@ -418,7 +423,7 @@ async function addExternalProductToSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error adding external product to sheet:", error);
+		logger.error("Sheets", "Error adding external product to sheet:", error);
 		return {
 			success: false,
 			error: error.message || "Failed to add external product",
@@ -439,7 +444,7 @@ async function updateInternalProductInSheet(
 
 		return { success: true };
 	} catch (error: any) {
-		console.error("Error updating internal product in sheet:", error);
+		logger.error("Sheets", "Error updating internal product in sheet:", error);
 		return {
 			success: false,
 			error: error.message || "Failed to update internal product",
@@ -570,7 +575,11 @@ export function useSheetsData() {
 			// Don't refresh - let the caller update the store directly
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error updating internal product in sheet:", error);
+			logger.error(
+				"Sheets",
+				"Error updating internal product in sheet:",
+				error,
+			);
 			return {
 				success: false,
 				error: error.message || "Failed to update internal product",
@@ -598,7 +607,11 @@ export function useSheetsData() {
 			// Don't refresh - let the caller update the store directly
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error updating external product in sheet:", error);
+			logger.error(
+				"Sheets",
+				"Error updating external product in sheet:",
+				error,
+			);
 			return {
 				success: false,
 				error: error.message || "Failed to update external product",
@@ -633,7 +646,7 @@ export function useSheetsData() {
 
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error archiving metadata:", error);
+			logger.error("Sheets", "Error archiving metadata:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to archive metadata",
@@ -668,7 +681,7 @@ export function useSheetsData() {
 
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error unarchiving metadata:", error);
+			logger.error("Sheets", "Error unarchiving metadata:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to unarchive metadata",
@@ -677,7 +690,10 @@ export function useSheetsData() {
 	};
 
 	const logAuditEvent = async (
-		event: Omit<import("@/services/googleSheets").AuditEvent, "id">,
+		event: Omit<
+			import("@/services/googleSheets").AuditEvent,
+			"id" | "user_email"
+		>,
 	) => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) return;
@@ -686,7 +702,7 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.logEvent(event, accessToken);
 		} catch (error) {
-			console.error("Failed to log audit event:", error);
+			logger.error("Sheets", "Failed to log audit event:", error);
 		}
 	};
 
@@ -701,7 +717,7 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			return await sheetsService.getAuditEvents(accessToken, limit, offset);
 		} catch (error: any) {
-			console.error("Error fetching audit events:", error);
+			logger.error("Sheets", "Error fetching audit events:", error);
 			return [];
 		}
 	};
@@ -718,7 +734,7 @@ export function useSheetsData() {
 			await sheetsService.archiveExternalProduct(sku, accessToken);
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error archiving external product:", error);
+			logger.error("Sheets", "Error archiving external product:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to archive external product",
@@ -738,7 +754,7 @@ export function useSheetsData() {
 			await sheetsService.unarchiveExternalProduct(sku, accessToken);
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error unarchiving external product:", error);
+			logger.error("Sheets", "Error unarchiving external product:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to unarchive external product",
@@ -758,7 +774,7 @@ export function useSheetsData() {
 			await sheetsService.archiveInternalProduct(name, accessToken);
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error archiving internal product:", error);
+			logger.error("Sheets", "Error archiving internal product:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to archive internal product",
@@ -778,7 +794,7 @@ export function useSheetsData() {
 			await sheetsService.unarchiveInternalProduct(name, accessToken);
 			return { success: true };
 		} catch (error: any) {
-			console.error("Error unarchiving internal product:", error);
+			logger.error("Sheets", "Error unarchiving internal product:", error);
 			return {
 				success: false,
 				error: error.message || "Failed to unarchive internal product",

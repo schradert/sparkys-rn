@@ -9,9 +9,11 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LogErrorBoundary } from "@/components/LogErrorBoundary";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 
 function ThemedRootLayout() {
 	const { theme } = useTheme();
@@ -19,14 +21,11 @@ function ThemedRootLayout() {
 
 	const hideNavigationBar = async () => {
 		try {
-			console.log("Setting navigation bar visibility to hidden");
+			// SDK 56 enforces edge-to-edge, so `setBehaviorAsync` is gone; hiding
+			// the bar already gives the swipe-to-reveal ("overlay-swipe") behavior.
 			await NavigationBar.setVisibilityAsync("hidden");
-			console.log("Navigation bar hidden successfully");
-
-			await NavigationBar.setBehaviorAsync("overlay-swipe");
-			console.log("Navigation bar behavior set successfully");
 		} catch (error) {
-			console.error("Error with navigation bar:", error);
+			logger.warn("Nav", "Navigation bar hide failed", { error });
 		}
 	};
 
@@ -51,7 +50,6 @@ function ThemedRootLayout() {
 		// Re-hide navigation bar when app becomes active
 		const handleAppStateChange = (nextAppState: string) => {
 			if (nextAppState === "active") {
-				console.log("App became active, re-hiding navigation bar");
 				hideWithRetry();
 			}
 		};
@@ -70,7 +68,6 @@ function ThemedRootLayout() {
 			// Multiple rapid attempts to ensure it stays hidden
 			for (let i = 0; i < 5; i++) {
 				NavigationBar.setVisibilityAsync("hidden").catch(() => {});
-				NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
 				await new Promise((resolve) => setTimeout(resolve, 10));
 			}
 		};
@@ -81,16 +78,15 @@ function ThemedRootLayout() {
 		<SafeAreaProvider>
 			<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 				<View style={{ flex: 1, backgroundColor: colors.cardBackground }}>
-					<Stack screenOptions={{ headerShown: false }}>
-						<Stack.Screen name="login" />
-						<Stack.Screen name="inventory" />
-						<Stack.Screen name="product/[id]" />
-						<Stack.Screen name="metadata/[...params]" />
-					</Stack>
-					<StatusBar
-						style={theme === "dark" ? "light" : "dark"}
-						backgroundColor={colors.cardBackground}
-					/>
+					<LogErrorBoundary>
+						<Stack screenOptions={{ headerShown: false }}>
+							<Stack.Screen name="login" />
+							<Stack.Screen name="inventory" />
+							<Stack.Screen name="metadata/[...params]" />
+							<Stack.Screen name="diagnostics" />
+						</Stack>
+					</LogErrorBoundary>
+					<StatusBar style={theme === "dark" ? "light" : "dark"} />
 				</View>
 			</TouchableWithoutFeedback>
 		</SafeAreaProvider>

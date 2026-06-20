@@ -17,6 +17,7 @@ import {
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
@@ -145,8 +146,9 @@ export default function MetadataDetail() {
 			return;
 		}
 
-		const existingValues =
-			PRODUCT_FIELD_OPTIONS[fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS];
+		const existingValues: readonly string[] =
+			PRODUCT_FIELD_OPTIONS[fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS] ??
+			[];
 		if (existingValues.includes(trimmedValue)) {
 			Alert.alert("Error", "This value already exists");
 			return;
@@ -173,6 +175,12 @@ export default function MetadataDetail() {
 				Alert.alert("Error", result.error || "Failed to save changes");
 			}
 		} catch (error) {
+			logger.error("Metadata", "Failed to save changes", {
+				error,
+				sheetName,
+				oldValue: decodedItemName,
+				newValue: trimmedValue,
+			});
 			Alert.alert("Error", "Failed to save changes");
 		} finally {
 			setIsSaving(false);
@@ -208,6 +216,11 @@ export default function MetadataDetail() {
 								Alert.alert("Error", result.error || "Failed to archive item");
 							}
 						} catch (error) {
+							logger.error("Metadata", "Failed to archive item", {
+								error,
+								sheetName,
+								value: decodedItemName,
+							});
 							Alert.alert("Error", "Failed to archive item");
 						} finally {
 							setIsArchiving(false);
@@ -253,6 +266,11 @@ export default function MetadataDetail() {
 								);
 							}
 						} catch (error) {
+							logger.error("Metadata", "Failed to unarchive item", {
+								error,
+								sheetName,
+								value: decodedItemName,
+							});
 							Alert.alert("Error", "Failed to unarchive item");
 						} finally {
 							setIsArchiving(false);

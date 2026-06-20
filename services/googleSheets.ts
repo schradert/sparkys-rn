@@ -2,6 +2,7 @@ import type {
 	ExternalProductSheet,
 	InternalProductSheet,
 } from "@/constants/Products";
+import { logger } from "@/services/logger";
 
 interface SheetsResponse {
 	range: string;
@@ -56,14 +57,14 @@ export class GoogleSheetsService {
 			);
 
 			if (!response.ok) {
-				console.error("Failed to fetch user info:", response.status);
+				logger.error("Sheets", "Failed to fetch user info:", response.status);
 				return "unknown";
 			}
 
 			const userInfo = await response.json();
 			return userInfo.email || "unknown";
 		} catch (error) {
-			console.error("Error fetching user email:", error);
+			logger.error("Sheets", "Error fetching user email:", error);
 			return "unknown";
 		}
 	}
@@ -74,7 +75,7 @@ export class GoogleSheetsService {
 	): Promise<any> {
 		const url = `${this.baseUrl}/${this.spreadsheetId}/${endpoint}`;
 
-		console.log("Making request to:", url);
+		logger.debug("Sheets", "Making request to:", url);
 
 		const response = await fetch(url, {
 			headers: {
@@ -85,7 +86,7 @@ export class GoogleSheetsService {
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error("Sheets API error:", {
+			logger.error("Sheets", "Sheets API error:", {
 				status: response.status,
 				statusText: response.statusText,
 				url,
@@ -146,14 +147,14 @@ export class GoogleSheetsService {
 		const values = await this.getSheetData("products", accessToken);
 
 		if (values.length === 0) {
-			console.log("No data found in products sheet");
+			logger.debug("Sheets", "No data found in products sheet");
 			return [];
 		}
 
 		const headerRow = values[0];
 		const products: ProductSheet[] = [];
 
-		console.log("Raw headers:", headerRow);
+		logger.debug("Sheets", "Raw headers:", headerRow);
 
 		const columnMap: { [key: string]: number } = {};
 		headerRow.forEach((header, index) => {
@@ -161,7 +162,7 @@ export class GoogleSheetsService {
 			columnMap[normalizedHeader] = index;
 		});
 
-		console.log("Normalized column map:", columnMap);
+		logger.debug("Sheets", "Normalized column map:", columnMap);
 
 		const columnMappings = {
 			id: ["unique_id_sku"],
@@ -193,7 +194,7 @@ export class GoogleSheetsService {
 			}
 		}
 
-		console.log("Resolved columns:", resolvedColumns);
+		logger.debug("Sheets", "Resolved columns:", resolvedColumns);
 
 		const requiredColumns = [
 			"id",
@@ -204,20 +205,20 @@ export class GoogleSheetsService {
 		];
 		for (const column of requiredColumns) {
 			if (resolvedColumns[column] === undefined) {
-				console.error(`Missing required column: ${column}`);
+				logger.error("Sheets", `Missing required column: ${column}`);
 				throw new Error(
 					`Required column for '${column}' not found in products sheet`,
 				);
 			}
 		}
 
-		console.log(`Processing ${values.length - 1} product rows...`);
+		logger.debug("Sheets", `Processing ${values.length - 1} product rows...`);
 
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 
 			if (!row[resolvedColumns.id] || row[resolvedColumns.id].trim() === "") {
-				console.log(`Skipping row ${i}: empty ID`);
+				logger.debug("Sheets", `Skipping row ${i}: empty ID`);
 				continue;
 			}
 
@@ -238,24 +239,27 @@ export class GoogleSheetsService {
 					image_url: undefined,
 				};
 
-				console.log(`Parsed product ${i}:`, product);
+				logger.debug("Sheets", `Parsed product ${i}:`, product);
 				products.push(product);
 			} catch (error) {
-				console.warn(`Error parsing product row ${i}:`, error);
+				logger.warn("Sheets", `Error parsing product row ${i}:`, error);
 			}
 		}
 
-		console.log(`Successfully parsed ${products.length} products`);
+		logger.debug("Sheets", `Successfully parsed ${products.length} products`);
 
 		return products;
 	}
 
 	async getInternalProductData(accessToken: string): Promise<any[]> {
-		console.log("Fetching internal_products sheet...");
+		logger.debug("Sheets", "Fetching internal_products sheet...");
 		const data = await this.getSheetData("internal_products", accessToken);
-		console.log("Internal products sheet data:", data);
+		logger.debug("Sheets", "Internal products sheet data:", data);
 		if (!data || data.length < 2) {
-			console.log("No internal products data found or insufficient rows");
+			logger.debug(
+				"Sheets",
+				"No internal products data found or insufficient rows",
+			);
 			return [];
 		}
 
@@ -282,21 +286,24 @@ export class GoogleSheetsService {
 				never_out: row[9] === "TRUE", // Parse boolean
 				status: row[10] || "active", // status field
 			};
-			console.log("Parsed internal product:", product);
+			logger.debug("Sheets", "Parsed internal product:", product);
 
 			products.push(product);
 		}
 
-		console.log("Returning", products.length, "internal products");
+		logger.debug("Sheets", `Returning ${products.length} internal products`);
 		return products;
 	}
 
 	async getExternalProductData(accessToken: string): Promise<any[]> {
-		console.log("Fetching external_products sheet...");
+		logger.debug("Sheets", "Fetching external_products sheet...");
 		const data = await this.getSheetData("external_products", accessToken);
-		console.log("External products sheet data:", data);
+		logger.debug("Sheets", "External products sheet data:", data);
 		if (!data || data.length < 2) {
-			console.log("No external products data found or insufficient rows");
+			logger.debug(
+				"Sheets",
+				"No external products data found or insufficient rows",
+			);
 			return [];
 		}
 
@@ -320,12 +327,12 @@ export class GoogleSheetsService {
 				quantity: parseInt(row[6] || "0", 10),
 				status: row[7] || "active", // status field
 			};
-			console.log("Parsed external product:", product);
+			logger.debug("Sheets", "Parsed external product:", product);
 
 			products.push(product);
 		}
 
-		console.log("Returning", products.length, "external products");
+		logger.debug("Sheets", `Returning ${products.length} external products`);
 		return products;
 	}
 
@@ -413,7 +420,7 @@ export class GoogleSheetsService {
 				externalProducts,
 			};
 		} catch (error) {
-			console.error("Error fetching sheets data:", error);
+			logger.error("Sheets", "Error fetching sheets data:", error);
 			throw error;
 		}
 	}
@@ -443,7 +450,7 @@ export class GoogleSheetsService {
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error("Sheets append error:", {
+			logger.error("Sheets", "Sheets append error:", {
 				status: response.status,
 				statusText: response.statusText,
 				error: errorText,
@@ -453,7 +460,10 @@ export class GoogleSheetsService {
 			);
 		}
 
-		console.log(`Successfully appended ${values.length} rows to ${sheetName}`);
+		logger.debug(
+			"Sheets",
+			`Successfully appended ${values.length} rows to ${sheetName}`,
+		);
 	}
 
 	async getNextId(sheetName: string, accessToken: string): Promise<number> {
@@ -489,7 +499,8 @@ export class GoogleSheetsService {
 		const newRow = [name, nextId.toString(), "active"];
 
 		await this.appendToSheet(sheetName, [newRow], accessToken);
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Added metadata item: ${name} with id ${nextId} to ${sheetName}`,
 		);
 
@@ -526,7 +537,8 @@ export class GoogleSheetsService {
 		];
 
 		await this.appendToSheet("products", [newRow], accessToken);
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Added product: ${product.name} (${product.id}) to products sheet`,
 		);
 	}
@@ -550,7 +562,8 @@ export class GoogleSheetsService {
 		];
 
 		await this.appendToSheet("internal_products", [newRow], accessToken);
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Added internal product: ${product.sparkys_product_name} (${product.id}) to internal_products sheet`,
 		);
 
@@ -592,7 +605,8 @@ export class GoogleSheetsService {
 		];
 
 		await this.appendToSheet("external_products", [newRow], accessToken);
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Added external product: ${product.unique_id_sku} to external_products sheet`,
 		);
 
@@ -664,7 +678,10 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Updated external product: ${product.unique_id_sku}`);
+		logger.debug(
+			"Sheets",
+			`Updated external product: ${product.unique_id_sku}`,
+		);
 
 		// Log audit event only if not skipped
 		if (!skipAuditLog && Object.keys(beforeState).length > 0) {
@@ -895,7 +912,10 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Updated internal product: ${product.sparkys_product_name}`);
+		logger.debug(
+			"Sheets",
+			`Updated internal product: ${product.sparkys_product_name}`,
+		);
 
 		// Log audit event with actual changes only
 		if (Object.keys(beforeState).length > 0) {
@@ -1055,7 +1075,7 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Archived external product: ${sku}`);
+		logger.debug("Sheets", `Archived external product: ${sku}`);
 
 		await this.logEvent(
 			{
@@ -1100,7 +1120,7 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Unarchived external product: ${sku}`);
+		logger.debug("Sheets", `Unarchived external product: ${sku}`);
 
 		await this.logEvent(
 			{
@@ -1142,15 +1162,15 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Archived internal product: ${name}`);
+		logger.debug("Sheets", `Archived internal product: ${id}`);
 
 		await this.logEvent(
 			{
 				timestamp: new Date().toISOString(),
 				event_type: "archive",
 				object_type: "internal_product",
-				object_id: name,
-				object_name: name,
+				object_id: id,
+				object_name: currentRow[1] || id,
 				changes: JSON.stringify({ status: "archived" }),
 				before_state: JSON.stringify({ status: "active" }),
 				sheet_name: "internal_products",
@@ -1187,15 +1207,15 @@ export class GoogleSheetsService {
 			updatedRow,
 			accessToken,
 		);
-		console.log(`Unarchived internal product: ${name}`);
+		logger.debug("Sheets", `Unarchived internal product: ${id}`);
 
 		await this.logEvent(
 			{
 				timestamp: new Date().toISOString(),
 				event_type: "unarchive",
 				object_type: "internal_product",
-				object_id: name,
-				object_name: name,
+				object_id: id,
+				object_name: currentRow[1] || id,
 				changes: JSON.stringify({ status: "active" }),
 				before_state: JSON.stringify({ status: "archived" }),
 				sheet_name: "internal_products",
@@ -1257,7 +1277,7 @@ export class GoogleSheetsService {
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error("Sheets update error:", {
+			logger.error("Sheets", "Sheets update error:", {
 				status: response.status,
 				statusText: response.statusText,
 				error: errorText,
@@ -1267,7 +1287,10 @@ export class GoogleSheetsService {
 			);
 		}
 
-		console.log(`Successfully updated row ${rowNumber} in ${sheetName}`);
+		logger.debug(
+			"Sheets",
+			`Successfully updated row ${rowNumber} in ${sheetName}`,
+		);
 	}
 
 	async updateMetadataItem(
@@ -1295,7 +1318,8 @@ export class GoogleSheetsService {
 		const status = existingRow[2] || "active"; // status is in third column
 		const updatedRow = [newName, id, status];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Updated metadata item from "${oldName}" to "${newName}" in ${sheetName}`,
 		);
 
@@ -1329,14 +1353,16 @@ export class GoogleSheetsService {
 		newValue: string,
 		accessToken: string,
 	): Promise<void> {
-		console.log(
+		logger.debug(
+			"Sheets",
 			`DEBUG: Starting cascade update for ${metadataSheetName}: "${oldValue}" -> "${newValue}"`,
 		);
 
 		// Determine which product sheets need updating based on metadata type
 		const sheetsToUpdate = this.getProductSheetsForMetadata(metadataSheetName);
 		if (sheetsToUpdate.length === 0) {
-			console.log(
+			logger.debug(
+				"Sheets",
 				`No product sheets to update for metadata sheet: ${metadataSheetName}`,
 			);
 			return;
@@ -1393,11 +1419,14 @@ export class GoogleSheetsService {
 		newValue: string,
 		accessToken: string,
 	): Promise<void> {
-		console.log(`DEBUG: Updating ${sheetName} sheet, column ${columnName}`);
+		logger.debug(
+			"Sheets",
+			`DEBUG: Updating ${sheetName} sheet, column ${columnName}`,
+		);
 
 		const products = await this.getSheetData(sheetName, accessToken);
 		if (products.length === 0) {
-			console.log(`DEBUG: No products found in ${sheetName}`);
+			logger.debug("Sheets", `DEBUG: No products found in ${sheetName}`);
 			return;
 		}
 
@@ -1407,7 +1436,8 @@ export class GoogleSheetsService {
 		);
 
 		if (columnIndex === -1) {
-			console.log(
+			logger.debug(
+				"Sheets",
 				`DEBUG: Column ${columnName} not found in ${sheetName}. Available columns:`,
 				headerRow,
 			);
@@ -1447,7 +1477,8 @@ export class GoogleSheetsService {
 			}
 		}
 
-		console.log(
+		logger.debug(
+			"Sheets",
 			`DEBUG: Found ${rowsToUpdate.length} products to update in ${sheetName}`,
 		);
 
@@ -1461,7 +1492,8 @@ export class GoogleSheetsService {
 			);
 		}
 
-		console.log(
+		logger.debug(
+			"Sheets",
 			`Updated ${rowsToUpdate.length} products in ${sheetName} with metadata change from "${oldValue}" to "${newValue}"`,
 		);
 	}
@@ -1489,7 +1521,7 @@ export class GoogleSheetsService {
 		// Update the metadata sheet with archived status
 		const updatedRow = [name, id, "archived"];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
-		console.log(`Archived metadata item "${name}" in ${sheetName}`);
+		logger.debug("Sheets", `Archived metadata item "${name}" in ${sheetName}`);
 
 		// Log audit event
 		await this.logEvent(
@@ -1530,7 +1562,10 @@ export class GoogleSheetsService {
 		// Update the metadata sheet with active status
 		const updatedRow = [name, id, "active"];
 		await this.updateRow(sheetName, rowNumber, updatedRow, accessToken);
-		console.log(`Unarchived metadata item "${name}" in ${sheetName}`);
+		logger.debug(
+			"Sheets",
+			`Unarchived metadata item "${name}" in ${sheetName}`,
+		);
 
 		// Log audit event
 		await this.logEvent(
@@ -1578,7 +1613,7 @@ export class GoogleSheetsService {
 		];
 
 		await this.updateRow("products", rowNumber, updatedRow, accessToken);
-		console.log(`Updated product: ${product.name} (${product.id})`);
+		logger.debug("Sheets", `Updated product: ${product.name} (${product.id})`);
 	}
 
 	// Audit Log Functions
@@ -1606,11 +1641,12 @@ export class GoogleSheetsService {
 			];
 
 			await this.appendToSheet("events", [newRow], accessToken);
-			console.log(
+			logger.debug(
+				"Sheets",
 				`Logged audit event: ${event.event_type} ${event.object_type} ${event.object_name} by ${userEmail}`,
 			);
 		} catch (error) {
-			console.error("Failed to log audit event:", error);
+			logger.error("Sheets", "Failed to log audit event:", error);
 		}
 	}
 
@@ -1649,7 +1685,7 @@ export class GoogleSheetsService {
 			// Apply pagination
 			return events.slice(offset, offset + limit);
 		} catch (error) {
-			console.error("Failed to fetch audit events:", error);
+			logger.error("Sheets", "Failed to fetch audit events:", error);
 			return [];
 		}
 	}
