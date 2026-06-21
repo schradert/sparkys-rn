@@ -149,5 +149,3 @@ else (tsc, eslint, biome, jest, and the push hooks) is green.
   `SPREADSHEET_ID` (see its `FIXME`); wire it to
   `process.env.EXPO_PUBLIC_SPREADSHEET_ID` so each variant uses its `eas.json`
   sheet.
-- [ ] **Refresh the `upgrade-expo-sdk` skill** — its note still pins `typescript`
-  to `~5.9`; SDK 56 now wants (and we use) `~6.0.3`.
