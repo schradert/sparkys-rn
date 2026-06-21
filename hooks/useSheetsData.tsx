@@ -9,6 +9,7 @@ import {
 	updateFieldOptions,
 	updateMetadataItems,
 } from "@/constants/Products";
+import { SPREADSHEET_ID } from "@/constants/Spreadsheet";
 import { GoogleSheetsService } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import { setExternalProducts, setInternalProducts } from "@/store/products";
@@ -117,10 +118,6 @@ function getMetadataFieldKey(sheetName: string): string | null {
 			return null;
 	}
 }
-
-// FIXME make dynamic (why isn't eas.json passing it?)
-// const SPREADSHEET_ID = process.env.EXPO_PUBLIC_SPREADSHEET_ID;
-const SPREADSHEET_ID = "1V4r_IT3XQB5hxIkX0iO6p1ASqgtz4MrfAGXq0QW8pzE";
 
 function getSheetNameForMetadata(viewMode: string): string | null {
 	switch (viewMode) {
