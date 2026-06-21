@@ -111,6 +111,10 @@
   # typescript-language-server devDependency in Helix; Biome formats + organizes
   # imports in both; nixd + alejandra handle Nix.
   files.".zed/settings.json".json = {
+    # Load the project's direnv (devenv) environment so Zed's language servers
+    # resolve from the toolchain (node_modules/.bin, nixd). Requires direnv
+    # installed and `.envrc` allowed (run `direnv allow` once).
+    load_direnv = "direct";
     # Zed needs the Biome + Nix extensions for those language servers (vtsls is
     # built in); auto-install them so the LSPs work out of the box.
     auto_install_extensions = {
