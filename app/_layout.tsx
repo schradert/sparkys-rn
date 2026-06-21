@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as NavigationBar from "expo-navigation-bar";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,6 +15,12 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
+
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: { retry: 2, staleTime: 30_000, refetchOnWindowFocus: false },
+	},
+});
 
 function ThemedRootLayout() {
 	const { theme } = useTheme();
@@ -95,8 +102,10 @@ function ThemedRootLayout() {
 
 export default function RootLayout() {
 	return (
-		<ThemeProvider>
-			<ThemedRootLayout />
-		</ThemeProvider>
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider>
+				<ThemedRootLayout />
+			</ThemeProvider>
+		</QueryClientProvider>
 	);
 }

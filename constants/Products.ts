@@ -1,3 +1,5 @@
+import * as v from "valibot";
+
 export const DEFAULT_FIELD_OPTIONS = {
 	productType: [
 		"Latex Balloons",
@@ -233,31 +235,73 @@ export interface ExternalProduct {
 	status?: "active" | "archived"; // archive status
 }
 
-// Spreadsheet representations with comma-separated arrays
-export interface InternalProductSheet {
-	id: string; // unique identifier
-	sparkys_product_name: string;
-	product_type: string;
-	sparkys_color: string;
-	texture: string;
-	shape: string;
-	occasions: string; // comma-separated
-	products: string; // comma-separated barcodes
-	threshold_quantity: number;
-	never_out: boolean; // high priority marking for understocked items
-	status?: "active" | "archived"; // archive status
+// Spreadsheet representations with comma-separated arrays.
+// valibot schemas are the source of truth; the row types are inferred from
+// them, and raw Google Sheets rows are validated at the boundary via the
+// safeParse* helpers below.
+const SheetStatusSchema = v.optional(v.picklist(["active", "archived"]));
+
+export const InternalProductSheetSchema = v.object({
+	id: v.string(),
+	sparkys_product_name: v.string(),
+	product_type: v.string(),
+	sparkys_color: v.string(),
+	texture: v.string(),
+	shape: v.string(),
+	occasions: v.string(), // comma-separated
+	products: v.string(), // comma-separated barcodes
+	threshold_quantity: v.number(),
+	never_out: v.boolean(),
+	status: SheetStatusSchema,
+});
+
+export const ExternalProductSheetSchema = v.object({
+	unique_id_sku: v.string(),
+	manufacturer_color: v.string(),
+	brand: v.string(),
+	size: v.string(),
+	bag_quantity: v.number(),
+	distributors: v.string(), // comma-separated
+	quantity: v.number(),
+	status: SheetStatusSchema,
+});
+
+export type InternalProductSheet = v.InferOutput<
+	typeof InternalProductSheetSchema
+>;
+export type ExternalProductSheet = v.InferOutput<
+	typeof ExternalProductSheetSchema
+>;
+
+// Boundary validation helpers — validate untrusted Google Sheets rows.
+export function safeParseInternalProductSheet(raw: unknown) {
+	return v.safeParse(InternalProductSheetSchema, raw);
 }
 
-export interface ExternalProductSheet {
-	unique_id_sku: string;
-	manufacturer_color: string;
-	brand: string;
-	size: string;
-	bag_quantity: number;
-	distributors: string; // comma-separated
-	quantity: number;
-	status?: "active" | "archived"; // archive status
+export function safeParseExternalProductSheet(raw: unknown) {
+	return v.safeParse(ExternalProductSheetSchema, raw);
 }
+
+// Model schema for the editable internal product (react-hook-form resolver).
+// Inferred output matches the InternalProduct interface above; the refinements
+// add form validation (required name, non-negative threshold).
+export const InternalProductSchema = v.object({
+	id: v.string(),
+	sparkys_product_name: v.pipe(
+		v.string(),
+		v.trim(),
+		v.minLength(1, "Product name is required"),
+	),
+	product_type: v.string(),
+	sparkys_color: v.string(),
+	texture: v.string(),
+	shape: v.string(),
+	occasions: v.array(v.string()),
+	products: v.array(v.string()),
+	threshold_quantity: v.pipe(v.number(), v.minValue(0, "Must be 0 or more")),
+	never_out: v.boolean(),
+	status: SheetStatusSchema,
+});
 
 // Utility functions for parsing comma-separated values
 export function parseCommaSeparated(value: string): string[] {
@@ -275,6 +319,9 @@ export function formatCommaSeparated(values: string[]): string {
 export function convertInternalProductSheetToModel(
 	sheet: InternalProductSheet,
 ): InternalProduct {
+	if (!safeParseInternalProductSheet(sheet).success) {
+		console.warn("Invalid internal product sheet row", sheet);
+	}
 	return {
 		id: sheet.id,
 		sparkys_product_name: sheet.sparkys_product_name,
@@ -311,6 +358,9 @@ export function convertInternalProductModelToSheet(
 export function convertExternalProductSheetToModel(
 	sheet: ExternalProductSheet,
 ): ExternalProduct {
+	if (!safeParseExternalProductSheet(sheet).success) {
+		console.warn("Invalid external product sheet row", sheet);
+	}
 	return {
 		unique_id_sku: sheet.unique_id_sku,
 		manufacturer_color: sheet.manufacturer_color,
