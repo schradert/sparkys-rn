@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 
 interface ExternalProductCardProps {
 	externalProduct: ExternalProduct;
@@ -27,7 +28,7 @@ export default function ExternalProductCard({
 	const colors = Colors[theme];
 
 	// Debug logging
-	console.log("ExternalProductCard props:", {
+	logger.debug("Products", "ExternalProductCard props:", {
 		externalProduct,
 		distributors: externalProduct?.distributors,
 		distributorsType: typeof externalProduct?.distributors,

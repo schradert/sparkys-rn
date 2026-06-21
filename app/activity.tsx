@@ -16,6 +16,7 @@ import { Colors } from "@/constants/Colors";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
+import { logger } from "@/services/logger";
 import { getAllInternalProducts } from "@/store/products";
 
 export default function Activity() {
@@ -53,7 +54,7 @@ export default function Activity() {
 
 			setHasMore(newEvents.length === 50);
 		} catch (error) {
-			console.error("Failed to load events:", error);
+			logger.error("Activity", "Failed to load events:", error);
 		} finally {
 			setLoading(false);
 			setRefreshing(false);
@@ -106,11 +107,14 @@ export default function Activity() {
 								: "arrow-down";
 						}
 					} catch (e) {
-						console.log(
-							"Failed to parse quantity changes for icon:",
-							e,
-							changes,
-							beforeState,
+						logger.debug(
+							"Activity",
+							"Failed to parse quantity changes for icon",
+							{
+								error: e,
+								changes: changes,
+								beforeState: beforeState,
+							},
 						);
 					}
 				}
@@ -149,12 +153,11 @@ export default function Activity() {
 								: colors.error;
 						}
 					} catch (e) {
-						console.log(
-							"Failed to parse quantity changes:",
-							e,
-							changes,
-							beforeState,
-						);
+						logger.debug("Activity", "Failed to parse quantity changes", {
+							error: e,
+							changes: changes,
+							beforeState: beforeState,
+						});
 					}
 				}
 				return colors.error; // Default to red if parsing fails
@@ -244,11 +247,14 @@ export default function Activity() {
 													: "Withdrew";
 											}
 										} catch (e) {
-											console.log(
-												"Failed to parse quantity changes for label:",
-												e,
-												item.changes,
-												item.before_state,
+											logger.debug(
+												"Activity",
+												"Failed to parse quantity changes for label",
+												{
+													error: e,
+													changes: item.changes,
+													beforeState: item.before_state,
+												},
 											);
 										}
 										return "Withdrew"; // Default to withdrew if parsing fails
@@ -452,11 +458,14 @@ export default function Activity() {
 																: "Withdrew";
 														}
 													} catch (e) {
-														console.log(
-															"Failed to parse quantity changes for detail label:",
-															e,
-															selectedEvent.changes,
-															selectedEvent.before_state,
+														logger.debug(
+															"Activity",
+															"Failed to parse quantity changes for detail label",
+															{
+																error: e,
+																changes: selectedEvent.changes,
+																beforeState: selectedEvent.before_state,
+															},
 														);
 													}
 													return "Withdrew"; // Default to withdrew if parsing fails

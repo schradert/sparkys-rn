@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { type Href, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -26,6 +26,7 @@ import {
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 import {
 	getAllInternalProducts,
 	getExternalProductsForInternal,
@@ -41,7 +42,10 @@ export default function InternalProductDetail() {
 	const colors = Colors[theme];
 
 	// Helper function to add (Archived) labels to metadata options
-	const addArchivedLabels = (options: string[], fieldKey: string): string[] => {
+	const addArchivedLabels = (
+		options: readonly string[],
+		fieldKey: string,
+	): string[] => {
 		return options.map((option) => {
 			const isArchived = isMetadataItemArchived(fieldKey, option);
 			return isArchived ? `${option} (Archived)` : option;
@@ -172,6 +176,10 @@ export default function InternalProductDetail() {
 				Alert.alert("Error", result.error || "Failed to update product");
 			}
 		} catch (error) {
+			logger.error("InternalProduct", "Failed to update product", {
+				error,
+				id: originalProduct?.id,
+			});
 			Alert.alert("Error", "Failed to update product");
 		} finally {
 			setIsSaving(false);
@@ -232,7 +240,9 @@ export default function InternalProductDetail() {
 								: await archiveInternalProduct(internalProduct.id);
 
 							if (result.success) {
-								const newStatus = isCurrentlyArchived ? "active" : "archived";
+								const newStatus: "active" | "archived" = isCurrentlyArchived
+									? "active"
+									: "archived";
 								const updatedProduct = {
 									...internalProduct,
 									status: newStatus,
@@ -248,6 +258,11 @@ export default function InternalProductDetail() {
 								);
 							}
 						} catch (error) {
+							logger.error("InternalProduct", `Failed to ${action} product`, {
+								error,
+								id: internalProduct.id,
+								action,
+							});
 							Alert.alert("Error", `Failed to ${action} product`);
 						} finally {
 							setIsArchiving(false);
@@ -663,7 +678,7 @@ export default function InternalProductDetail() {
 													{ backgroundColor: colors.surface },
 												]}
 												{...(route
-													? { onPress: () => router.push(route) }
+													? { onPress: () => router.push(route as Href) }
 													: {})}
 											>
 												<Ionicons

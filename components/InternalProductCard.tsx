@@ -20,6 +20,7 @@ import type {
 import { getQuantityColor } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
+import { logger } from "@/services/logger";
 import ExternalProductCard from "./ExternalProductCard";
 
 if (
@@ -63,7 +64,7 @@ export default function InternalProductCard({
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	// Debug logging
-	console.log("InternalProductCard props:", {
+	logger.debug("Products", "InternalProductCard props:", {
 		internalProduct,
 		externalProductsCount: externalProducts?.length || 0,
 		internalProductBarcodes: internalProduct?.products,
@@ -76,9 +77,9 @@ export default function InternalProductCard({
 	});
 
 	// Debug the barcode matching
-	console.log(
-		"Barcode matching debug for",
-		internalProduct.sparkys_product_name + ":",
+	logger.debug(
+		"Products",
+		`Barcode matching debug for ${internalProduct.sparkys_product_name}`,
 		{
 			internalProductBarcodes: internalProduct.products,
 			externalProductSkus:
@@ -165,9 +166,9 @@ export default function InternalProductCard({
 		return b.unique_id_sku.localeCompare(a.unique_id_sku);
 	});
 
-	console.log(
-		"RelatedExternals result for",
-		internalProduct.sparkys_product_name + ":",
+	logger.debug(
+		"Products",
+		`RelatedExternals result for ${internalProduct.sparkys_product_name}`,
 		{
 			relatedExternalsCount: relatedExternals.length,
 			internalProductBarcodes: internalProduct.products,
@@ -190,7 +191,7 @@ export default function InternalProductCard({
 		internalProduct.threshold_quantity,
 	);
 
-	console.log("Color calculation:", {
+	logger.debug("Products", "Color calculation:", {
 		productName: internalProduct.sparkys_product_name,
 		totalQuantity,
 		threshold: internalProduct.threshold_quantity,

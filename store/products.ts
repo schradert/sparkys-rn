@@ -1,4 +1,5 @@
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
+import { logger } from "@/services/logger";
 
 // Store for internal products (user-defined groupings)
 let internalProducts: InternalProduct[] = [];
@@ -67,7 +68,7 @@ export function updateInternalProductByName(
 }
 
 export function setInternalProducts(newProducts: InternalProduct[]): void {
-	console.log("Setting internal products:", newProducts);
+	logger.debug("Store", "Setting internal products:", newProducts);
 	internalProducts = [...newProducts];
 	notifyStoreChange();
 }
@@ -93,6 +94,7 @@ export function getExternalProductsForInternal(
 
 export function addExternalProduct(product: ExternalProduct): void {
 	externalProducts = [...externalProducts, product];
+	notifyStoreChange();
 }
 
 export function updateExternalProduct(
@@ -107,7 +109,7 @@ export function updateExternalProduct(
 }
 
 export function setExternalProducts(newProducts: ExternalProduct[]): void {
-	console.log("Setting external products:", newProducts);
+	logger.debug("Store", "Setting external products:", newProducts);
 	externalProducts = [...newProducts];
 	notifyStoreChange();
 }

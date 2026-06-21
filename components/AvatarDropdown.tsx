@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 
 export default function AvatarDropdown() {
 	const { user, signOut } = useAuth();
@@ -13,14 +14,14 @@ export default function AvatarDropdown() {
 	const colors = Colors[theme];
 
 	const handleSignOut = async () => {
-		console.log("Sign out clicked");
+		logger.debug("Auth", "Sign out clicked");
 		setIsDropdownVisible(false);
 		try {
 			await signOut();
-			console.log("Sign out completed");
+			logger.info("Auth", "Sign out completed");
 			router.replace("/login");
 		} catch (error) {
-			console.log("Sign out error:", error);
+			logger.debug("Auth", "Sign out error", { error });
 		}
 	};
 
@@ -32,6 +33,11 @@ export default function AvatarDropdown() {
 	const handleActivityPress = () => {
 		setIsDropdownVisible(false);
 		router.push("/activity");
+	};
+
+	const handleDiagnosticsPress = () => {
+		setIsDropdownVisible(false);
+		router.push("/diagnostics");
 	};
 
 	return (
@@ -85,6 +91,20 @@ export default function AvatarDropdown() {
 							style={[styles.themeToggleText, { color: colors.textSecondary }]}
 						>
 							Activity
+						</Text>
+					</Pressable>
+					<View
+						style={[styles.separator, { backgroundColor: colors.separator }]}
+					/>
+					<Pressable
+						style={styles.dropdownItem}
+						onPress={handleDiagnosticsPress}
+					>
+						<Ionicons name="bug-outline" size={20} color={colors.icon} />
+						<Text
+							style={[styles.themeToggleText, { color: colors.textSecondary }]}
+						>
+							Share diagnostics
 						</Text>
 					</Pressable>
 					<View
