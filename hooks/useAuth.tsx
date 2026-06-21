@@ -4,6 +4,10 @@ import {
 	type User,
 } from "@react-native-google-signin/google-signin";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
+import { logger } from "@/services/logger";
+
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
 
 interface AuthState {
 	user: User | null;
@@ -99,7 +103,7 @@ async function signOut(): Promise<void> {
 			isLoading: false,
 		});
 	} catch (error) {
-		console.error("Sign out error:", error);
+		logger.error("Auth", "Sign out error", { error });
 	}
 }
 
@@ -115,7 +119,7 @@ async function getAccessToken(): Promise<string | null> {
 			const tokens = await GoogleSignin.getTokens();
 			return tokens.accessToken;
 		} catch (error) {
-			console.error("Get access token error:", error);
+			logger.error("Auth", "Get access token error", { error });
 			return null;
 		} finally {
 			tokenPromise = null;
@@ -123,6 +127,42 @@ async function getAccessToken(): Promise<string | null> {
 	})();
 
 	return tokenPromise;
+}
+
+/**
+ * Get an access token that includes the Drive scope, requesting it just-in-time
+ * via incremental consent (so users who never upload diagnostics are never
+ * prompted for Drive). On Android the cached token is cleared after `addScopes`
+ * so the refreshed token actually reflects the new scope — otherwise Drive
+ * calls 403 with a stale, pre-elevation token. Returns null if no token can be
+ * obtained; if the user declines Drive consent the upload will surface a 403.
+ */
+export async function getDriveAccessToken(): Promise<string | null> {
+	try {
+		await GoogleSignin.addScopes({ scopes: [DRIVE_SCOPE] });
+	} catch (error) {
+		logger.warn("Auth", "addScopes(drive) failed; trying existing token", {
+			error,
+		});
+	}
+
+	try {
+		if (Platform.OS === "android") {
+			try {
+				const current = await GoogleSignin.getTokens();
+				if (current?.accessToken) {
+					await GoogleSignin.clearCachedAccessToken(current.accessToken);
+				}
+			} catch {
+				// Best effort — fall through to a fresh getTokens().
+			}
+		}
+		const tokens = await GoogleSignin.getTokens();
+		return tokens.accessToken ?? null;
+	} catch (error) {
+		logger.error("Auth", "Failed to obtain Drive access token", { error });
+		return null;
+	}
 }
 
 export function useAuth() {
@@ -137,5 +177,6 @@ export function useAuth() {
 		signIn,
 		signOut,
 		getAccessToken,
+		getDriveAccessToken,
 	};
 }

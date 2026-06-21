@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { type Href, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -24,6 +24,7 @@ import {
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
+import { logger } from "@/services/logger";
 import {
 	getAllExternalProducts,
 	getAllInternalProducts,
@@ -38,7 +39,10 @@ export default function ExternalProductDetail() {
 	const colors = Colors[theme];
 
 	// Helper function to add (Archived) labels to metadata options
-	const addArchivedLabels = (options: string[], fieldKey: string): string[] => {
+	const addArchivedLabels = (
+		options: readonly string[],
+		fieldKey: string,
+	): string[] => {
 		return options.map((option) => {
 			const isArchived = isMetadataItemArchived(fieldKey, option);
 			return isArchived ? `${option} (Archived)` : option;
@@ -138,7 +142,8 @@ export default function ExternalProductDetail() {
 
 		setIsSaving(true);
 		try {
-			// Update external product in spreadsheet
+			// 1) External field changes. The sheets service audits these itself
+			//    (it diffs before/after), so we do NOT log an audit event here.
 			if (hasExternalChanges) {
 				const productForSheet = {
 					unique_id_sku: editedProduct.unique_id_sku,
@@ -153,68 +158,131 @@ export default function ExternalProductDetail() {
 
 				const result = await updateExternalProductInSheet(productForSheet);
 				if (!result.success) {
+					logger.error("ExternalProduct", "Failed to update external fields", {
+						error: result.error,
+						sku: editedProduct.unique_id_sku,
+					});
 					Alert.alert("Error", result.error || "Failed to update product");
 					return;
 				}
+				// Keep the store in lockstep with the sheet, so a later reassignment
+				// failure can't leave the store showing stale external fields.
+				updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
+				setExternalProduct(editedProduct);
+				setOriginalProduct(editedProduct);
 			}
 
-			// Handle internal product reassignment
+			// 2) Internal-product reassignment: two sheet writes (remove from old,
+			//    add to new). Check each result, and if the second write fails roll
+			//    the first one back, so a SKU is never left orphaned (removed from
+			//    its old product but never added to the new one). Store updates are
+			//    deferred until both writes succeed.
 			if (hasInternalProductChange) {
-				// Remove SKU from old internal product
-				if (originalInternalProduct) {
-					const updatedOldInternal = {
-						...originalInternalProduct,
-						products: originalInternalProduct.products.filter(
-							(sku) => sku !== externalProduct.unique_id_sku,
-						),
-					};
-					const oldInternalForSheet = {
-						id: updatedOldInternal.id,
-						sparkys_product_name: updatedOldInternal.sparkys_product_name,
-						product_type: updatedOldInternal.product_type,
-						sparkys_color: updatedOldInternal.sparkys_color,
-						texture: updatedOldInternal.texture,
-						shape: updatedOldInternal.shape,
-						occasions: updatedOldInternal.occasions.join(", "),
-						products: updatedOldInternal.products.join(", "),
-						threshold_quantity: updatedOldInternal.threshold_quantity,
-						never_out: updatedOldInternal.never_out,
-						status: updatedOldInternal.status,
-					};
-					await updateInternalProductInSheet(oldInternalForSheet);
+				const sku = externalProduct.unique_id_sku;
+				const toInternalSheet = (p: InternalProduct) => ({
+					id: p.id,
+					sparkys_product_name: p.sparkys_product_name,
+					product_type: p.product_type,
+					sparkys_color: p.sparkys_color,
+					texture: p.texture,
+					shape: p.shape,
+					occasions: p.occasions.join(", "),
+					products: p.products.join(", "),
+					threshold_quantity: p.threshold_quantity,
+					never_out: p.never_out,
+					status: p.status,
+				});
+
+				const updatedOldInternal = originalInternalProduct
+					? {
+							...originalInternalProduct,
+							products: originalInternalProduct.products.filter(
+								(s) => s !== sku,
+							),
+						}
+					: null;
+				const updatedNewInternal = internalProduct
+					? { ...internalProduct, products: [...internalProduct.products, sku] }
+					: null;
+
+				// Step A: remove the SKU from the old internal product.
+				if (originalInternalProduct && updatedOldInternal) {
+					const removeResult = await updateInternalProductInSheet(
+						toInternalSheet(updatedOldInternal),
+					);
+					if (!removeResult.success) {
+						logger.error(
+							"ExternalProduct",
+							"Reassign: failed to remove SKU from old internal product",
+							{
+								error: removeResult.error,
+								sku,
+								oldInternalId: originalInternalProduct.id,
+							},
+						);
+						Alert.alert(
+							"Error",
+							removeResult.error || "Failed to reassign product",
+						);
+						return; // nothing persisted for the reassignment yet — safe to abort
+					}
+				}
+
+				// Step B: add the SKU to the new internal product; roll back A on failure.
+				if (internalProduct && updatedNewInternal) {
+					const addResult = await updateInternalProductInSheet(
+						toInternalSheet(updatedNewInternal),
+					);
+					if (!addResult.success) {
+						logger.error(
+							"ExternalProduct",
+							"Reassign: failed to add SKU to new internal product; rolling back",
+							{
+								error: addResult.error,
+								sku,
+								newInternalId: internalProduct.id,
+							},
+						);
+						if (originalInternalProduct) {
+							const rollback = await updateInternalProductInSheet(
+								toInternalSheet(originalInternalProduct),
+							);
+							if (rollback.success) {
+								logger.warn(
+									"ExternalProduct",
+									"Reassign rolled back: SKU restored to old internal product",
+									{ sku, oldInternalId: originalInternalProduct.id },
+								);
+							} else {
+								logger.error(
+									"ExternalProduct",
+									"Reassign ROLLBACK FAILED: SKU orphaned from old internal product",
+									{
+										error: rollback.error,
+										sku,
+										oldInternalId: originalInternalProduct.id,
+									},
+								);
+							}
+						}
+						Alert.alert(
+							"Error",
+							addResult.error || "Failed to reassign product",
+						);
+						return;
+					}
+				}
+
+				// Both sheet writes succeeded — update the store and write the audit event.
+				if (originalInternalProduct && updatedOldInternal) {
 					updateInternalProductInStore(
 						originalInternalProduct.id,
 						updatedOldInternal,
 					);
 				}
-
-				// Add SKU to new internal product
-				if (internalProduct) {
-					const updatedNewInternal = {
-						...internalProduct,
-						products: [
-							...internalProduct.products,
-							externalProduct.unique_id_sku,
-						],
-					};
-					const newInternalForSheet = {
-						id: updatedNewInternal.id,
-						sparkys_product_name: updatedNewInternal.sparkys_product_name,
-						product_type: updatedNewInternal.product_type,
-						sparkys_color: updatedNewInternal.sparkys_color,
-						texture: updatedNewInternal.texture,
-						shape: updatedNewInternal.shape,
-						occasions: updatedNewInternal.occasions.join(", "),
-						products: updatedNewInternal.products.join(", "),
-						threshold_quantity: updatedNewInternal.threshold_quantity,
-						never_out: updatedNewInternal.never_out,
-						status: updatedNewInternal.status,
-					};
-					await updateInternalProductInSheet(newInternalForSheet);
+				if (internalProduct && updatedNewInternal) {
 					updateInternalProductInStore(internalProduct.id, updatedNewInternal);
 				}
-
-				// Create single event showing the assignment change
 				await logAuditEvent({
 					timestamp: new Date().toISOString(),
 					event_type: "edit",
@@ -231,16 +299,16 @@ export default function ExternalProductDetail() {
 					}),
 					sheet_name: "external_products",
 				});
+				setOriginalInternalProduct(internalProduct);
 			}
 
-			// Update global store
-			updateExternalProduct(externalProduct.unique_id_sku, editedProduct);
-			setExternalProduct(editedProduct);
-			setOriginalProduct(editedProduct);
-			setOriginalInternalProduct(internalProduct);
 			setIsEditing(false);
 			Alert.alert("Success", "Product updated successfully");
 		} catch (error) {
+			logger.error("ExternalProduct", "Failed to update product", {
+				error,
+				sku: externalProduct?.unique_id_sku,
+			});
 			Alert.alert("Error", "Failed to update product");
 		} finally {
 			setIsSaving(false);
@@ -311,7 +379,9 @@ export default function ExternalProductDetail() {
 								: await archiveExternalProduct(externalProduct.unique_id_sku);
 
 							if (result.success) {
-								const newStatus = isCurrentlyArchived ? "active" : "archived";
+								const newStatus: "active" | "archived" = isCurrentlyArchived
+									? "active"
+									: "archived";
 								const updatedProduct = {
 									...externalProduct,
 									status: newStatus,
@@ -331,6 +401,11 @@ export default function ExternalProductDetail() {
 								);
 							}
 						} catch (error) {
+							logger.error("ExternalProduct", `Failed to ${action} product`, {
+								error,
+								sku: externalProduct.unique_id_sku,
+								action,
+							});
 							Alert.alert("Error", `Failed to ${action} product`);
 						} finally {
 							setIsArchiving(false);
@@ -708,7 +783,7 @@ export default function ExternalProductDetail() {
 													{ backgroundColor: colors.surface },
 												]}
 												{...(route
-													? { onPress: () => router.push(route) }
+													? { onPress: () => router.push(route as Href) }
 													: {})}
 											>
 												<Ionicons
