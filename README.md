@@ -145,7 +145,3 @@ else (tsc, eslint, biome, jest, and the push hooks) is green.
   set to `warn` for now (`react-hooks/set-state-in-effect`, `react-hooks/refs`,
   `react-hooks/immutability`) plus `exhaustive-deps`; fix and promote them back
   toward `error` where practical.
-- [ ] **Dynamic spreadsheet ID** — `hooks/useSheetsData.tsx` hardcodes
-  `SPREADSHEET_ID` (see its `FIXME`); wire it to
-  `process.env.EXPO_PUBLIC_SPREADSHEET_ID` so each variant uses its `eas.json`
-  sheet.
