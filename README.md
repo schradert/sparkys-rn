@@ -128,11 +128,15 @@ else (tsc, eslint, biome, jest, and the push hooks) is green.
 - [ ] **App icons** — replace `assets/images/icon.png` and
   `assets/images/adaptive-icon.png` with square (1024×1024) assets. This is the
   only remaining `expo-doctor` failure.
-- [ ] **Grow test coverage** — tests currently cover the logger only. Add units
-  for the pure-logic core first (`constants/Products.ts`, `store/products.ts`,
-  `services/googleSheets.ts`), then components/screens with React Native Testing
-  Library, raising `coverageThreshold` in `jest.config.js` from `0` as it grows
+- [ ] **Grow test coverage** — the pure-logic core now has unit tests
+  (`constants/Products.ts`, `store/products.ts`, plus the logger). Extend to
+  `services/googleSheets.ts` (mock `fetch`), the hooks, and screens; raise
+  `coverageThreshold` in `jest.config.js` from its current floor as it grows
   (ratchet up, never down).
+- [ ] **RNTL component rendering** — `@testing-library/react-native`'s `render()`
+  returns an empty result under React 19 + jest-expo 56, so component/screen
+  tests can't query the tree yet. Investigate the renderer/setup before adding UI
+  tests; unit tests are unaffected.
 - [ ] **Biome warning backlog (~88)** — work down `noExplicitAny` (the dynamic
   Google Sheets layer), `noNonNullAssertion`, `noArrayIndexKey`,
   `useIterableCallbackReturn`, `useTemplate`, `useParseIntRadix`, and
