@@ -119,3 +119,31 @@ once you enter the shell.
 
 Upgrading the SDK is scripted: see `scripts/upgrade-expo.sh` and the
 `upgrade-expo-sdk` skill in `.claude/skills/`.
+
+## TODO / follow-ups
+
+Non-blocking items from the dev-tooling setup, to pick up over time. Everything
+else (tsc, eslint, biome, jest, and the push hooks) is green.
+
+- [ ] **App icons** — replace `assets/images/icon.png` and
+  `assets/images/adaptive-icon.png` with square (1024×1024) assets. This is the
+  only remaining `expo-doctor` failure.
+- [ ] **Grow test coverage** — tests currently cover the logger only. Add units
+  for the pure-logic core first (`constants/Products.ts`, `store/products.ts`,
+  `services/googleSheets.ts`), then components/screens with React Native Testing
+  Library, raising `coverageThreshold` in `jest.config.js` from `0` as it grows
+  (ratchet up, never down).
+- [ ] **Biome warning backlog (~88)** — work down `noExplicitAny` (the dynamic
+  Google Sheets layer), `noNonNullAssertion`, `noArrayIndexKey`,
+  `useIterableCallbackReturn`, `useTemplate`, `useParseIntRadix`, and
+  `noUselessFragments` / `noUselessSwitchCase`.
+- [ ] **ESLint warning backlog (~16)** — the React Compiler readiness rules are
+  set to `warn` for now (`react-hooks/set-state-in-effect`, `react-hooks/refs`,
+  `react-hooks/immutability`) plus `exhaustive-deps`; fix and promote them back
+  toward `error` where practical.
+- [ ] **Dynamic spreadsheet ID** — `hooks/useSheetsData.tsx` hardcodes
+  `SPREADSHEET_ID` (see its `FIXME`); wire it to
+  `process.env.EXPO_PUBLIC_SPREADSHEET_ID` so each variant uses its `eas.json`
+  sheet.
+- [ ] **Refresh the `upgrade-expo-sdk` skill** — its note still pins `typescript`
+  to `~5.9`; SDK 56 now wants (and we use) `~6.0.3`.
