@@ -14,7 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 
 interface CollapsibleRadioSectionProps {
 	title: string;
-	options: string[];
+	options: readonly string[];
 	selectedValue: string;
 	onSelectionChange: (value: string) => void;
 }

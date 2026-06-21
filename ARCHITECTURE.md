@@ -1,0 +1,103 @@
+# Architecture
+
+InvX is an Expo Router (file-based routing) React Native app. There is **no
+custom backend**: Google Sheets is the database, reached directly over the
+Sheets REST API with the OAuth token from Google Sign-In. All persistence lives
+in the user's Google account (Sheets/Drive).
+
+## Layers
+
+```text
+app/                screens (Expo Router routes)
+components/          reusable UI (cards, collapsible filter sections, theming)
+hooks/              data + auth + theme hooks
+services/           googleSheets.ts (Sheets API) + logger/ (structured logging)
+store/              products.ts (in-memory product state + subscriptions)
+constants/          Products.ts (domain types + converters), Colors.ts (theme)
+```
+
+## Screens (`app/`)
+
+| Route | File | Purpose |
+| --- | --- | --- |
+| `/login` | `login.tsx` | Google Sign-In gate |
+| `/inventory` | `inventory.tsx` | Main screen: internal-product list, metadata views, filters, barcode scanner, add forms |
+| `/internal-product/[id]` | `internal-product/[id].tsx` | View/edit a Sparky's (internal) product |
+| `/external-product/[sku]` | `external-product/[sku].tsx` | View/edit a manufacturer (external) product by barcode |
+| `/metadata/[...params]` | `metadata/[...params].tsx` | Edit a metadata list item |
+| `/activity` | `activity.tsx` | Audit-event feed |
+| `/diagnostics` | `diagnostics.tsx` | In-app log viewer |
+
+`app/_layout.tsx` is the root: it wraps the stack in `ThemeProvider` and a log
+error boundary, and hides the Android navigation bar.
+
+## Data model
+
+Two product tiers, stored in separate sheets:
+
+- **InternalProduct** — a Sparky's logical product (`id`,
+  `sparkys_product_name`, `product_type`, `sparkys_color`, `texture`, `shape`,
+  `occasions[]`, `products[]` = member barcodes, `threshold_quantity`,
+  `never_out`, `status`). It *groups* external products.
+- **ExternalProduct** — a manufacturer SKU keyed by barcode (`unique_id_sku`,
+  `manufacturer_color`, `brand`, `size`, `bag_quantity`, `distributors[]`,
+  `quantity`, `status`).
+
+An internal product's stock is the sum of its members' `quantity`
+(`getInternalProductTotalQuantity`). Stock health (red/blue/green) comes from
+`getQuantityColor` against `threshold_quantity`.
+
+Each model has a **`*Sheet`** twin (`InternalProductSheet`,
+`ExternalProductSheet`) where array fields are comma-separated strings — that's
+the on-the-wire shape. `constants/Products.ts` holds the converters
+(`convert*SheetToModel` / `convert*ModelToSheet`) and the comma helpers
+(`parseCommaSeparated` / `formatCommaSeparated`).
+
+### Sheets
+
+- `internal_products`, `external_products` — the two product tiers.
+- Metadata sheets — `product_types`, `occasions`, `manufacturer_colors`,
+  `sparkys_colors`, `brands`, `shapes`, `textures`, `distributors`,
+  `bag_quantities` — each a `{name, id, status}` list (status = active/archived).
+- `events` — append-only audit log (`event_type`, `object_type`, `object_id`,
+  `changes`, `before_state`, `user_email`, …) written by `logEvent`.
+
+## State & data flow
+
+- **`services/googleSheets.ts`** — `GoogleSheetsService` wraps the Sheets REST
+  API (read ranges, append/update rows, find-row-by-value) and writes audit
+  events. One method per operation (add/update/archive internal+external, CRUD
+  metadata, fetch audit events).
+- **`hooks/useSheetsData.tsx`** — the app-facing data hook. Holds a module-level
+  `globalSheetsState`, exposes load/refresh + all mutations, and fans changes
+  out to subscribers. Mutations call `GoogleSheetsService`, then update the
+  in-memory store directly (no full refetch).
+- **`store/products.ts`** — module-singleton arrays of internal/external
+  products with a `subscribeToStoreChanges` listener model. Screens read from
+  here and re-render on change.
+- **`hooks/useAuth.tsx`** — Google Sign-In; provides the access token used for
+  every Sheets call.
+
+## Theming
+
+`constants/Colors.ts` defines `light`/`dark` palettes plus derived types
+(`ColorScheme`, `ColorKey`) and `toColorScheme()` (coerces the platform value,
+which can be `null`/`"unspecified"`). `components/ThemeProvider.tsx` exposes
+`{ theme, toggleTheme }` via context; screens do `const colors = Colors[theme]`.
+`hooks/useThemeColor.ts` resolves a single color with light/dark overrides.
+
+## Logging
+
+`services/logger/` is a structured logger: leveled entries, secret redaction
+(`serialize.ts` scrubs OAuth tokens / JWTs / known sensitive keys before
+anything is persisted), a file sink, and a `/diagnostics` viewer. Because logs
+can be uploaded to Drive, redaction is mandatory — see the tests in
+`services/logger/__tests__/`.
+
+## Build variants
+
+`app.config.js` reads `APP_VARIANT` to derive the app name + bundle id
+(`development` → `.dev`, `preview` → `.preview`, unset → production), so all
+three install side by side. Per-variant build config and env (e.g.
+`EXPO_PUBLIC_SPREADSHEET_ID`) live in `eas.json`. `android/` and `ios/` are
+generated by `expo prebuild` and are not committed.

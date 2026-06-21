@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -652,20 +652,24 @@ export default function Activity() {
 																			field === "occasions" ? (
 																				<View style={styles.badgeContainer}>
 																					{(() => {
-																						const oldItems =
+																						const oldItems: string[] =
 																							oldValue?.toString()
 																								? oldValue
 																										.toString()
 																										.split(",")
-																										.map((s) => s.trim())
+																										.map((s: string) =>
+																											s.trim(),
+																										)
 																										.filter(Boolean)
 																								: [];
-																						const newItems =
+																						const newItems: string[] =
 																							newValue?.toString()
 																								? newValue
 																										.toString()
 																										.split(",")
-																										.map((s) => s.trim())
+																										.map((s: string) =>
+																											s.trim(),
+																										)
 																										.filter(Boolean)
 																								: [];
 
@@ -788,7 +792,7 @@ export default function Activity() {
 																									setIsDetailModalVisible(
 																										false,
 																									);
-																									router.push(route);
+																									router.push(route as Href);
 																								}
 																							}}
 																						>

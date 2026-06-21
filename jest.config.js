@@ -4,6 +4,7 @@ module.exports = {
 	// transformIgnorePatterns (covering expo-modules-core, react-native, etc.).
 	// We only add the project's "@/" path alias.
 	preset: "jest-expo",
+	setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
 	moduleNameMapper: {
 		"^@/(.*)$": "<rootDir>/$1",
 	},
@@ -18,9 +19,9 @@ module.exports = {
 		"!**/__tests__/**",
 	],
 	coveragePathIgnorePatterns: ["/node_modules/", "/.expo/", "/coverage/"],
-	// Coverage ratchet: start at 0 and raise these as tests are added so
-	// coverage can only go up. See CONTRIBUTING.md.
+	// Coverage ratchet: a floor set just under current coverage. Raise these as
+	// tests are added so coverage can only go up. See CONTRIBUTING.md.
 	coverageThreshold: {
-		global: { statements: 0, branches: 0, functions: 0, lines: 0 },
+		global: { statements: 4, branches: 2, functions: 7, lines: 4 },
 	},
 };

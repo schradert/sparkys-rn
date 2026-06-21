@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { type ReactElement, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -30,6 +30,7 @@ import {
 	getInternalProductTotalQuantity,
 	getMetadataItems,
 	type InternalProduct,
+	type InternalProductSheet,
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 } from "@/constants/Products";
@@ -92,6 +93,19 @@ type ExternalFilters = {
 	distributors: string[];
 	showArchived: boolean;
 };
+
+// Array-valued (multi-select) filter keys, excluding the boolean toggles.
+type InternalArrayFilterKey =
+	| "product_type"
+	| "texture"
+	| "shape"
+	| "occasions"
+	| "sparkys_color";
+type ExternalArrayFilterKey =
+	| "manufacturer_color"
+	| "brand"
+	| "size"
+	| "distributors";
 
 // Enable LayoutAnimation on Android
 if (
@@ -254,142 +268,6 @@ function CollapsibleFilterSection({
 	);
 }
 
-function ProductCard({
-	item,
-	filters,
-	onFilterToggle,
-}: {
-	item: Product;
-	filters: FieldFilters;
-	onFilterToggle: (field: Field, value: string) => void;
-}) {
-	const product = item;
-	const { theme } = useTheme();
-	const colors = Colors[theme];
-
-	const getIconForMetadata = (field: string): string => {
-		switch (field) {
-			case "productType":
-				return "shapes-outline";
-			case "color":
-				return "color-palette-outline";
-			case "manufacturer":
-				return "business-outline";
-			case "size":
-				return "resize-outline";
-			case "texture":
-				return "hand-left-outline";
-			case "bagQuantity":
-				return "bag-outline";
-			case "shape":
-				return "diamond-outline";
-			case "distributor":
-				return "storefront-outline";
-			case "occasion":
-				return "calendar-outline";
-			default:
-				return "information-circle-outline";
-		}
-	};
-
-	const metadataItems = [
-		{
-			field: "productType",
-			value: product.productType,
-			icon: getIconForMetadata("productType"),
-		},
-		{ field: "color", value: product.color, icon: getIconForMetadata("color") },
-		{
-			field: "manufacturer",
-			value: product.manufacturer,
-			icon: getIconForMetadata("manufacturer"),
-		},
-		{ field: "size", value: product.size, icon: getIconForMetadata("size") },
-		{
-			field: "texture",
-			value: product.texture,
-			icon: getIconForMetadata("texture"),
-		},
-		{
-			field: "bagQuantity",
-			value: product.bagQuantity?.toString(),
-			icon: getIconForMetadata("bagQuantity"),
-		},
-		{ field: "shape", value: product.shape, icon: getIconForMetadata("shape") },
-		{
-			field: "distributor",
-			value: product.distributor,
-			icon: getIconForMetadata("distributor"),
-		},
-		{
-			field: "occasion",
-			value: product.occasion,
-			icon: getIconForMetadata("occasion"),
-		},
-	].filter((item) => item.value && item.value.trim() !== "");
-
-	const isMetadataSelected = (field: string, value: string): boolean => {
-		const fieldFilters = filters[field as Field];
-		return fieldFilters ? fieldFilters.includes(value) : false;
-	};
-
-	const handleMetadataPress = (field: string, value: string) => {
-		onFilterToggle(field as Field, value);
-	};
-
-	return (
-		<View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-			<Pressable
-				style={styles.cardHeader}
-				onPress={() => router.push(`/product/${product.id}`)}
-			>
-				<Text style={[styles.productName, { color: colors.text }]}>
-					{product.name}
-				</Text>
-				<Text style={[styles.price, { color: colors.primary }]}>
-					{product.quantity}
-				</Text>
-			</Pressable>
-
-			<View style={styles.metadataGrid}>
-				{metadataItems.map((item) => {
-					const isSelected = isMetadataSelected(item.field, item.value!);
-					return (
-						<Pressable
-							key={item.field}
-							style={[
-								styles.metadataItem,
-								{ backgroundColor: colors.metadataBackground },
-								isSelected && {
-									backgroundColor: colors.selectedBackground,
-									borderColor: colors.primary,
-								},
-							]}
-							onPress={() => handleMetadataPress(item.field, item.value!)}
-						>
-							<Ionicons
-								name={item.icon as any}
-								size={16}
-								color={isSelected ? colors.primary : colors.icon}
-							/>
-							<Text
-								style={[
-									styles.metadataValue,
-									{ color: colors.textSecondary },
-									isSelected && { color: colors.primary, fontWeight: "600" },
-								]}
-								numberOfLines={1}
-							>
-								{item.value}
-							</Text>
-						</Pressable>
-					);
-				})}
-			</View>
-		</View>
-	);
-}
-
 function MetadataCard({
 	item,
 	viewMode,
@@ -466,7 +344,6 @@ export default function Inventory() {
 		error: sheetsError,
 		refresh,
 		addMetadata,
-		addProduct: addProductToSheets,
 		addInternalProduct,
 		addExternalProduct,
 		updateInternalProduct,
@@ -568,7 +445,7 @@ export default function Inventory() {
 
 	// Subscribe to store changes to update products (with debouncing to prevent loops)
 	useEffect(() => {
-		let timeoutId: NodeJS.Timeout;
+		let timeoutId: ReturnType<typeof setTimeout>;
 		const unsubscribe = subscribeToStoreChanges(() => {
 			// Debounce store change notifications to prevent rapid loops
 			clearTimeout(timeoutId);
@@ -721,7 +598,10 @@ export default function Inventory() {
 											return !isProductArchived;
 										}
 									}
-									if (!selectedValues || selectedValues.length === 0)
+									if (
+										!Array.isArray(selectedValues) ||
+										selectedValues.length === 0
+									)
 										return true;
 									if (key === "occasions") {
 										// For occasions array, check if any selected occasion is in the product's occasions
@@ -740,7 +620,7 @@ export default function Inventory() {
 
 							// If external filters are applied, check if any related external products match
 							const hasExternalFilters = Object.values(externalFilters).some(
-								(arr) => arr.length > 0,
+								(arr) => Array.isArray(arr) && arr.length > 0,
 							);
 							if (!hasExternalFilters) return true;
 
@@ -765,7 +645,10 @@ export default function Inventory() {
 													return !isProductArchived;
 												}
 											}
-											if (!selectedValues || selectedValues.length === 0)
+											if (
+												!Array.isArray(selectedValues) ||
+												selectedValues.length === 0
+											)
 												return true;
 											if (key === "distributors") {
 												return selectedValues.some((selectedValue) =>
@@ -899,7 +782,10 @@ export default function Inventory() {
 											return !isProductArchived;
 										}
 									}
-									if (!selectedValues || selectedValues.length === 0)
+									if (
+										!Array.isArray(selectedValues) ||
+										selectedValues.length === 0
+									)
 										return true;
 									if (key === "distributors") {
 										return selectedValues.some((selectedValue) =>
@@ -959,7 +845,7 @@ export default function Inventory() {
 			].includes(field)
 		) {
 			setInternalFilters((prev) => {
-				const currentValues = prev[field as keyof InternalFilters] || [];
+				const currentValues = prev[field as InternalArrayFilterKey] || [];
 				const isSelected = currentValues.includes(value);
 				const newValues = isSelected
 					? currentValues.filter((v) => v !== value)
@@ -973,7 +859,7 @@ export default function Inventory() {
 			["manufacturer_color", "brand", "size", "distributors"].includes(field)
 		) {
 			setExternalFilters((prev) => {
-				const currentValues = prev[field as keyof ExternalFilters] || [];
+				const currentValues = prev[field as ExternalArrayFilterKey] || [];
 				const isSelected = currentValues.includes(value);
 				const newValues = isSelected
 					? currentValues.filter((v) => v !== value)
@@ -986,9 +872,16 @@ export default function Inventory() {
 		}
 	}
 
-	const currentData = getCurrentData();
-	const currentRenderItem = getCurrentRenderItem();
-	const currentKeyExtractor = getCurrentKeyExtractor();
+	// Data, renderItem and key extractor are view-correlated (products vs.
+	// metadata), which TypeScript can't express as one generic. Unify them on the
+	// `InternalProduct | string` item type the list actually carries.
+	const currentData = getCurrentData() as (InternalProduct | string)[];
+	const currentRenderItem = getCurrentRenderItem() as unknown as (info: {
+		item: InternalProduct | string;
+	}) => ReactElement;
+	const currentKeyExtractor = getCurrentKeyExtractor() as unknown as (
+		item: InternalProduct | string,
+	) => string;
 
 	function clearAllFilters(): void {
 		setInternalFilters(defaultInternalFilters);
@@ -1163,7 +1056,8 @@ export default function Inventory() {
 
 		if (!fieldKey) return;
 
-		const existingValues = PRODUCT_FIELD_OPTIONS[fieldKey];
+		const existingValues: readonly string[] =
+			PRODUCT_FIELD_OPTIONS[fieldKey] ?? [];
 		if (existingValues.includes(trimmedValue)) {
 			Alert.alert("Error", "This value already exists");
 			return;
@@ -1291,7 +1185,7 @@ export default function Inventory() {
 		setIsSubmittingInternal(true);
 		try {
 			// Create the product for the spreadsheet
-			const productForSheet = {
+			const productForSheet: InternalProductSheet = {
 				id: newInternalProduct.id,
 				sparkys_product_name: newInternalProduct.sparkys_product_name,
 				product_type: newInternalProduct.product_type,
@@ -1404,7 +1298,7 @@ export default function Inventory() {
 			);
 
 			let linkingSucceeded = false;
-			let updatedInternalProduct;
+			let updatedInternalProduct: InternalProduct | undefined;
 
 			if (assignedInternalProduct) {
 				updatedInternalProduct = {
@@ -1856,7 +1750,7 @@ export default function Inventory() {
 									internalFilters.showArchived,
 								)}
 								selectedValues={
-									internalFilters[category as keyof InternalFilters] || []
+									internalFilters[category as InternalArrayFilterKey] || []
 								}
 								onSelectionChange={(values) =>
 									handleInternalFilterChange(
@@ -1953,7 +1847,7 @@ export default function Inventory() {
 									externalFilters.showArchived,
 								)}
 								selectedValues={
-									externalFilters[category as keyof ExternalFilters] || []
+									externalFilters[category as ExternalArrayFilterKey] || []
 								}
 								onSelectionChange={(values) =>
 									handleExternalFilterChange(

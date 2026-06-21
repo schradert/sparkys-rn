@@ -1,0 +1,13 @@
+{
+	"recommendations": [
+		"biomejs.biome",
+		"dbaeumer.vscode-eslint",
+		"expo.vscode-expo-tools",
+		"jnoortheen.nix-ide",
+		"mkhl.direnv"
+	],
+	"unwantedRecommendations": [
+		"esbenp.prettier-vscode",
+		"rvest.vs-code-prettier-eslint"
+	]
+}

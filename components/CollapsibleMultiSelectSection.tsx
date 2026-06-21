@@ -14,7 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 
 interface CollapsibleMultiSelectSectionProps {
 	title: string;
-	options: string[];
+	options: readonly string[];
 	selectedValues: string[];
 	onSelectionChange: (values: string[]) => void;
 }

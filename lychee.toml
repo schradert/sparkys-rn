@@ -1,0 +1,4 @@
+# Link-checker (lychee) config.
+# The Google APIs referenced in the source are runtime endpoints — they need
+# auth/params and aren't browsable — so exclude them from link checking.
+exclude = ["googleapis\\.com"]

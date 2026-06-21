@@ -48,6 +48,7 @@ interface InternalProductCardProps {
 			brand?: string[];
 			size?: string[];
 			distributors?: string[];
+			showArchived?: boolean;
 		};
 	};
 }
@@ -438,7 +439,10 @@ export default function InternalProductCard({
 												return !isProductArchived;
 											}
 										}
-										if (!selectedValues || selectedValues.length === 0)
+										if (
+											!Array.isArray(selectedValues) ||
+											selectedValues.length === 0
+										)
 											return true;
 										if (key === "distributors") {
 											return selectedValues.some((selectedValue) =>

@@ -1,0 +1,18 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": ["constants", "hooks", "services", "store"],
+	"entryPointStrategy": "expand",
+	"out": "docs/api",
+	"exclude": [
+		"**/__tests__/**",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"**/node_modules/**"
+	],
+	"tsconfig": "tsconfig.json",
+	"readme": "none",
+	"skipErrorChecking": true,
+	"excludePrivate": true,
+	"excludeInternal": true,
+	"hideGenerator": true
+}
