@@ -22,11 +22,12 @@ module.exports = defineConfig([
 			// Unescaped entities is an HTML concern; React Native <Text> renders
 			// quotes/apostrophes natively, so this rule is noise here.
 			"react/no-unescaped-entities": "off",
-			// React Compiler readiness rules: keep them visible as warnings (the
-			// codebase predates them) without blocking. rules-of-hooks stays an error.
-			"react-hooks/set-state-in-effect": "warn",
-			"react-hooks/refs": "warn",
-			"react-hooks/immutability": "warn",
+			// React Compiler readiness rules — the backlog is cleared, so these are
+			// enforced as errors now (rules-of-hooks is already an error in the preset).
+			"react-hooks/set-state-in-effect": "error",
+			"react-hooks/refs": "error",
+			"react-hooks/immutability": "error",
+			"react-hooks/exhaustive-deps": "error",
 		},
 	},
 	{

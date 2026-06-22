@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import {
 	convertExternalProductSheetToModel,
@@ -419,17 +419,7 @@ export function useSheetsData() {
 		return subscribeToSheetsData(() => forceUpdate({}));
 	}, []);
 
-	useEffect(() => {
-		if (
-			isSignedIn &&
-			!globalSheetsState.lastUpdated &&
-			!globalSheetsState.isLoading
-		) {
-			loadInitialData();
-		}
-	}, [isSignedIn]);
-
-	const loadInitialData = async () => {
+	const loadInitialData = useCallback(async () => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
 			updateSheetsState({
@@ -440,7 +430,17 @@ export function useSheetsData() {
 		}
 
 		await loadSheetsData(accessToken);
-	};
+	}, [getAccessToken]);
+
+	useEffect(() => {
+		if (
+			isSignedIn &&
+			!globalSheetsState.lastUpdated &&
+			!globalSheetsState.isLoading
+		) {
+			loadInitialData();
+		}
+	}, [isSignedIn, loadInitialData]);
 
 	const refresh = async () => {
 		const accessToken = await getAccessToken();
@@ -645,21 +645,24 @@ export function useSheetsData() {
 		}
 	};
 
-	const getAuditEvents = async (limit = 50, offset = 0) => {
-		const accessToken = await getAccessToken();
-		if (!accessToken) {
-			Alert.alert("Error", "No access token available");
-			return [];
-		}
+	const getAuditEvents = useCallback(
+		async (limit = 50, offset = 0) => {
+			const accessToken = await getAccessToken();
+			if (!accessToken) {
+				Alert.alert("Error", "No access token available");
+				return [];
+			}
 
-		try {
-			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
-			return await sheetsService.getAuditEvents(accessToken, limit, offset);
-		} catch (error: any) {
-			logger.error("Sheets", "Error fetching audit events:", error);
-			return [];
-		}
-	};
+			try {
+				const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
+				return await sheetsService.getAuditEvents(accessToken, limit, offset);
+			} catch (error: any) {
+				logger.error("Sheets", "Error fetching audit events:", error);
+				return [];
+			}
+		},
+		[getAccessToken],
+	);
 
 	const archiveExternalProduct = async (sku: string) => {
 		const accessToken = await getAccessToken();
