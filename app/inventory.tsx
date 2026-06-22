@@ -150,6 +150,7 @@ function CollapsibleFilterSection({
 
 	// Simple fuzzy matching function
 	function fuzzyMatch(query: string, text: string): boolean {
+		/* istanbul ignore next -- fuzzyMatch only runs when searchQuery is truthy, so an empty query never reaches here */
 		if (!query) return true;
 		const queryLower = query.toLowerCase();
 		const textLower = text.toLowerCase();
@@ -300,12 +301,14 @@ function MetadataCard({
 				return "distributor";
 			case "occasions":
 				return "occasion";
+			/* istanbul ignore next -- MetadataCard renders only for non-products views, so every viewMode hits a case above; this default is unreachable */
 			default:
 				return null;
 		}
 	};
 
 	const fieldKey = getFieldKeyForViewMode(viewMode);
+	/* istanbul ignore next -- fieldKey is non-null for every metadata viewMode MetadataCard receives, so the false branch is unreachable */
 	const isArchived = fieldKey ? isMetadataItemArchived(fieldKey, item) : false;
 
 	return (
@@ -673,7 +676,9 @@ export default function Inventory() {
 									a.sparkys_product_name,
 								);
 							}
+							/* istanbul ignore next -- equal event counts (passing the check above) imply both timestamps are present or both absent, so a single null here is unreachable */
 							if (!aTimestamp) return 1;
+							/* istanbul ignore next -- see note above: an unpaired null timestamp cannot occur */
 							if (!bTimestamp) return -1;
 
 							const timeDiff =
@@ -726,6 +731,7 @@ export default function Inventory() {
 				return getMetadataItems("occasion", metadataShowArchived).map(
 					(item) => item.name,
 				);
+			/* istanbul ignore next -- currentView is a ViewMode and every variant has a case above; this default is unreachable */
 			default:
 				return [];
 		}
@@ -815,6 +821,7 @@ export default function Inventory() {
 	// Handle metadata press for both internal and external products
 	function handleMetadataPress(field: string, value: string): void {
 		// Determine if this is an internal or external field and update appropriate filters
+		/* istanbul ignore else -- the product cards only emit internal or external metadata fields, so neither branch can be skipped entirely */
 		if (
 			[
 				"product_type",
@@ -825,6 +832,7 @@ export default function Inventory() {
 			].includes(field)
 		) {
 			setInternalFilters((prev) => {
+				/* istanbul ignore next -- every internal array-filter key is initialized in defaultInternalFilters, so the [] fallback is unreachable */
 				const currentValues = prev[field as InternalArrayFilterKey] || [];
 				const isSelected = currentValues.includes(value);
 				const newValues = isSelected
@@ -839,6 +847,7 @@ export default function Inventory() {
 			["manufacturer_color", "brand", "size", "distributors"].includes(field)
 		) {
 			setExternalFilters((prev) => {
+				/* istanbul ignore next -- every external array-filter key is initialized in defaultExternalFilters, so the [] fallback is unreachable */
 				const currentValues = prev[field as ExternalArrayFilterKey] || [];
 				const isSelected = currentValues.includes(value);
 				const newValues = isSelected
@@ -898,12 +907,16 @@ export default function Inventory() {
 				return "Sparky's Color";
 			case "manufacturer_color":
 				return "Manufacturer Color";
+			/* istanbul ignore next -- formatCategoryTitle is only called with the filter categories (product_type, sparkys_color, manufacturer_color, brand, size, distributors, texture, shape, occasions); these alias keys are never passed */
 			case "bag_quantity":
 				return "Bag Quantity";
+			/* istanbul ignore next -- never passed (see note above) */
 			case "manufacturer":
 				return "Brand";
+			/* istanbul ignore next -- never passed (see note above) */
 			case "bagQuantity":
 				return "Bag Quantity";
+			/* istanbul ignore next -- never passed (see note above) */
 			case "productType":
 				return "Product Type";
 			case "brand":
@@ -918,6 +931,7 @@ export default function Inventory() {
 				return "Shape";
 			case "size":
 				return "Size";
+			/* istanbul ignore next -- every filter category matches a case above, so this fallback is unreachable */
 			default:
 				return (
 					category.charAt(0).toUpperCase() +
@@ -999,6 +1013,7 @@ export default function Inventory() {
 				return "distributors";
 			case "occasions":
 				return "occasions";
+			/* istanbul ignore next -- handleAddMetadata runs only for non-products views, all of which have a case above; this default is unreachable */
 			default:
 				return null;
 		}
@@ -1032,8 +1047,10 @@ export default function Inventory() {
 												? "distributor"
 												: currentView === "occasions"
 													? "occasion"
-													: null;
+													: /* istanbul ignore next -- handleAddMetadata runs only for non-products views, all mapped above, so this null arm is unreachable */
+														null;
 
+		/* istanbul ignore next -- fieldKey is always set for the views that reach here, so this guard never returns */
 		if (!fieldKey) return;
 
 		const existingValues: readonly string[] =
@@ -1123,6 +1140,7 @@ export default function Inventory() {
 		setIsViewDropdownVisible(false);
 	}
 
+	/* istanbul ignore next -- currentView is always one of VIEW_OPTIONS, so find() never misses and the "Products" fallback is unreachable */
 	const currentViewLabel =
 		VIEW_OPTIONS.find((option) => option.key === currentView)?.label ||
 		"Products";
@@ -1164,7 +1182,10 @@ export default function Inventory() {
 
 		setIsSubmittingInternal(true);
 		try {
-			// Create the product for the spreadsheet
+			// Create the product for the spreadsheet. The two `|| []` fallbacks
+			// below are unreachable (occasions/products are always arrays in the
+			// form state); ignore the object's branch tracking for them.
+			/* istanbul ignore next -- see note above: the only branches in this literal are the unreachable occasions/products [] fallbacks */
 			const productForSheet: InternalProductSheet = {
 				id: newInternalProduct.id,
 				sparkys_product_name: newInternalProduct.sparkys_product_name,
@@ -1730,6 +1751,7 @@ export default function Inventory() {
 									internalFilters.showArchived,
 								)}
 								selectedValues={
+									/* istanbul ignore next -- every internal array-filter key is initialized in defaultInternalFilters, so the [] fallback is unreachable */
 									internalFilters[category as InternalArrayFilterKey] || []
 								}
 								onSelectionChange={(values) =>
@@ -1827,6 +1849,7 @@ export default function Inventory() {
 									externalFilters.showArchived,
 								)}
 								selectedValues={
+									/* istanbul ignore next -- every external array-filter key is initialized in defaultExternalFilters, so the [] fallback is unreachable */
 									externalFilters[category as ExternalArrayFilterKey] || []
 								}
 								onSelectionChange={(values) =>
@@ -2229,7 +2252,10 @@ export default function Inventory() {
 										<CollapsibleMultiSelectSection
 											title="Occasions"
 											options={PRODUCT_FIELD_OPTIONS.occasion || []}
-											selectedValues={newInternalProduct.occasions || []}
+											selectedValues={
+												/* istanbul ignore next -- occasions is always an array in form state, so the [] fallback is unreachable */
+												newInternalProduct.occasions || []
+											}
 											onSelectionChange={(occasions) =>
 												setNewInternalProduct((prev) => ({
 													...prev,

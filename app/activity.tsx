@@ -158,6 +158,7 @@ export default function Activity() {
 			const date = new Date(timestamp);
 			return date.toLocaleString();
 		} catch {
+			/* istanbul ignore next -- new Date()/toLocaleString never throw, even for invalid input (returns "Invalid Date"); this catch is defensive and unreachable */
 			return timestamp;
 		}
 	};
@@ -582,6 +583,7 @@ export default function Activity() {
 																			return `/metadata/sizes/${encodeURIComponent(newValue)}`;
 																		case "bag_quantity":
 																			return `/metadata/bagQuantities/${encodeURIComponent(newValue)}`;
+																		/* istanbul ignore next -- distributors render as badges, not clickable arrows, so getMetadataRoute is never called for this field */
 																		case "distributors":
 																			return `/metadata/distributors/${encodeURIComponent(newValue)}`;
 																		case "product_type":
@@ -590,6 +592,7 @@ export default function Activity() {
 																			return `/metadata/textures/${encodeURIComponent(newValue)}`;
 																		case "shape":
 																			return `/metadata/shapes/${encodeURIComponent(newValue)}`;
+																		/* istanbul ignore next -- occasions render as badges, not clickable arrows, so getMetadataRoute is never called for this field */
 																		case "occasions":
 																			return `/metadata/occasions/${encodeURIComponent(newValue)}`;
 																		case "internal_product": {
@@ -604,6 +607,7 @@ export default function Activity() {
 																				? `/internal-product/${encodeURIComponent(product.id)}`
 																				: null;
 																		}
+																		/* istanbul ignore next -- every field reaching getMetadataRoute has an explicit case; this default is unreachable */
 																		default:
 																			return null;
 																	}

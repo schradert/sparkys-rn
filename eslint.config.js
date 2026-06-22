@@ -31,6 +31,17 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		// Test files use require() and interleave imports with jest.mock /
+		// isolateModules loading, which the import-graph rules don't expect.
+		files: ["**/__tests__/**", "**/*.test.{ts,tsx}"],
+		rules: {
+			"@typescript-eslint/no-require-imports": "off",
+			"import/first": "off",
+			// Inline mock components in tests don't need display names.
+			"react/display-name": "off",
+		},
+	},
+	{
 		ignores: [
 			"dist/*",
 			".expo/*",

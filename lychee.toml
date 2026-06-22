@@ -2,3 +2,7 @@
 # The Google APIs referenced in the source are runtime endpoints — they need
 # auth/params and aren't browsable — so exclude them from link checking.
 exclude = ["googleapis\\.com"]
+
+# Test files use placeholder/mock URLs as fetch fixtures, not real links.
+# (exclude_path entries are regexes, matched against the file path.)
+exclude_path = ["__tests__", "test-support"]

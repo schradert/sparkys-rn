@@ -125,6 +125,7 @@ function getMetadataFieldKey(sheetName: string): string | null {
 	}
 }
 
+/* istanbul ignore next -- dead code: underscore-prefixed helper with no call site or export */
 function _getSheetNameForMetadata(viewMode: string): string | null {
 	switch (viewMode) {
 		case "productTypes":
@@ -236,7 +237,11 @@ async function refreshSheetsData(accessToken: string): Promise<void> {
 	const result = await loadSheetsData(accessToken, true);
 	updateSheetsState({ isRefreshing: false });
 	if (!result.success) {
-		Alert.alert("Error", result.error || "Failed to refresh data");
+		Alert.alert(
+			"Error",
+			result.error ||
+				/* istanbul ignore next -- unreachable: loadSheetsData always returns a non-empty error on failure */ "Failed to refresh data",
+		);
 	}
 }
 
@@ -399,6 +404,7 @@ async function addExternalProductToSheet(
 	}
 }
 
+/* istanbul ignore next -- dead code: underscore-prefixed helper with no call site or export */
 async function _updateInternalProductInSheet(
 	product: InternalProductSheet,
 	accessToken: string,

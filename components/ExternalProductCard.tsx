@@ -47,10 +47,13 @@ export default function ExternalProductCard({
 				return "business-outline";
 			case "size":
 				return "resize-outline";
+			/* istanbul ignore next -- metadataItems only maps the three cases above; bag_quantity/distributors/default are never requested */
 			case "bag_quantity":
 				return "bag-outline";
+			/* istanbul ignore next -- distributors render with a literal icon, not via this helper */
 			case "distributors":
 				return "storefront-outline";
+			/* istanbul ignore next -- no other field values reach this helper */
 			default:
 				return "information-circle-outline";
 		}

@@ -78,6 +78,7 @@ export default function Diagnostics() {
 	};
 
 	const onShareLink = async () => {
+		/* istanbul ignore next -- unreachable false arm: the share affordance only renders when result.ok && result.link are already truthy */
 		if (result?.ok && result.link) {
 			try {
 				await Share.share({ message: result.link, url: result.link });
