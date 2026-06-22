@@ -79,8 +79,16 @@ jobs:
         run: bunx expo prebuild --platform ios --no-install
 
       - name: Install CocoaPods dependencies
-        run: pod install
         working-directory: ios
+        run: |
+          # Google Sign-In pulls in Swift pods (AppCheckCore -> GoogleUtilities,
+          # RecaptchaInterop) that lack module maps; enable modular headers so
+          # they integrate as static libraries.
+          if ! grep -q 'use_modular_headers!' Podfile; then
+            printf 'use_modular_headers!\n%s' "$(cat Podfile)" > Podfile.tmp
+            mv Podfile.tmp Podfile
+          fi
+          pod install
 
       - name: Build (simulator, unsigned)
         working-directory: ios
@@ -93,6 +101,7 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
