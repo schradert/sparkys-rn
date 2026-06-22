@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { type ComponentProps, useState } from "react";
+import { useState } from "react";
 import {
 	LayoutAnimation,
 	Platform,
@@ -10,6 +10,7 @@ import {
 	UIManager,
 	View,
 } from "react-native";
+import { getFieldIcon } from "@/components/activity/eventPresentation";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import { getQuantityColor } from "@/constants/Products";
@@ -17,8 +18,6 @@ import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import ExternalProductCard from "./ExternalProductCard";
-
-type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 if (
 	Platform.OS === "android" &&
@@ -80,14 +79,10 @@ export default function InternalProductCard({
 		`Barcode matching debug for ${internalProduct.sparkys_product_name}`,
 		{
 			internalProductBarcodes: internalProduct.products,
-			externalProductSkus:
-				/* istanbul ignore next -- externalProducts is a required prop dereferenced unguarded elsewhere, so the optional-chain/`|| []` fallback is dead */
-				externalProducts?.map((ext) => ext.unique_id_sku) || [],
-			matchingExternals:
-				/* istanbul ignore next -- externalProducts is always defined here, so the optional-chain/`|| []` fallback is dead */
-				externalProducts?.filter((ext) =>
-					internalProduct.products.includes(ext.unique_id_sku),
-				) || [],
+			externalProductSkus: externalProducts.map((ext) => ext.unique_id_sku),
+			matchingExternals: externalProducts.filter((ext) =>
+				internalProduct.products.includes(ext.unique_id_sku),
+			),
 		},
 	);
 
@@ -141,6 +136,8 @@ export default function InternalProductCard({
 			return bEventCount - aEventCount;
 		}
 
+		const reverseAlpha = b.unique_id_sku.localeCompare(a.unique_id_sku);
+
 		// Then sort by most recent activity
 		const aTimestamp = getMostRecentEventTimestamp(
 			a.unique_id_sku,
@@ -151,21 +148,16 @@ export default function InternalProductCard({
 			"external_product",
 		);
 
-		if (!aTimestamp && !bTimestamp) {
-			// Finally sort by reverse alphabetical
-			return b.unique_id_sku.localeCompare(a.unique_id_sku);
+		// Equal event counts imply both timestamps are present or both absent, so a
+		// missing timestamp means neither has events -> fall straight to reverse-alpha.
+		if (!aTimestamp || !bTimestamp) {
+			return reverseAlpha;
 		}
-		/* istanbul ignore next -- equal event counts imply equal timestamp presence (a zero-event product has no timestamp), so a single missing timestamp is unreachable past the frequency check */
-		if (!aTimestamp) return 1;
-		/* istanbul ignore next -- see above: a single missing timestamp is unreachable here */
-		if (!bTimestamp) return -1;
 
 		const timeDiff =
 			new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
-		if (timeDiff !== 0) return timeDiff;
-
 		// If same timestamp, use reverse alphabetical
-		return b.unique_id_sku.localeCompare(a.unique_id_sku);
+		return timeDiff !== 0 ? timeDiff : reverseAlpha;
 	});
 
 	logger.debug(
@@ -211,45 +203,26 @@ export default function InternalProductCard({
 		}
 	};
 
-	const getIconForMetadata = (field: string): IoniconName => {
-		switch (field) {
-			case "product_type":
-				return "shapes-outline";
-			case "texture":
-				return "hand-left-outline";
-			case "shape":
-				return "diamond-outline";
-			case "sparkys_color":
-				return "color-palette-outline";
-			/* istanbul ignore next -- metadataItems maps only the four cases above; occasions render with a literal icon and no other field reaches this helper */
-			case "occasions":
-				return "calendar-outline";
-			/* istanbul ignore next -- no other field values reach this helper */
-			default:
-				return "information-circle-outline";
-		}
-	};
-
 	const metadataItems = [
 		{
 			field: "product_type",
 			value: internalProduct.product_type,
-			icon: getIconForMetadata("product_type"),
+			icon: getFieldIcon("product_type"),
 		},
 		{
 			field: "texture",
 			value: internalProduct.texture,
-			icon: getIconForMetadata("texture"),
+			icon: getFieldIcon("texture"),
 		},
 		{
 			field: "shape",
 			value: internalProduct.shape,
-			icon: getIconForMetadata("shape"),
+			icon: getFieldIcon("shape"),
 		},
 		{
 			field: "sparkys_color",
 			value: internalProduct.sparkys_color,
-			icon: getIconForMetadata("sparkys_color"),
+			icon: getFieldIcon("sparkys_color"),
 		},
 	].filter((item) => item.value && item.value.trim() !== "");
 

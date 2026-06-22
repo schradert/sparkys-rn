@@ -15,6 +15,7 @@ import {
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
 } from "@/constants/Products";
+import { getSheetNameForViewMode } from "@/hooks/sheetsData/mappings";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
@@ -96,32 +97,6 @@ export default function MetadataDetail() {
 		}
 	}
 
-	function getSheetName(viewMode: string): string | null {
-		switch (viewMode) {
-			case "productTypes":
-				return "product_types";
-			case "occasions":
-				return "occasions";
-			case "colors":
-				return "colors";
-			case "sizes":
-				return null; // No sizes sheet, generated from products
-			case "manufacturers":
-				return "brands";
-			case "textures":
-				return "textures";
-			case "bagQuantities":
-				return "bag_quantities";
-			case "shapes":
-				return "shapes";
-			case "distributors":
-				return "distributors";
-			/* istanbul ignore next -- unreachable: callers gate on getFieldKey, which accepts the same view modes, so a non-null field key always has a matching sheet here */
-			default:
-				return null;
-		}
-	}
-
 	function formatCategoryTitle(category: string): string {
 		if (category === "manufacturer") return "Brand";
 		if (category === "bagQuantity") return "Bag Quantity";
@@ -155,7 +130,7 @@ export default function MetadataDetail() {
 			return;
 		}
 
-		const sheetName = getSheetName(viewMode);
+		const sheetName = getSheetNameForViewMode(viewMode);
 		if (!sheetName) {
 			Alert.alert("Error", "Cannot update this metadata type");
 			return;
@@ -189,7 +164,7 @@ export default function MetadataDetail() {
 	}
 
 	async function handleArchive() {
-		const sheetName = getSheetName(viewMode);
+		const sheetName = getSheetNameForViewMode(viewMode);
 		if (!sheetName) {
 			Alert.alert("Error", "Cannot archive this metadata type");
 			return;
@@ -233,7 +208,7 @@ export default function MetadataDetail() {
 	}
 
 	async function handleUnarchive() {
-		const sheetName = getSheetName(viewMode);
+		const sheetName = getSheetNameForViewMode(viewMode);
 		if (!sheetName) {
 			Alert.alert("Error", "Cannot unarchive this metadata type");
 			return;
