@@ -22,6 +22,6 @@ module.exports = {
 	// Coverage ratchet: a floor set just under current coverage. Raise these as
 	// tests are added so coverage can only go up. See CONTRIBUTING.md.
 	coverageThreshold: {
-		global: { statements: 4, branches: 2, functions: 7, lines: 4 },
+		global: { statements: 100, branches: 100, functions: 100, lines: 100 },
 	},
 };

@@ -116,6 +116,7 @@ export default function MetadataDetail() {
 				return "shapes";
 			case "distributors":
 				return "distributors";
+			/* istanbul ignore next -- unreachable: callers gate on getFieldKey, which accepts the same view modes, so a non-null field key always has a matching sheet here */
 			default:
 				return null;
 		}

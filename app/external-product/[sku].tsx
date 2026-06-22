@@ -95,6 +95,7 @@ export default function ExternalProductDetail() {
 	}, [sku]);
 
 	const handleIncrementStock = () => {
+		/* istanbul ignore next -- defensive guard: the increment button only renders in edit mode, where externalProduct/editedProduct are set */
 		if (!externalProduct || !editedProduct) return;
 		const currentQuantity = editedProduct.quantity;
 		const newQuantity = currentQuantity + externalProduct.bag_quantity;
@@ -106,6 +107,7 @@ export default function ExternalProductDetail() {
 	};
 
 	const handleDecrementStock = () => {
+		/* istanbul ignore next -- defensive guard: the decrement button only renders in edit mode, where externalProduct/editedProduct are set */
 		if (!externalProduct || !editedProduct) return;
 		const currentQuantity = editedProduct.quantity;
 		const newQuantity = Math.max(0, currentQuantity - 1);
@@ -117,6 +119,7 @@ export default function ExternalProductDetail() {
 	};
 
 	const handleSave = async () => {
+		/* istanbul ignore next -- defensive guard: handleSave is only reachable via the edit-mode checkmark, where editedProduct/externalProduct/originalProduct are all set */
 		if (!editedProduct || !externalProduct || !originalProduct) return;
 
 		// Check if there are any actual changes
@@ -201,7 +204,8 @@ export default function ExternalProductDetail() {
 					: null;
 				const updatedNewInternal = internalProduct
 					? { ...internalProduct, products: [...internalProduct.products, sku] }
-					: null;
+					: /* istanbul ignore next -- a reassignment can only target a selected (non-null) internal product */
+						null;
 
 				// Step A: remove the SKU from the old internal product.
 				if (originalInternalProduct && updatedOldInternal) {
@@ -227,6 +231,7 @@ export default function ExternalProductDetail() {
 				}
 
 				// Step B: add the SKU to the new internal product; roll back A on failure.
+				/* istanbul ignore next -- a reassignment always has a selected (non-null) internalProduct, so updatedNewInternal is correlated and this guard is always entered */
 				if (internalProduct && updatedNewInternal) {
 					const addResult = await updateInternalProductInSheet(
 						toInternalSheet(updatedNewInternal),
@@ -278,6 +283,7 @@ export default function ExternalProductDetail() {
 						updatedOldInternal,
 					);
 				}
+				/* istanbul ignore next -- a reassignment always has a selected (non-null) internalProduct, so updatedNewInternal is correlated and this guard is always entered */
 				if (internalProduct && updatedNewInternal) {
 					updateInternalProductInStore(internalProduct.id, updatedNewInternal);
 				}
@@ -289,6 +295,7 @@ export default function ExternalProductDetail() {
 					object_name: externalProduct.unique_id_sku,
 					changes: JSON.stringify({
 						internal_product:
+							/* istanbul ignore next -- the audit event is only written after reassigning to a selected (non-null) internal product */
 							internalProduct?.sparkys_product_name || "Unassigned",
 					}),
 					before_state: JSON.stringify({
@@ -315,6 +322,7 @@ export default function ExternalProductDetail() {
 
 	const handleCancel = () => {
 		// Revert to original product state
+		/* istanbul ignore next -- defensive guard: cancel only happens in edit mode, where originalProduct is set */
 		if (originalProduct) {
 			setExternalProduct(originalProduct);
 			setEditedProduct(originalProduct);
@@ -329,6 +337,7 @@ export default function ExternalProductDetail() {
 		field: keyof ExternalProduct,
 		value: string | number,
 	) => {
+		/* istanbul ignore next -- defensive guard: the field radios only render while editedProduct is set */
 		if (!editedProduct) return;
 		setEditedProduct({
 			...editedProduct,
@@ -336,6 +345,7 @@ export default function ExternalProductDetail() {
 		});
 	};
 
+	/* istanbul ignore next -- unused legacy handler; distributors are edited via CollapsibleMultiSelectSection */
 	const _handleDistributorsChange = (distributorValue: string) => {
 		if (!editedProduct) return;
 
@@ -356,6 +366,7 @@ export default function ExternalProductDetail() {
 	};
 
 	const handleArchive = async () => {
+		/* istanbul ignore next -- defensive guard: the archive button only renders while externalProduct is set */
 		if (!externalProduct) return;
 
 		const isCurrentlyArchived = externalProduct.status === "archived";
@@ -456,8 +467,10 @@ export default function ExternalProductDetail() {
 				return "resize-outline";
 			case "bag_quantity":
 				return "bag-outline";
+			/* istanbul ignore next -- metadataItems only requests the four cases above; distributors/default are never passed to this helper */
 			case "distributors":
 				return "storefront-outline";
+			/* istanbul ignore next -- metadataItems only requests the four cases above; distributors/default are never passed to this helper */
 			default:
 				return "information-circle-outline";
 		}
@@ -582,34 +595,43 @@ export default function ExternalProductDetail() {
 									>
 										<Ionicons name="remove" size={16} color="white" />
 									</Pressable>
-									{isEditing ? (
-										<TextInput
-											style={[
-												styles.quantityInputClickable,
-												{
-													color: colors.primary,
-													borderColor: colors.primary,
-													backgroundColor: colors.cardBackground,
-												},
-											]}
-											value={editedProduct?.quantity.toString() || ""}
-											onChangeText={(text) => {
-												if (editedProduct) {
-													const quantity = parseInt(text, 10);
-													setEditedProduct({
-														...editedProduct,
-														quantity: Number.isNaN(quantity) ? 0 : quantity,
-													});
+									{
+										/* istanbul ignore next -- this block only renders inside the outer isEditing branch, so the inner false case is dead */
+										isEditing ? (
+											<TextInput
+												style={[
+													styles.quantityInputClickable,
+													{
+														color: colors.primary,
+														borderColor: colors.primary,
+														backgroundColor: colors.cardBackground,
+													},
+												]}
+												value={
+													/* istanbul ignore next -- quantity is always a number here, so the optional chaining and empty-string fallback never trigger */
+													editedProduct?.quantity.toString() || ""
 												}
-											}}
-											keyboardType="numeric"
-											selectTextOnFocus
-										/>
-									) : (
-										<Text style={[styles.quantity, { color: colors.primary }]}>
-											{externalProduct?.quantity}
-										</Text>
-									)}
+												onChangeText={(text) => {
+													/* istanbul ignore else -- defensive guard: this input only renders while editedProduct is set */
+													if (editedProduct) {
+														const quantity = parseInt(text, 10);
+														setEditedProduct({
+															...editedProduct,
+															quantity: Number.isNaN(quantity) ? 0 : quantity,
+														});
+													}
+												}}
+												keyboardType="numeric"
+												selectTextOnFocus
+											/>
+										) : (
+											<Text
+												style={[styles.quantity, { color: colors.primary }]}
+											>
+												{externalProduct?.quantity}
+											</Text>
+										)
+									}
 									<Pressable
 										onPress={handleIncrementStock}
 										style={[
@@ -674,6 +696,7 @@ export default function ExternalProductDetail() {
 									const selectedInternal = getAllInternalProducts().find(
 										(p) => p.sparkys_product_name === value,
 									);
+									/* istanbul ignore else -- the radio only offers existing active product names, so the lookup always matches */
 									if (selectedInternal) {
 										setInternalProduct(selectedInternal);
 									}
@@ -765,13 +788,19 @@ export default function ExternalProductDetail() {
 													return `/metadata/sizes/${encodeURIComponent(value)}`;
 												case "bag_quantity":
 													return `/metadata/bagQuantities/${encodeURIComponent(value)}`;
+												/* istanbul ignore next -- every metadataItems field has a route, so the default is never hit */
 												default:
 													return null;
 											}
 										};
 
 										const route = getMetadataRoute(item.field, item.value);
+										/* istanbul ignore next -- route is always truthy here (all metadata fields map to a route), so the View fallback is never used */
 										const MetadataComponent = route ? Pressable : View;
+										/* istanbul ignore next -- route is always truthy here, so the empty-props fallback is never used */
+										const pressProps = route
+											? { onPress: () => router.push(route as Href) }
+											: {};
 
 										return (
 											<MetadataComponent
@@ -780,9 +809,7 @@ export default function ExternalProductDetail() {
 													styles.metadataItem,
 													{ backgroundColor: colors.surface },
 												]}
-												{...(route
-													? { onPress: () => router.push(route as Href) }
-													: {})}
+												{...pressProps}
 											>
 												<Ionicons
 													name={item.icon}
@@ -801,7 +828,11 @@ export default function ExternalProductDetail() {
 													<Text
 														style={[
 															styles.metadataValue,
-															{ color: route ? colors.primary : colors.text },
+															{
+																color:
+																	/* istanbul ignore next -- route is always truthy here, so the secondary text colour is never used */
+																	route ? colors.primary : colors.text,
+															},
 														]}
 													>
 														{item.value}

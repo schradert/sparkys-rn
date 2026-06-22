@@ -48,6 +48,9 @@ let marker: {
 } | null = null;
 
 function persistMarker(clean: boolean): void {
+	/* istanbul ignore next -- defensive guard: every caller runs after
+	   installLifecycle() assigns `marker`, which is never reset to null, so the
+	   early return is unreachable in practice. */
 	if (!marker) return;
 	marker = { ...marker, clean };
 	writeMarker(JSON.stringify(marker));

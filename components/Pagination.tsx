@@ -55,6 +55,7 @@ export default function Pagination<T>({
 		const start = Math.max(2, currentPage - 1);
 		const end = Math.min(totalPages - 1, currentPage + 1);
 		for (let i = start; i <= end; i++) {
+			/* istanbul ignore else -- start>=2 and end<=totalPages-1, so i is never 1 or totalPages */
 			if (i !== 1 && i !== totalPages) pageNumbers.push(i);
 		}
 

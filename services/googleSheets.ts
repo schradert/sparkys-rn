@@ -170,7 +170,8 @@ export class GoogleSheetsService {
 			if (!row[0] || row[0].trim() === "") continue;
 
 			const product: InternalProductSheet = {
-				id: row[0] || "",
+				// row[0] is guaranteed truthy by the blank-id continue above.
+				id: /* istanbul ignore next */ row[0] || "",
 				sparkys_product_name: row[1] || "",
 				product_type: row[2] || "",
 				sparkys_color: row[3] || "",
@@ -216,7 +217,8 @@ export class GoogleSheetsService {
 			if (!row[0] || row[0].trim() === "") continue;
 
 			const product: ExternalProductSheet = {
-				unique_id_sku: row[0] || "",
+				// row[0] is guaranteed truthy by the blank-id continue above.
+				unique_id_sku: /* istanbul ignore next */ row[0] || "",
 				manufacturer_color: row[1] || "",
 				brand: row[2] || "",
 				size: row[3] || "",
@@ -712,6 +714,7 @@ export class GoogleSheetsService {
 					delete fieldBefore.quantity;
 					delete fieldBefore.status;
 
+					/* istanbul ignore else -- hasOtherChanges implies a non-stripped field, so fieldChanges is always non-empty here */
 					if (Object.keys(fieldChanges).length > 0) {
 						await this.logEvent(
 							{

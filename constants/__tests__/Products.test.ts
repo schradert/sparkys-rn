@@ -6,17 +6,26 @@ import {
 	convertExternalProductSheetToModel,
 	convertInternalProductModelToSheet,
 	convertInternalProductSheetToModel,
+	DEFAULT_FIELD_OPTIONS,
 	type ExternalProduct,
+	type ExternalProductSheet,
 	formatCommaSeparated,
+	getAllMetadataItems,
 	getExternalProductsForInternal,
 	getInternalProductTotalQuantity,
+	getMetadataItems,
 	getQuantityColor,
 	type InternalProduct,
 	type InternalProductSheet,
 	isExternalProductArchived,
 	isInternalProductArchived,
+	isMetadataItemArchived,
+	PRODUCT_FIELD_OPTIONS,
 	parseCommaSeparated,
+	unarchiveExternalProduct,
 	unarchiveInternalProduct,
+	updateFieldOptions,
+	updateMetadataItems,
 } from "@/constants/Products";
 
 const internal = (over: Partial<InternalProduct> = {}): InternalProduct => ({
@@ -112,6 +121,16 @@ describe("sheet <-> model conversion", () => {
 		);
 		expect(back).toEqual(model);
 	});
+
+	it("defaults never_out and status when converting a model to a sheet", () => {
+		// internal() has never_out: false and no status -> exercises || fallbacks
+		const sheet = convertInternalProductModelToSheet(internal());
+		expect(sheet.never_out).toBe(false);
+		expect(sheet.status).toBe("active");
+
+		const extSheet = convertExternalProductModelToSheet(external());
+		expect(extSheet.status).toBe("active");
+	});
 });
 
 describe("stock helpers", () => {
@@ -146,19 +165,201 @@ describe("stock helpers", () => {
 
 describe("archive helpers", () => {
 	it("archives and unarchives an internal product by name immutably", () => {
-		const products = [internal({ status: "active" })];
+		const products = [
+			internal({
+				id: "1",
+				sparkys_product_name: "Red Latex",
+				status: "active",
+			}),
+			internal({
+				id: "2",
+				sparkys_product_name: "Blue Foil",
+				status: "active",
+			}),
+		];
 		const archived = archiveInternalProduct("Red Latex", products);
 		expect(archived[0].status).toBe("archived");
+		expect(archived[1].status).toBe("active"); // non-matching untouched
 		expect(products[0].status).toBe("active"); // original untouched
 		expect(isInternalProductArchived("Red Latex", archived)).toBe(true);
+		expect(isInternalProductArchived("missing", archived)).toBe(false);
 
 		const restored = unarchiveInternalProduct("Red Latex", archived);
 		expect(restored[0].status).toBe("active");
+		expect(restored[1].status).toBe("active"); // non-matching untouched
 	});
 
-	it("archives an external product by sku", () => {
-		const products = [external({ unique_id_sku: "111", status: "active" })];
+	it("archives an external product by sku, leaving others untouched", () => {
+		const products = [
+			external({ unique_id_sku: "111", status: "active" }),
+			external({ unique_id_sku: "222", status: "active" }),
+		];
 		const archived = archiveExternalProduct("111", products);
 		expect(isExternalProductArchived("111", archived)).toBe(true);
+		expect(archived[1].status).toBe("active"); // non-matching untouched
+	});
+
+	it("unarchives an external product by sku and leaves others untouched", () => {
+		const products = [
+			external({ unique_id_sku: "111", status: "archived" }),
+			external({ unique_id_sku: "222", status: "archived" }),
+		];
+		const restored = unarchiveExternalProduct("111", products);
+		expect(restored[0].status).toBe("active");
+		expect(restored[1].status).toBe("archived");
+		expect(isExternalProductArchived("111", restored)).toBe(false);
+	});
+
+	it("reports false when an external sku is unknown", () => {
+		expect(isExternalProductArchived("missing", [external()])).toBe(false);
+	});
+});
+
+describe("conversion validation warnings", () => {
+	it("warns on an invalid internal sheet row but still converts", () => {
+		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		// threshold_quantity is required to be a number; a string fails validation.
+		const bad = {
+			id: "1",
+			sparkys_product_name: "Bad",
+			product_type: "",
+			sparkys_color: "",
+			texture: "",
+			shape: "",
+			occasions: "Birthday",
+			products: "111",
+			threshold_quantity: "oops",
+			never_out: false,
+		} as unknown as InternalProductSheet;
+		const model = convertInternalProductSheetToModel(bad);
+		expect(warn).toHaveBeenCalledWith(
+			"Invalid internal product sheet row",
+			bad,
+		);
+		expect(model.occasions).toEqual(["Birthday"]);
+		warn.mockRestore();
+	});
+
+	it("warns on an invalid external sheet row but still converts", () => {
+		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		// quantity is required to be a number; a string fails validation.
+		const bad = {
+			unique_id_sku: "9",
+			manufacturer_color: "",
+			brand: "",
+			size: "",
+			bag_quantity: 50,
+			distributors: "Acme",
+			quantity: "oops",
+		} as unknown as ExternalProductSheet;
+		const model = convertExternalProductSheetToModel(bad);
+		expect(warn).toHaveBeenCalledWith(
+			"Invalid external product sheet row",
+			bad,
+		);
+		expect(model.distributors).toEqual(["Acme"]);
+		warn.mockRestore();
+	});
+
+	it("defaults missing never_out and status when converting", () => {
+		const model = convertInternalProductSheetToModel({
+			id: "1",
+			sparkys_product_name: "Defaults",
+			product_type: "",
+			sparkys_color: "",
+			texture: "",
+			shape: "",
+			occasions: "",
+			products: "",
+			threshold_quantity: 0,
+			never_out: false,
+		} as InternalProductSheet);
+		expect(model.never_out).toBe(false);
+		expect(model.status).toBe("active");
+
+		const ext = convertExternalProductSheetToModel({
+			unique_id_sku: "9",
+			manufacturer_color: "",
+			brand: "",
+			size: "",
+			bag_quantity: 0,
+			distributors: "",
+			quantity: 0,
+		} as ExternalProductSheet);
+		expect(ext.status).toBe("active");
+	});
+});
+
+describe("field options", () => {
+	// updateFieldOptions mutates module-level PRODUCT_FIELD_OPTIONS; restore it.
+	// DEFAULT_FIELD_OPTIONS is `as const`, so copy each field into a mutable
+	// string[] to satisfy the (mutable) updateFieldOptions signature.
+	afterEach(() => {
+		const defaults: Record<string, string[]> = {};
+		for (const [key, items] of Object.entries(DEFAULT_FIELD_OPTIONS)) {
+			defaults[key] = [...items];
+		}
+		updateFieldOptions(defaults);
+	});
+
+	it("merges new options, flattening metadata objects to names", () => {
+		updateFieldOptions({
+			shape: [{ name: "Oval" }, "Round"],
+		});
+		expect(PRODUCT_FIELD_OPTIONS.shape).toEqual(["Oval", "Round"]);
+		// untouched fields are preserved
+		expect(PRODUCT_FIELD_OPTIONS.manufacturer).toEqual(
+			DEFAULT_FIELD_OPTIONS.manufacturer,
+		);
+	});
+});
+
+describe("metadata items", () => {
+	beforeEach(() => {
+		updateMetadataItems({
+			occasion: [
+				{ name: "Birthday", status: "active" },
+				{ name: "Retired Party", status: "archived" },
+			],
+		});
+	});
+
+	afterEach(() => {
+		updateMetadataItems({});
+	});
+
+	it("returns only active items by default and all when requested", () => {
+		expect(getMetadataItems("occasion").map((i) => i.name)).toEqual([
+			"Birthday",
+		]);
+		expect(getMetadataItems("occasion", true)).toHaveLength(2);
+	});
+
+	it("returns [] for an unknown field key", () => {
+		expect(getMetadataItems("unknown")).toEqual([]);
+	});
+
+	it("reports archived status for a metadata item", () => {
+		expect(isMetadataItemArchived("occasion", "Retired Party")).toBe(true);
+		expect(isMetadataItemArchived("occasion", "Birthday")).toBe(false);
+		expect(isMetadataItemArchived("occasion", "Missing")).toBe(false);
+		expect(isMetadataItemArchived("unknown", "x")).toBe(false);
+	});
+
+	it("lists active field options, optionally appending archived metadata", () => {
+		// active-only returns the field option list from PRODUCT_FIELD_OPTIONS
+		expect(getAllMetadataItems("occasion")).toEqual([
+			...PRODUCT_FIELD_OPTIONS.occasion,
+		]);
+		// including archived appends archived metadata names
+		expect(getAllMetadataItems("occasion", true)).toEqual([
+			...PRODUCT_FIELD_OPTIONS.occasion,
+			"Retired Party",
+		]);
+	});
+
+	it("falls back to [] active options for an unknown field key", () => {
+		expect(getAllMetadataItems("unknown")).toEqual([]);
+		expect(getAllMetadataItems("unknown", true)).toEqual([]);
 	});
 });

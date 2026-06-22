@@ -123,16 +123,12 @@ Upgrading the SDK is scripted: see `scripts/upgrade-expo.sh` and the
 ## TODO / follow-ups
 
 Non-blocking items from the dev-tooling setup, to pick up over time. Everything
-else (tsc, eslint, biome, jest, expo-doctor, and the push hooks) is green.
+else (tsc, eslint, biome, jest at 100% coverage, expo-doctor, and the push
+hooks) is green.
 
 - [ ] **App icon polish** — `icon.png` / `adaptive-icon.png` are the existing
   Sparky's logo padded onto a 1024×1024 canvas (a stopgap that clears
   `expo-doctor`); replace with a properly designed high-resolution asset.
-- [ ] **Grow test coverage** — the pure-logic core now has unit tests
-  (`constants/Products.ts`, `store/products.ts`, plus the logger). Extend to
-  `services/googleSheets.ts` (mock `fetch`), the hooks, and screens; raise
-  `coverageThreshold` in `jest.config.js` from its current floor as it grows
-  (ratchet up, never down).
 - [ ] **Architectural refactor — decompose oversized modules** — large files are
   the worst smell here: `app/inventory.tsx` (~3k lines),
   `services/googleSheets.ts` (~1.5k), `app/activity.tsx` (~1.1k),

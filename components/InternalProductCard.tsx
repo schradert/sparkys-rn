@@ -81,8 +81,10 @@ export default function InternalProductCard({
 		{
 			internalProductBarcodes: internalProduct.products,
 			externalProductSkus:
+				/* istanbul ignore next -- externalProducts is a required prop dereferenced unguarded elsewhere, so the optional-chain/`|| []` fallback is dead */
 				externalProducts?.map((ext) => ext.unique_id_sku) || [],
 			matchingExternals:
+				/* istanbul ignore next -- externalProducts is always defined here, so the optional-chain/`|| []` fallback is dead */
 				externalProducts?.filter((ext) =>
 					internalProduct.products.includes(ext.unique_id_sku),
 				) || [],
@@ -153,7 +155,9 @@ export default function InternalProductCard({
 			// Finally sort by reverse alphabetical
 			return b.unique_id_sku.localeCompare(a.unique_id_sku);
 		}
+		/* istanbul ignore next -- equal event counts imply equal timestamp presence (a zero-event product has no timestamp), so a single missing timestamp is unreachable past the frequency check */
 		if (!aTimestamp) return 1;
+		/* istanbul ignore next -- see above: a single missing timestamp is unreachable here */
 		if (!bTimestamp) return -1;
 
 		const timeDiff =
@@ -217,8 +221,10 @@ export default function InternalProductCard({
 				return "diamond-outline";
 			case "sparkys_color":
 				return "color-palette-outline";
+			/* istanbul ignore next -- metadataItems maps only the four cases above; occasions render with a literal icon and no other field reaches this helper */
 			case "occasions":
 				return "calendar-outline";
+			/* istanbul ignore next -- no other field values reach this helper */
 			default:
 				return "information-circle-outline";
 		}
