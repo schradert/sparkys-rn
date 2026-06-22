@@ -8,12 +8,16 @@ in the user's Google account (Sheets/Drive).
 ## Layers
 
 ```text
-app/                screens (Expo Router routes)
-components/          reusable UI (cards, collapsible filter sections, theming)
-hooks/              data + auth + theme hooks
-services/           googleSheets.ts (Sheets API) + logger/ (structured logging)
-store/              products.ts (in-memory product state + subscriptions)
-constants/          Products.ts (domain types + converters), Colors.ts (theme)
+app/                 screens (Expo Router routes)
+components/          reusable UI; feature folders back the big screens —
+                       activity/ (audit feed), product/ (detail view + edit),
+                       inventory/ (list, filters, scanner, add forms)
+hooks/               data + auth + theme hooks; sheetsData/ backs useSheetsData
+services/            googleSheets.ts facade over sheets/ (resource modules),
+                       logger/ (structured logging), errors.ts
+store/               products.ts (in-memory product state + subscriptions)
+constants/           Products.ts (types + converters), Colors.ts (theme),
+                       Spreadsheet.ts (sheet-id resolution), Diagnostics.ts
 ```
 
 ## Screens (`app/`)
@@ -64,19 +68,59 @@ the on-the-wire shape. `constants/Products.ts` holds the converters
 
 ## State & data flow
 
-- **`services/googleSheets.ts`** — `GoogleSheetsService` wraps the Sheets REST
-  API (read ranges, append/update rows, find-row-by-value) and writes audit
-  events. One method per operation (add/update/archive internal+external, CRUD
-  metadata, fetch audit events).
-- **`hooks/useSheetsData.tsx`** — the app-facing data hook. Holds a module-level
-  `globalSheetsState`, exposes load/refresh + all mutations, and fans changes
-  out to subscribers. Mutations call `GoogleSheetsService`, then update the
-  in-memory store directly (no full refetch).
+The Sheets access layer is split into a transport, focused resource modules, and
+a thin facade, so each piece stays small and independently testable:
+
+- **`services/sheets/client.ts`** — `SheetsClient`, the resource-agnostic
+  transport. Owns the spreadsheet id and the low-level read/write primitives
+  (read ranges, append/update rows, find-row-by-value); injected into the
+  resource modules so they stay focused on their domain.
+- **`services/sheets/`** — one module per concern: `products.read` (parse rows
+  into typed products), `products.internal` / `products.external` (create +
+  update with audit diffing), `products.archive` (status flips), `metadata` +
+  `metadata.cascade` (metadata CRUD and the rename cascade into product rows),
+  `audit` (read/write the events log), and `aggregate` (one-shot load of every
+  sheet). `products.ts` re-exports the product surface; `types.ts` holds the
+  shared row/response types.
+- **`services/googleSheets.ts`** — a thin facade that wires a `SheetsClient`
+  into those modules and re-exposes them as the historical `GoogleSheetsService`
+  API, so existing callers and tests are unaffected by the split.
+- **`hooks/useSheetsData.tsx`** — the app-facing data hook (load/refresh + every
+  mutation), kept thin by delegating to `hooks/sheetsData/`: `store.ts` (the
+  module-level `globalSheetsState` and its subscriber model), `operations.ts` /
+  `productOperations.ts` (call `GoogleSheetsService`, then update the in-memory
+  store directly — no full refetch), and `mappings.ts` (the one table tying each
+  sheet name to its field key and inventory view mode, replacing duplicated
+  `switch` ladders).
 - **`store/products.ts`** — module-singleton arrays of internal/external
   products with a `subscribeToStoreChanges` listener model. Screens read from
   here and re-render on change.
 - **`hooks/useAuth.tsx`** — Google Sign-In; provides the access token used for
   every Sheets call.
+
+## Screen feature modules
+
+The four largest screens are thin route files that compose feature folders under
+`components/`, with screen-specific logic factored into hooks:
+
+- **Inventory** — `app/inventory.tsx` over `components/inventory/`: list items,
+  filter modals, barcode scanner, add-product/-metadata forms, view-mode
+  dropdown; state in `useInventoryState`, `useInventoryFilters`,
+  `useInventoryFilterState`, `useInventoryAuditEvents`.
+- **Product detail** — `app/internal-product/[id].tsx` and
+  `app/external-product/[sku].tsx` over `components/product/`: a separate
+  `*View` and `*EditForm` per tier, plus `MetadataGrid`, `PillList`, and the
+  detail header/chrome; editing in `useInternalProductEditor` /
+  `useExternalProductEditor` and `useArchiveProduct`.
+- **Activity** — `app/activity.tsx` over `components/activity/`: `EventCard`,
+  `EventChanges`, `EventDetailModal`; data via `hooks/useAuditEvents`.
+
+**Open/Closed in practice:** presentation and routing that used to be `switch`
+statements are now **data-driven maps** — you add a row, not a branch.
+`components/activity/eventPresentation.ts` (event/field icons + metadata
+routes), `components/product/metadataMaps.ts` (the clickable detail grid),
+`components/inventory/inventoryMaps.ts`, and `hooks/sheetsData/mappings.ts` are
+the canonical examples.
 
 ## Theming
 
