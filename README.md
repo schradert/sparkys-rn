@@ -141,3 +141,23 @@ else (tsc, eslint, biome, jest, expo-doctor, and the push hooks) is green.
   Google Sheets layer), `noNonNullAssertion`, `noArrayIndexKey`,
   `useIterableCallbackReturn`, `useTemplate`, `useParseIntRadix`, and
   `noUselessFragments` / `noUselessSwitchCase`.
+- [ ] **Architectural refactor — decompose oversized modules** — large files are
+  the worst smell here: `app/inventory.tsx` (~3k lines),
+  `services/googleSheets.ts` (~1.5k), `app/activity.tsx` (~1.1k),
+  `hooks/useSheetsData.tsx` (~770). Target **~150 lines average, ~300 hard cap**.
+  Treat it as a design exercise — choose module boundaries by responsibility,
+  not by mechanically splitting lines:
+
+  - **SRP / cohesion** — `inventory` → screen shell + feature sections (list,
+    filters, scanner, add/edit forms) + view-model hooks; `googleSheets.ts` →
+    per-resource modules (products / metadata / audit) behind a thin client.
+  - **Low coupling, acyclic deps** — enforce UI → hooks → services → store, no
+    circular imports; depend on interfaces (Dependency Inversion) so the Sheets
+    layer is swappable/mockable.
+  - **Open/Closed via polymorphism** — replace the metadata `switch` ladders and
+    similar branch-per-case code with data-driven maps / strategy objects.
+  - **DRY, no grab-bag utils** — extract only genuinely shared logic; don't
+    hoist single-use helpers into catch-all files.
+
+  Do it after the test harness lands (so refactors are test-backed) and ship it
+  incrementally — one cohesive module per PR — to keep diffs reviewable.
