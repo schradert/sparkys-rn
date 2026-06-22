@@ -2,8 +2,8 @@ name: Build app artifacts
 
 # Builds the Android and iOS apps and uploads them as GitHub artifacts.
 # Self-contained: uses `expo prebuild` + the native toolchains, so it needs no
-# EAS token. Android ships a (debug-signed) release APK; iOS ships an unsigned
-# simulator build. Signed/store builds need credentials — see README "CI".
+# EAS token. Android ships a (debug-signed) arm64-v8a release APK; iOS ships an
+# unsigned simulator build. Signed/store builds need credentials — see README "CI".
 on:
   push:
     branches: [trunk]
@@ -56,8 +56,14 @@ jobs:
       - name: Set up Gradle (with caching)
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Assemble release APK
-        run: ./gradlew :app:assembleRelease --no-daemon
+      # Compile native code for arm64-v8a only. expo prebuild emits all four
+      # ABIs (arm64-v8a, armeabi-v7a, x86, x86_64) and compiling every one from
+      # source dominates the build, so restricting to arm64-v8a roughly quarters
+      # it. Tradeoff: the APK runs on arm64 devices (every modern phone) but not
+      # x86/x86_64 emulators — it's a CI test artifact, not a universal store
+      # build. For a multi-ABI store build use the EAS `build-prod` profile.
+      - name: Assemble release APK (arm64-v8a)
+        run: ./gradlew :app:assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
         working-directory: android
 
       - name: Locate APK

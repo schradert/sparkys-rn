@@ -77,8 +77,9 @@ profiles and per-variant env (e.g. `EXPO_PUBLIC_SPREADSHEET_ID`) live in
 every push to `trunk` (and on demand via the Actions tab) and uploads the
 binaries as GitHub Actions artifacts:
 
-- **Android** (`android-apk`) — `expo prebuild` + `gradlew assembleRelease`
-  (debug-signed APK).
+- **Android** (`android-apk`) — `expo prebuild` + `gradlew assembleRelease`,
+  built for **arm64-v8a only** to keep CI fast (a debug-signed test APK; a
+  universal multi-ABI build comes from the EAS `build-prod` profile).
 - **iOS** (`ios-simulator-app`) — `expo prebuild` + `xcodebuild` for the
   simulator (unsigned), zipped.
 
