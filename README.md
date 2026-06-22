@@ -71,6 +71,21 @@ Release / ops flows are devenv scripts (run by bare name in the shell):
 profiles and per-variant env (e.g. `EXPO_PUBLIC_SPREADSHEET_ID`) live in
 [`eas.json`](eas.json). So three variants can coexist on one device.
 
+## Continuous integration
+
+[`.github/workflows/build.yml`](.github/workflows/build.yml) builds the app on
+every push to `trunk` (and on demand via the Actions tab) and uploads the
+binaries as GitHub Actions artifacts:
+
+- **Android** (`android-apk`) — `expo prebuild` + `gradlew assembleRelease`
+  (debug-signed APK).
+- **iOS** (`ios-simulator-app`) — `expo prebuild` + `xcodebuild` for the
+  simulator (unsigned), zipped.
+
+Both run on stock GitHub runners and need no secrets. **Signed, store-ready
+builds** (a device `.ipa`, a Play AAB) need credentials — set an `EXPO_TOKEN`
+secret and use the EAS profiles (`build-prod`), or add native signing secrets.
+
 ## Tooling
 
 - **Lint/format:** Biome (formatting, import organization, general JS/TS lint)
