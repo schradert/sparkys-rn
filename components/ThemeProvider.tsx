@@ -29,6 +29,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
 	// Update theme when system theme changes
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: re-sync theme to the OS color scheme when it changes
 		setTheme(toColorScheme(systemColorScheme));
 	}, [systemColorScheme]);
 

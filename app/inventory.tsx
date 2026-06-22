@@ -41,11 +41,10 @@ import { logger } from "@/services/logger";
 import {
 	addExternalProduct as addExternalProductToStore,
 	addInternalProduct as addInternalProductToStore,
-	getAllExternalProducts,
-	getAllInternalProducts,
 	getExternalProductBySku,
 	subscribeToStoreChanges,
 	updateInternalProduct as updateInternalProductInStore,
+	useProductStore,
 } from "@/store/products";
 
 type ViewMode =
@@ -339,7 +338,6 @@ export default function Inventory() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 	const {
-		isLoading: sheetsLoading,
 		isRefreshing: sheetsRefreshing,
 		error: sheetsError,
 		refresh,
@@ -380,12 +378,8 @@ export default function Inventory() {
 		defaultExternalFilters,
 	);
 	const [metadataShowArchived, setMetadataShowArchived] = useState(false);
-	const [internalProducts, setInternalProductsState] = useState<
-		InternalProduct[]
-	>(getAllInternalProducts());
-	const [externalProducts, setExternalProductsState] = useState<
-		ExternalProduct[]
-	>(getAllExternalProducts());
+	const internalProducts = useProductStore((s) => s.internalProducts);
+	const externalProducts = useProductStore((s) => s.externalProducts);
 	const [storeUpdateTrigger, setStoreUpdateTrigger] = useState(0);
 	const [cachedEvents, setCachedEvents] = useState<AuditEvent[]>([]);
 
@@ -429,20 +423,6 @@ export default function Inventory() {
 	});
 	const [isSubmittingExternal, setIsSubmittingExternal] = useState(false);
 
-	useEffect(() => {
-		// Update product data from store
-		const internalData = getAllInternalProducts();
-		const externalData = getAllExternalProducts();
-		logger.debug("Inventory", "Loading products from store:", {
-			internalCount: internalData?.length || 0,
-			externalCount: externalData?.length || 0,
-			internalData,
-			externalData,
-		});
-		setInternalProductsState(internalData);
-		setExternalProductsState(externalData);
-	}, [sheetsLoading, storeUpdateTrigger]);
-
 	// Subscribe to store changes to update products (with debouncing to prevent loops)
 	useEffect(() => {
 		let timeoutId: ReturnType<typeof setTimeout>;
@@ -473,7 +453,7 @@ export default function Inventory() {
 		};
 
 		loadEvents();
-	}, [sheetsRefreshing, storeUpdateTrigger]); // Reload when data changes too
+	}, [sheetsRefreshing, storeUpdateTrigger, getAuditEvents]);
 
 	useEffect(() => {
 		const unsubscribe = subscribeToMetadataChanges((change) => {

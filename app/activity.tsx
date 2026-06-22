@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Href, router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -24,55 +25,37 @@ export default function Activity() {
 	const colors = Colors[theme];
 	const { getAuditEvents } = useSheetsData();
 
-	const [events, setEvents] = useState<AuditEvent[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [refreshing, setRefreshing] = useState(false);
-	const [loadingMore, setLoadingMore] = useState(false);
-	const [hasMore, setHasMore] = useState(true);
 	const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 	const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
-	const loadEvents = async (isRefresh = false, offset = 0) => {
-		try {
-			if (isRefresh) {
-				setRefreshing(true);
-				setEvents([]);
-				setHasMore(true);
-			} else if (offset === 0) {
-				setLoading(true);
-			} else {
-				setLoadingMore(true);
-			}
+	const PAGE_SIZE = 50;
+	const {
+		data,
+		isLoading: loading,
+		isRefetching: refreshing,
+		isFetchingNextPage: loadingMore,
+		hasNextPage,
+		fetchNextPage,
+		refetch,
+	} = useInfiniteQuery({
+		queryKey: ["auditEvents"],
+		queryFn: ({ pageParam }) => getAuditEvents(PAGE_SIZE, pageParam),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage, allPages) =>
+			lastPage.length === PAGE_SIZE
+				? allPages.reduce((count, page) => count + page.length, 0)
+				: undefined,
+	});
 
-			const newEvents = await getAuditEvents(50, offset);
-
-			if (isRefresh || offset === 0) {
-				setEvents(newEvents);
-			} else {
-				setEvents((prev) => [...prev, ...newEvents]);
-			}
-
-			setHasMore(newEvents.length === 50);
-		} catch (error) {
-			logger.error("Activity", "Failed to load events:", error);
-		} finally {
-			setLoading(false);
-			setRefreshing(false);
-			setLoadingMore(false);
-		}
-	};
-
-	useEffect(() => {
-		loadEvents();
-	}, []);
+	const events = useMemo(() => data?.pages.flat() ?? [], [data]);
 
 	const handleRefresh = () => {
-		loadEvents(true);
+		refetch();
 	};
 
 	const handleLoadMore = () => {
-		if (!loadingMore && hasMore) {
-			loadEvents(false, events.length);
+		if (hasNextPage && !loadingMore) {
+			fetchNextPage();
 		}
 	};
 

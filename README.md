@@ -141,7 +141,3 @@ else (tsc, eslint, biome, jest, expo-doctor, and the push hooks) is green.
   Google Sheets layer), `noNonNullAssertion`, `noArrayIndexKey`,
   `useIterableCallbackReturn`, `useTemplate`, `useParseIntRadix`, and
   `noUselessFragments` / `noUselessSwitchCase`.
-- [ ] **ESLint warning backlog (~16)** — the React Compiler readiness rules are
-  set to `warn` for now (`react-hooks/set-state-in-effect`, `react-hooks/refs`,
-  `react-hooks/immutability`) plus `exhaustive-deps`; fix and promote them back
-  toward `error` where practical.

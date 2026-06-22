@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
 	FlatList,
@@ -38,7 +38,7 @@ export default function InfiniteScroll<T>({
 	const colors = Colors[theme];
 
 	const flatListRef = useRef<FlatList>(null);
-	const overlayOpacity = useRef(new Animated.Value(0)).current;
+	const [overlayOpacity] = useState(() => new Animated.Value(0));
 	const hideOverlayTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
 	);
@@ -77,12 +77,12 @@ export default function InfiniteScroll<T>({
 		showOverlay(); // Call directly without requestAnimationFrame
 	};
 
-	const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+	const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
 		if (viewableItems.length > 0) {
 			const firstVisible = viewableItems[0].index;
 			setFirstVisibleIndex(firstVisible);
 		}
-	}).current;
+	}, []);
 
 	const jumpToStart = () => {
 		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });

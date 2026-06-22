@@ -74,7 +74,10 @@ export default function Pagination<T>({
 	}
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: setCurrentPage is stable, data.length is the only relevant dependency
-	useEffect(() => setCurrentPage(1), [data.length]);
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset to the first page whenever the data set changes
+		setCurrentPage(1);
+	}, [data.length]);
 
 	return (
 		<View style={[styles.container, { backgroundColor: colors.background }]}>

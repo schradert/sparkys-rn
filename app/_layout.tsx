@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as NavigationBar from "expo-navigation-bar";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
 	AppState,
 	Keyboard,
@@ -26,7 +26,7 @@ function ThemedRootLayout() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
-	const hideNavigationBar = async () => {
+	const hideNavigationBar = useCallback(async () => {
 		try {
 			// SDK 56 enforces edge-to-edge, so `setBehaviorAsync` is gone; hiding
 			// the bar already gives the swipe-to-reveal ("overlay-swipe") behavior.
@@ -34,9 +34,9 @@ function ThemedRootLayout() {
 		} catch (error) {
 			logger.warn("Nav", "Navigation bar hide failed", { error });
 		}
-	};
+	}, []);
 
-	const hideWithRetry = async () => {
+	const hideWithRetry = useCallback(async () => {
 		// Immediate attempt
 		await hideNavigationBar();
 
@@ -49,7 +49,7 @@ function ThemedRootLayout() {
 		setTimeout(async () => {
 			await hideNavigationBar();
 		}, 500);
-	};
+	}, [hideNavigationBar]);
 
 	useEffect(() => {
 		hideWithRetry();
@@ -67,7 +67,7 @@ function ThemedRootLayout() {
 		);
 
 		return () => subscription?.remove();
-	}, []);
+	}, [hideWithRetry]);
 
 	// Hide navigation bar immediately when theme changes
 	useEffect(() => {
