@@ -43,6 +43,10 @@ const FIELD_KEY_BY_SHEET_NAME = new Map(
 	METADATA_MAPPINGS.map((m) => [m.sheetName, m.fieldKey]),
 );
 
+const SHEET_NAME_BY_VIEW_MODE = new Map(
+	METADATA_MAPPINGS.map((m) => [m.viewMode, m.sheetName]),
+);
+
 /**
  * Resolve a Google Sheet tab name to its in-app metadata field key, or `null`
  * for sheets that have no corresponding field (preserving the original
@@ -50,4 +54,12 @@ const FIELD_KEY_BY_SHEET_NAME = new Map(
  */
 export function getFieldKeyForSheetName(sheetName: string): string | null {
 	return FIELD_KEY_BY_SHEET_NAME.get(sheetName) ?? null;
+}
+
+/**
+ * Resolve an inventory view mode to its Google Sheet tab name, or `null` for
+ * view modes with no backing sheet (e.g. `sizes`, generated from products).
+ */
+export function getSheetNameForViewMode(viewMode: string): string | null {
+	return SHEET_NAME_BY_VIEW_MODE.get(viewMode) ?? null;
 }

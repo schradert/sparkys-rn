@@ -1,13 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { getFieldIcon } from "@/components/activity/eventPresentation";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
-
-type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 interface ExternalProductCardProps {
 	externalProduct: ExternalProduct;
@@ -39,41 +37,21 @@ export default function ExternalProductCard({
 		distributorValues: externalProduct?.distributors,
 	});
 
-	const getIconForMetadata = (field: string): IoniconName => {
-		switch (field) {
-			case "manufacturer_color":
-				return "color-palette-outline";
-			case "brand":
-				return "business-outline";
-			case "size":
-				return "resize-outline";
-			/* istanbul ignore next -- metadataItems only maps the three cases above; bag_quantity/distributors/default are never requested */
-			case "bag_quantity":
-				return "bag-outline";
-			/* istanbul ignore next -- distributors render with a literal icon, not via this helper */
-			case "distributors":
-				return "storefront-outline";
-			/* istanbul ignore next -- no other field values reach this helper */
-			default:
-				return "information-circle-outline";
-		}
-	};
-
 	const metadataItems = [
 		{
 			field: "manufacturer_color",
 			value: externalProduct.manufacturer_color,
-			icon: getIconForMetadata("manufacturer_color"),
+			icon: getFieldIcon("manufacturer_color"),
 		},
 		{
 			field: "brand",
 			value: externalProduct.brand,
-			icon: getIconForMetadata("brand"),
+			icon: getFieldIcon("brand"),
 		},
 		{
 			field: "size",
 			value: externalProduct.size,
-			icon: getIconForMetadata("size"),
+			icon: getFieldIcon("size"),
 		},
 	].filter((item) => item.value && item.value.trim() !== "");
 

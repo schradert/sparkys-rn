@@ -46,8 +46,6 @@ export default function CollapsibleMultiSelectSection({
 	}
 
 	function fuzzyMatch(query: string, text: string): boolean {
-		/* istanbul ignore next -- fuzzyMatch only runs when searchQuery is truthy, so an empty query never reaches here */
-		if (!query) return true;
 		const queryLower = query.toLowerCase();
 		const textLower = text.toLowerCase();
 		return textLower.includes(queryLower);
