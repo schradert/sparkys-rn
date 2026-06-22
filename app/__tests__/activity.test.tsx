@@ -739,6 +739,29 @@ describe("Activity screen", () => {
 			await fireEvent.press(screen.getByText("View Item"));
 			expect(mockPush).toHaveBeenCalledWith("/metadata/colors");
 		});
+
+		it("closes without navigating for an unknown object type", async () => {
+			// An object_type outside the union has no route, so View Item closes the
+			// modal but performs no navigation (the `if (route)` false arm).
+			mockGetAuditEvents.mockResolvedValue([
+				makeEvent({
+					id: 1,
+					object_type: "mystery" as AuditEvent["object_type"],
+					object_name: "No Route Nav",
+				}),
+			]);
+			await renderActivity();
+			await waitFor(() =>
+				expect(screen.getByText("No Route Nav")).toBeOnTheScreen(),
+			);
+			await fireEvent.press(screen.getByText("No Route Nav"));
+			await fireEvent.press(screen.getByText("View Item"));
+			expect(mockPush).not.toHaveBeenCalled();
+			// The modal still closes after the no-op navigation.
+			await waitFor(() =>
+				expect(screen.queryByText("by tester@example.com")).toBeNull(),
+			);
+		});
 	});
 
 	describe("changes section in the detail modal", () => {
