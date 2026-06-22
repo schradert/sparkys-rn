@@ -387,10 +387,9 @@ describe("refresh", () => {
 	});
 
 	it("alerts the load fallback message when refresh fails without an error string", async () => {
-		// `loadSheetsData` always supplies its own fallback on failure, so the
-		// alert surfaces that message. (refreshSheetsData's own `|| "Failed to
-		// refresh data"` RHS is therefore unreachable — see the source istanbul
-		// note.)
+		// `loadSheetsData` always supplies its own fallback on failure, so
+		// `refreshSheetsData` surfaces `result.error` directly and the alert shows
+		// that message.
 		mockGetAllSheetsData.mockRejectedValue("");
 		const { result, act } = await loadHook();
 
