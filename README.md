@@ -133,10 +133,6 @@ else (tsc, eslint, biome, jest, expo-doctor, and the push hooks) is green.
   `services/googleSheets.ts` (mock `fetch`), the hooks, and screens; raise
   `coverageThreshold` in `jest.config.js` from its current floor as it grows
   (ratchet up, never down).
-- [ ] **RNTL component rendering** — `@testing-library/react-native`'s `render()`
-  returns an empty result under React 19 + jest-expo 56, so component/screen
-  tests can't query the tree yet. Investigate the renderer/setup before adding UI
-  tests; unit tests are unaffected.
 - [ ] **Architectural refactor — decompose oversized modules** — large files are
   the worst smell here: `app/inventory.tsx` (~3k lines),
   `services/googleSheets.ts` (~1.5k), `app/activity.tsx` (~1.1k),

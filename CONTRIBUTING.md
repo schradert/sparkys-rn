@@ -42,7 +42,11 @@ other if it overlaps.
 ## Testing
 
 - Runner: **Jest** with the `jest-expo` preset; component tests use
-  **React Native Testing Library**.
+  **React Native Testing Library** (RNTL 14).
+- **RNTL 14 is async** — `await render(...)` and `await fireEvent.*(...)`. Its
+  `test-renderer` backend uses an async `act`, so without `await` you get an
+  empty result and `screen` queries throw "render has not been called". See
+  `components/__tests__/Button.test.tsx` for the pattern.
 - Put tests in `__tests__/` next to the code, named `*.test.ts(x)`.
 - The pure-logic core (`constants/`, `store/`, `services/`) is the easiest and
   highest-value place to add coverage — those modules have no native deps.
