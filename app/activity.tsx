@@ -66,7 +66,7 @@ export default function Activity() {
 
 	const getEventIcon = (
 		eventType: string,
-		objectType: string,
+		_objectType: string,
 		changes?: string,
 		beforeState?: string,
 	) => {
@@ -618,7 +618,7 @@ export default function Activity() {
 																		]}
 																	>
 																		<Ionicons
-																			name={getFieldIcon(field) as any}
+																			name={getFieldIcon(field)}
 																			size={20}
 																			color={colors.primary}
 																		/>
@@ -701,8 +701,7 @@ export default function Activity() {
 																										style={[
 																											styles.badge,
 																											{
-																												backgroundColor:
-																													colors.error + "20",
+																												backgroundColor: `${colors.error}20`,
 																												borderColor:
 																													colors.error,
 																											},
@@ -724,8 +723,7 @@ export default function Activity() {
 																										style={[
 																											styles.badge,
 																											{
-																												backgroundColor:
-																													colors.success + "20",
+																												backgroundColor: `${colors.success}20`,
 																												borderColor:
 																													colors.success,
 																											},
@@ -759,69 +757,60 @@ export default function Activity() {
 																			)}
 																		</View>
 																		{field !== "distributors" &&
-																			field !== "occasions" && (
-																				<>
-																					{isClickableField(field) ? (
-																						<Pressable
-																							style={
-																								styles.changeArrowContainer
-																							}
-																							onPress={() => {
-																								const route = getMetadataRoute(
-																									field,
-																									newValue?.toString() || "",
-																								);
-																								if (route) {
-																									setIsDetailModalVisible(
-																										false,
-																									);
-																									router.push(route as Href);
-																								}
-																							}}
-																						>
-																							<Ionicons
-																								name="arrow-forward"
-																								size={16}
-																								color={colors.primary}
-																							/>
-																							<Text
-																								style={[
-																									styles.changeNewValue,
-																									{ color: colors.primary },
-																								]}
-																							>
-																								{newValue?.toString() || "—"}
-																							</Text>
-																						</Pressable>
-																					) : (
-																						<View
-																							style={
-																								styles.changeArrowContainer
-																							}
-																						>
-																							<Ionicons
-																								name="arrow-forward"
-																								size={16}
-																								color={colors.textSecondary}
-																							/>
-																							<Text
-																								style={[
-																									styles.changeNewValue,
-																									{ color: colors.text },
-																								]}
-																							>
-																								{newValue?.toString() || "—"}
-																							</Text>
-																						</View>
-																					)}
-																				</>
-																			)}
+																			field !== "occasions" &&
+																			(isClickableField(field) ? (
+																				<Pressable
+																					style={styles.changeArrowContainer}
+																					onPress={() => {
+																						const route = getMetadataRoute(
+																							field,
+																							newValue?.toString() || "",
+																						);
+																						if (route) {
+																							setIsDetailModalVisible(false);
+																							router.push(route as Href);
+																						}
+																					}}
+																				>
+																					<Ionicons
+																						name="arrow-forward"
+																						size={16}
+																						color={colors.primary}
+																					/>
+																					<Text
+																						style={[
+																							styles.changeNewValue,
+																							{ color: colors.primary },
+																						]}
+																					>
+																						{newValue?.toString() || "—"}
+																					</Text>
+																				</Pressable>
+																			) : (
+																				<View
+																					style={styles.changeArrowContainer}
+																				>
+																					<Ionicons
+																						name="arrow-forward"
+																						size={16}
+																						color={colors.textSecondary}
+																					/>
+																					<Text
+																						style={[
+																							styles.changeNewValue,
+																							{ color: colors.text },
+																						]}
+																					>
+																						{newValue?.toString() || "—"}
+																					</Text>
+																				</View>
+																			))}
 																	</View>
 																);
 															})}
 														</View>
 													);
-												} catch (e) {
+												} catch (_e) {
 													return (
 														<Text
 															style={[

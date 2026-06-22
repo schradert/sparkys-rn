@@ -8,6 +8,7 @@ import {
 	StyleSheet,
 	Text,
 	View,
+	type ViewToken,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
@@ -77,12 +78,15 @@ export default function InfiniteScroll<T>({
 		showOverlay(); // Call directly without requestAnimationFrame
 	};
 
-	const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-		if (viewableItems.length > 0) {
-			const firstVisible = viewableItems[0].index;
-			setFirstVisibleIndex(firstVisible);
-		}
-	}, []);
+	const onViewableItemsChanged = useCallback(
+		({ viewableItems }: { viewableItems: ViewToken[] }) => {
+			if (viewableItems.length > 0) {
+				const firstVisible = viewableItems[0].index ?? 0;
+				setFirstVisibleIndex(firstVisible);
+			}
+		},
+		[],
+	);
 
 	const jumpToStart = () => {
 		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });

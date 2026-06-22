@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-	Animated,
 	FlatList,
 	Pressable,
 	RefreshControl,
@@ -73,7 +72,6 @@ export default function Pagination<T>({
 		);
 	}
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: setCurrentPage is stable, data.length is the only relevant dependency
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset to the first page whenever the data set changes
 		setCurrentPage(1);

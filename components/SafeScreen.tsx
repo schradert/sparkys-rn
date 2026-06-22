@@ -1,10 +1,10 @@
 import type React from "react";
-import { StyleSheet, View } from "react-native";
+import { type StyleProp, StyleSheet, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SafeScreenProps {
 	children: React.ReactNode;
-	style?: any;
+	style?: StyleProp<ViewStyle>;
 	backgroundColor?: string;
 }
 

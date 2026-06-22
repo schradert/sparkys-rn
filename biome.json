@@ -31,12 +31,12 @@
 					"level": "warn",
 					"options": { "syntax": "shorthand" }
 				},
-				"noNonNullAssertion": "warn"
+				"noNonNullAssertion": "error"
 			},
 			"suspicious": {
-				"noExplicitAny": "warn",
-				"noArrayIndexKey": "warn",
-				"useIterableCallbackReturn": "warn"
+				"noExplicitAny": "error",
+				"noArrayIndexKey": "error",
+				"useIterableCallbackReturn": "error"
 			},
 			"correctness": {
 				"useExhaustiveDependencies": "off",

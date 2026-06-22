@@ -64,17 +64,17 @@ export const ARCHIVED_METADATA_ITEMS: Record<string, string[]> = {
 	occasion: [],
 };
 
-export function updateFieldOptions(newOptions: any) {
+type FieldOptionInput = string | { name: string };
+
+export function updateFieldOptions(
+	newOptions: Record<string, FieldOptionInput[]>,
+) {
 	// Convert metadata objects to strings for existing compatibility
-	const convertedOptions: any = {};
+	const convertedOptions: Record<string, string[]> = {};
 	for (const [key, items] of Object.entries(newOptions)) {
-		if (Array.isArray(items)) {
-			convertedOptions[key] = (items as any[]).map((item) =>
-				typeof item === "object" && item.name ? item.name : item,
-			);
-		} else {
-			convertedOptions[key] = items;
-		}
+		convertedOptions[key] = items.map((item) =>
+			typeof item === "object" ? item.name : item,
+		);
 	}
 	PRODUCT_FIELD_OPTIONS = { ...PRODUCT_FIELD_OPTIONS, ...convertedOptions };
 }
@@ -85,7 +85,9 @@ let METADATA_ITEMS: Record<
 	Array<{ name: string; status: string }>
 > = {};
 
-export function updateMetadataItems(metadata: any) {
+export function updateMetadataItems(
+	metadata: Record<string, Array<{ name: string; status: string }>>,
+) {
 	METADATA_ITEMS = { ...metadata };
 }
 

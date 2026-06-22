@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
+
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 interface ExternalProductCardProps {
 	externalProduct: ExternalProduct;
@@ -36,7 +39,7 @@ export default function ExternalProductCard({
 		distributorValues: externalProduct?.distributors,
 	});
 
-	const getIconForMetadata = (field: string): string => {
+	const getIconForMetadata = (field: string): IoniconName => {
 		switch (field) {
 			case "manufacturer_color":
 				return "color-palette-outline";
@@ -124,7 +127,7 @@ export default function ExternalProductCard({
 			{/* External product metadata grid */}
 			<View style={styles.metadataGrid}>
 				{metadataItems.map((item) => {
-					const isSelected = isMetadataSelected(item.field, item.value!);
+					const isSelected = isMetadataSelected(item.field, item.value);
 					return (
 						<Pressable
 							key={item.field}
@@ -135,10 +138,10 @@ export default function ExternalProductCard({
 									backgroundColor: colors.primary,
 								},
 							]}
-							onPress={() => handleMetadataPress(item.field, item.value!)}
+							onPress={() => handleMetadataPress(item.field, item.value)}
 						>
 							<Ionicons
-								name={item.icon as any}
+								name={item.icon}
 								size={16}
 								color={isSelected ? "white" : colors.icon}
 							/>
@@ -169,6 +172,7 @@ export default function ExternalProductCard({
 							);
 							return (
 								<Pressable
+									// biome-ignore lint/suspicious/noArrayIndexKey: distributor names are not guaranteed unique within the list, so a value+index composite is used; the list is static display only
 									key={`${distributor}-${index}`}
 									style={[
 										styles.distributorPill,

@@ -5,6 +5,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
+import { getErrorMessage } from "@/services/errors";
 import { logger } from "@/services/logger";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
@@ -32,7 +33,9 @@ function subscribeToAuth(callback: () => void) {
 
 function updateAuthState(newState: Partial<AuthState>) {
 	globalAuthState = { ...globalAuthState, ...newState };
-	authSubscribers.forEach((callback) => callback());
+	authSubscribers.forEach((callback) => {
+		callback();
+	});
 }
 
 GoogleSignin.configure({
@@ -84,13 +87,16 @@ async function signIn(): Promise<{ success: boolean; error?: string }> {
 			});
 			return { success: false };
 		}
-	} catch (error: any) {
+	} catch (error) {
 		updateAuthState({
 			user: null,
 			isSignedIn: false,
 			isLoading: false,
 		});
-		return { success: false, error: error.message || "Sign in failed" };
+		return {
+			success: false,
+			error: getErrorMessage(error) || "Sign in failed",
+		};
 	}
 }
 
