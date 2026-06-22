@@ -94,7 +94,10 @@ jobs:
         working-directory: ios
         run: |
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | jq -r '.workspace.schemes[0]')
+          # Expo names the workspace, Xcode project, and app scheme identically,
+          # so derive the app scheme from the workspace (not `schemes[0]`, which
+          # is an alphabetical dependency scheme like AppAuth).
+          SCHEME="${WORKSPACE%.xcworkspace}"
           echo "Workspace: $WORKSPACE  Scheme: $SCHEME"
           xcodebuild \
             -workspace "$WORKSPACE" \
