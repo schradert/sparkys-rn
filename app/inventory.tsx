@@ -943,7 +943,7 @@ export default function Inventory() {
 	function generateUniqueId(): string {
 		const existingIds = (internalProducts || [])
 			.map((p) => parseInt(p?.id || "0", 10))
-			.filter((id) => !isNaN(id));
+			.filter((id) => !Number.isNaN(id));
 		const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
 		return (maxId + 1).toString();
 	}
@@ -2031,7 +2031,7 @@ export default function Inventory() {
 													onChangeText={(text) =>
 														setNewExternalProduct((prev) => ({
 															...prev,
-															bag_quantity: parseInt(text) || 0,
+															bag_quantity: parseInt(text, 10) || 0,
 														}))
 													}
 													placeholder="50"
@@ -2059,7 +2059,7 @@ export default function Inventory() {
 													onChangeText={(text) =>
 														setNewExternalProduct((prev) => ({
 															...prev,
-															quantity: parseInt(text) || 0,
+															quantity: parseInt(text, 10) || 0,
 														}))
 													}
 													placeholder="0"
@@ -2171,7 +2171,7 @@ export default function Inventory() {
 														const threshold = parseInt(text, 10);
 														setNewInternalProduct((prev) => ({
 															...prev,
-															threshold_quantity: isNaN(threshold)
+															threshold_quantity: Number.isNaN(threshold)
 																? 0
 																: threshold,
 														}));

@@ -4,12 +4,14 @@ import {
 	convertExternalProductSheetToModel,
 	convertInternalProductSheetToModel,
 	type ExternalProduct,
+	type ExternalProductSheet,
 	type InternalProduct,
 	type InternalProductSheet,
 	updateFieldOptions,
 	updateMetadataItems,
 } from "@/constants/Products";
 import { SPREADSHEET_ID } from "@/constants/Spreadsheet";
+import { getErrorMessage } from "@/services/errors";
 import { GoogleSheetsService } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import { setExternalProducts, setInternalProducts } from "@/store/products";
@@ -67,12 +69,16 @@ function notifyMetadataChange(change: {
 	oldValue: string;
 	newValue: string;
 }) {
-	metadataChangeSubscribers.forEach((callback) => callback(change));
+	metadataChangeSubscribers.forEach((callback) => {
+		callback(change);
+	});
 }
 
 function updateSheetsState(newState: Partial<SheetsDataState>) {
 	globalSheetsState = { ...globalSheetsState, ...newState };
-	sheetsSubscribers.forEach((callback) => callback());
+	sheetsSubscribers.forEach((callback) => {
+		callback();
+	});
 }
 
 function setMetadata(
@@ -119,7 +125,7 @@ function getMetadataFieldKey(sheetName: string): string | null {
 	}
 }
 
-function getSheetNameForMetadata(viewMode: string): string | null {
+function _getSheetNameForMetadata(viewMode: string): string | null {
 	switch (viewMode) {
 		case "productTypes":
 			return "product_types";
@@ -213,10 +219,10 @@ async function loadSheetsData(
 
 		logger.debug("Sheets", "Successfully loaded sheets data");
 		return { success: true };
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error loading sheets data:", error);
 		const errorMessage =
-			error.message || "Failed to load data from spreadsheet";
+			getErrorMessage(error) || "Failed to load data from spreadsheet";
 		updateSheetsState({
 			isLoading: false,
 			error: errorMessage,
@@ -259,9 +265,12 @@ async function addMetadataToSheet(
 		});
 
 		return { success: true };
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error adding metadata to sheet:", error);
-		return { success: false, error: error.message || "Failed to add item" };
+		return {
+			success: false,
+			error: getErrorMessage(error) || "Failed to add item",
+		};
 	}
 }
 
@@ -277,11 +286,11 @@ async function addInternalProductToSheet(
 		// No need for full refresh
 
 		return { success: true };
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error adding internal product to sheet:", error);
 		return {
 			success: false,
-			error: error?.toString() || "Failed to add internal product",
+			error: String(error) || "Failed to add internal product",
 		};
 	}
 }
@@ -337,11 +346,11 @@ async function updateMetadataInSheet(
 				newValue: newName,
 			},
 		};
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error updating metadata in sheet:", error);
 		return {
 			success: false,
-			error: error.message || "Failed to update metadata",
+			error: getErrorMessage(error) || "Failed to update metadata",
 		};
 	}
 }
@@ -370,7 +379,7 @@ function getFieldKeyForSheetName(sheetName: string): string | null {
 }
 
 async function addExternalProductToSheet(
-	product: any,
+	product: ExternalProductSheet,
 	accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
@@ -381,17 +390,17 @@ async function addExternalProductToSheet(
 		// No need for full refresh
 
 		return { success: true };
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error adding external product to sheet:", error);
 		return {
 			success: false,
-			error: error.message || "Failed to add external product",
+			error: getErrorMessage(error) || "Failed to add external product",
 		};
 	}
 }
 
-async function updateInternalProductInSheet(
-	product: any,
+async function _updateInternalProductInSheet(
+	product: InternalProductSheet,
 	accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
@@ -402,11 +411,11 @@ async function updateInternalProductInSheet(
 		// No need for full refresh
 
 		return { success: true };
-	} catch (error: any) {
+	} catch (error) {
 		logger.error("Sheets", "Error updating internal product in sheet:", error);
 		return {
 			success: false,
-			error: error.message || "Failed to update internal product",
+			error: getErrorMessage(error) || "Failed to update internal product",
 		};
 	}
 }
@@ -491,7 +500,7 @@ export function useSheetsData() {
 		);
 	};
 
-	const addExternalProduct = async (product: any) => {
+	const addExternalProduct = async (product: ExternalProductSheet) => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
 			Alert.alert("Error", "No access token available");
@@ -501,7 +510,7 @@ export function useSheetsData() {
 		return await addExternalProductToSheet(product, accessToken);
 	};
 
-	const updateInternalProduct = async (product: any) => {
+	const updateInternalProduct = async (product: InternalProductSheet) => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
 			Alert.alert("Error", "No access token available");
@@ -513,7 +522,7 @@ export function useSheetsData() {
 			await sheetsService.updateInternalProduct(product, accessToken);
 			// Don't refresh - let the caller update the store directly
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error(
 				"Sheets",
 				"Error updating internal product in sheet:",
@@ -521,13 +530,13 @@ export function useSheetsData() {
 			);
 			return {
 				success: false,
-				error: error.message || "Failed to update internal product",
+				error: getErrorMessage(error) || "Failed to update internal product",
 			};
 		}
 	};
 
 	const updateExternalProduct = async (
-		product: any,
+		product: ExternalProductSheet,
 		skipAuditLog: boolean = false,
 	) => {
 		const accessToken = await getAccessToken();
@@ -545,7 +554,7 @@ export function useSheetsData() {
 			);
 			// Don't refresh - let the caller update the store directly
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error(
 				"Sheets",
 				"Error updating external product in sheet:",
@@ -553,7 +562,7 @@ export function useSheetsData() {
 			);
 			return {
 				success: false,
-				error: error.message || "Failed to update external product",
+				error: getErrorMessage(error) || "Failed to update external product",
 			};
 		}
 	};
@@ -584,11 +593,11 @@ export function useSheetsData() {
 			});
 
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error archiving metadata:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to archive metadata",
+				error: getErrorMessage(error) || "Failed to archive metadata",
 			};
 		}
 	};
@@ -619,11 +628,11 @@ export function useSheetsData() {
 			});
 
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error unarchiving metadata:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to unarchive metadata",
+				error: getErrorMessage(error) || "Failed to unarchive metadata",
 			};
 		}
 	};
@@ -656,7 +665,7 @@ export function useSheetsData() {
 			try {
 				const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 				return await sheetsService.getAuditEvents(accessToken, limit, offset);
-			} catch (error: any) {
+			} catch (error) {
 				logger.error("Sheets", "Error fetching audit events:", error);
 				return [];
 			}
@@ -675,11 +684,11 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.archiveExternalProduct(sku, accessToken);
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error archiving external product:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to archive external product",
+				error: getErrorMessage(error) || "Failed to archive external product",
 			};
 		}
 	};
@@ -695,11 +704,11 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.unarchiveExternalProduct(sku, accessToken);
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error unarchiving external product:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to unarchive external product",
+				error: getErrorMessage(error) || "Failed to unarchive external product",
 			};
 		}
 	};
@@ -715,11 +724,11 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.archiveInternalProduct(name, accessToken);
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error archiving internal product:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to archive internal product",
+				error: getErrorMessage(error) || "Failed to archive internal product",
 			};
 		}
 	};
@@ -735,11 +744,11 @@ export function useSheetsData() {
 			const sheetsService = new GoogleSheetsService(SPREADSHEET_ID);
 			await sheetsService.unarchiveInternalProduct(name, accessToken);
 			return { success: true };
-		} catch (error: any) {
+		} catch (error) {
 			logger.error("Sheets", "Error unarchiving internal product:", error);
 			return {
 				success: false,
-				error: error.message || "Failed to unarchive internal product",
+				error: getErrorMessage(error) || "Failed to unarchive internal product",
 			};
 		}
 	};

@@ -137,10 +137,6 @@ else (tsc, eslint, biome, jest, expo-doctor, and the push hooks) is green.
   returns an empty result under React 19 + jest-expo 56, so component/screen
   tests can't query the tree yet. Investigate the renderer/setup before adding UI
   tests; unit tests are unaffected.
-- [ ] **Biome warning backlog (~88)** — work down `noExplicitAny` (the dynamic
-  Google Sheets layer), `noNonNullAssertion`, `noArrayIndexKey`,
-  `useIterableCallbackReturn`, `useTemplate`, `useParseIntRadix`, and
-  `noUselessFragments` / `noUselessSwitchCase`.
 - [ ] **Architectural refactor — decompose oversized modules** — large files are
   the worst smell here: `app/inventory.tsx` (~3k lines),
   `services/googleSheets.ts` (~1.5k), `app/activity.tsx` (~1.1k),

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 import {
 	LayoutAnimation,
 	Platform,
@@ -11,17 +11,14 @@ import {
 	View,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
-import type {
-	ExternalProduct,
-	getExternalProductsForInternal,
-	getInternalProductTotalQuantity,
-	InternalProduct,
-} from "@/constants/Products";
+import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import { getQuantityColor } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import ExternalProductCard from "./ExternalProductCard";
+
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 if (
 	Platform.OS === "android" &&
@@ -205,13 +202,12 @@ export default function InternalProductCard({
 				return "#dc3545";
 			case "green":
 				return "#28a745";
-			case "blue":
 			default:
 				return colors.primary;
 		}
 	};
 
-	const getIconForMetadata = (field: string): string => {
+	const getIconForMetadata = (field: string): IoniconName => {
 		switch (field) {
 			case "product_type":
 				return "shapes-outline";
@@ -345,7 +341,7 @@ export default function InternalProductCard({
 			{/* Internal product metadata */}
 			<View style={styles.metadataGrid}>
 				{metadataItems.map((item) => {
-					const isSelected = isMetadataSelected(item.field, item.value!);
+					const isSelected = isMetadataSelected(item.field, item.value);
 					return (
 						<Pressable
 							key={item.field}
@@ -356,10 +352,10 @@ export default function InternalProductCard({
 									backgroundColor: colors.primary,
 								},
 							]}
-							onPress={() => handleMetadataPress(item.field, item.value!)}
+							onPress={() => handleMetadataPress(item.field, item.value)}
 						>
 							<Ionicons
-								name={item.icon as any}
+								name={item.icon}
 								size={16}
 								color={isSelected ? "white" : colors.icon}
 							/>
@@ -387,6 +383,7 @@ export default function InternalProductCard({
 							const isSelected = isMetadataSelected("occasions", occasion);
 							return (
 								<Pressable
+									// biome-ignore lint/suspicious/noArrayIndexKey: occasion names are not guaranteed unique within the list, so a value+index composite is used; the list is static display only
 									key={`${occasion}-${index}`}
 									style={[
 										styles.occasionPill,

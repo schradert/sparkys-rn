@@ -18,11 +18,9 @@ import ExternalProductCard from "@/components/ExternalProductCard";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import {
-	archiveInternalProduct,
 	getQuantityColor,
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
-	unarchiveInternalProduct,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
@@ -31,11 +29,11 @@ import {
 	getAllInternalProducts,
 	getExternalProductsForInternal,
 	getInternalProductById,
-	getInternalProductByName,
-	setInternalProducts,
 	subscribeToStoreChanges,
 	updateInternalProduct,
 } from "@/store/products";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 export default function InternalProductDetail() {
 	const { theme } = useTheme();
@@ -199,7 +197,7 @@ export default function InternalProductDetail() {
 		});
 	};
 
-	const handleOccasionsChange = (occasionValue: string) => {
+	const _handleOccasionsChange = (occasionValue: string) => {
 		if (!editedProduct) return;
 
 		const occasions = editedProduct.occasions || [];
@@ -320,13 +318,12 @@ export default function InternalProductDetail() {
 				return "#dc3545";
 			case "green":
 				return "#28a745";
-			case "blue":
 			default:
 				return colors.primary;
 		}
 	};
 
-	const getIconForMetadata = (field: string): string => {
+	const getIconForMetadata = (field: string): IoniconName => {
 		switch (field) {
 			case "product_type":
 				return "shapes-outline";
@@ -558,7 +555,9 @@ export default function InternalProductDetail() {
 										const threshold = parseInt(text, 10);
 										setEditedProduct({
 											...editedProduct,
-											threshold_quantity: isNaN(threshold) ? 0 : threshold,
+											threshold_quantity: Number.isNaN(threshold)
+												? 0
+												: threshold,
 										});
 									}}
 									keyboardType="numeric"
@@ -682,7 +681,7 @@ export default function InternalProductDetail() {
 													: {})}
 											>
 												<Ionicons
-													name={item.icon as any}
+													name={item.icon}
 													size={20}
 													color={colors.primary}
 												/>
@@ -726,6 +725,7 @@ export default function InternalProductDetail() {
 									<View style={styles.occasionsContainer}>
 										{internalProduct.occasions.map((occasion, index) => (
 											<View
+												// biome-ignore lint/suspicious/noArrayIndexKey: occasion names are not guaranteed unique within the list, so a value+index composite is used; the list is static display only
 												key={`${occasion}-${index}`}
 												style={[
 													styles.occasionPill,

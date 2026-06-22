@@ -17,22 +17,20 @@ import CollapsibleRadioSection from "@/components/CollapsibleRadioSection";
 import { Colors } from "@/constants/Colors";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import {
-	archiveExternalProduct,
 	isMetadataItemArchived,
 	PRODUCT_FIELD_OPTIONS,
-	unarchiveExternalProduct,
 } from "@/constants/Products";
 import { useSheetsData } from "@/hooks/useSheetsData";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
 import {
-	getAllExternalProducts,
 	getAllInternalProducts,
 	getExternalProductBySku,
-	setExternalProducts,
 	updateExternalProduct,
 	updateInternalProduct as updateInternalProductInStore,
 } from "@/store/products";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 export default function ExternalProductDetail() {
 	const { theme } = useTheme();
@@ -338,7 +336,7 @@ export default function ExternalProductDetail() {
 		});
 	};
 
-	const handleDistributorsChange = (distributorValue: string) => {
+	const _handleDistributorsChange = (distributorValue: string) => {
 		if (!editedProduct) return;
 
 		const distributors = editedProduct.distributors || [];
@@ -448,7 +446,7 @@ export default function ExternalProductDetail() {
 		);
 	}
 
-	const getIconForMetadata = (field: string): string => {
+	const getIconForMetadata = (field: string): IoniconName => {
 		switch (field) {
 			case "manufacturer_color":
 				return "color-palette-outline";
@@ -600,7 +598,7 @@ export default function ExternalProductDetail() {
 													const quantity = parseInt(text, 10);
 													setEditedProduct({
 														...editedProduct,
-														quantity: isNaN(quantity) ? 0 : quantity,
+														quantity: Number.isNaN(quantity) ? 0 : quantity,
 													});
 												}
 											}}
@@ -787,7 +785,7 @@ export default function ExternalProductDetail() {
 													: {})}
 											>
 												<Ionicons
-													name={item.icon as any}
+													name={item.icon}
 													size={20}
 													color={colors.primary}
 												/>
@@ -831,6 +829,7 @@ export default function ExternalProductDetail() {
 									<View style={styles.distributorsContainer}>
 										{externalProduct.distributors.map((distributor, index) => (
 											<View
+												// biome-ignore lint/suspicious/noArrayIndexKey: distributor names are not guaranteed unique within the list, so a value+index composite is used; the list is static display only
 												key={`${distributor}-${index}`}
 												style={[
 													styles.distributorPill,

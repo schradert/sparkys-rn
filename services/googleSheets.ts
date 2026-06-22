@@ -39,7 +39,6 @@ export interface AuditEventSheet {
 export class GoogleSheetsService {
 	private baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
 	private spreadsheetId: string;
-	private globalProductState: any[] | null = null;
 
 	constructor(spreadsheetId: string) {
 		this.spreadsheetId = spreadsheetId;
@@ -72,7 +71,7 @@ export class GoogleSheetsService {
 	private async makeRequest(
 		endpoint: string,
 		accessToken: string,
-	): Promise<any> {
+	): Promise<unknown> {
 		const url = `${this.baseUrl}/${this.spreadsheetId}/${endpoint}`;
 
 		logger.debug("Sheets", "Making request to:", url);
@@ -106,7 +105,10 @@ export class GoogleSheetsService {
 	): Promise<string[][]> {
 		const range = `${sheetName}!A:Z`;
 		const endpoint = `values/${encodeURIComponent(range)}`;
-		const data: SheetsResponse = await this.makeRequest(endpoint, accessToken);
+		const data = (await this.makeRequest(
+			endpoint,
+			accessToken,
+		)) as SheetsResponse;
 
 		return data.values || [];
 	}
@@ -114,7 +116,7 @@ export class GoogleSheetsService {
 	async getMetadataValues(
 		sheetName: string,
 		accessToken: string,
-	): Promise<any[]> {
+	): Promise<Array<{ name: string; status: string }>> {
 		const values = await this.getSheetData(sheetName, accessToken);
 
 		if (values.length === 0) return [];
@@ -143,7 +145,9 @@ export class GoogleSheetsService {
 			.filter((item) => item.name && item.name.trim() !== "");
 	}
 
-	async getInternalProductData(accessToken: string): Promise<any[]> {
+	async getInternalProductData(
+		accessToken: string,
+	): Promise<InternalProductSheet[]> {
 		logger.debug("Sheets", "Fetching internal_products sheet...");
 		const data = await this.getSheetData("internal_products", accessToken);
 		logger.debug("Sheets", "Internal products sheet data:", data);
@@ -155,17 +159,17 @@ export class GoogleSheetsService {
 			return [];
 		}
 
-		const headers = data[0];
+		const _headers = data[0];
 		const values = data;
 
-		const products: any[] = [];
+		const products: InternalProductSheet[] = [];
 
 		// Header: id, sparkys_product_name, product_type, sparkys_color, texture, shape, occasions, products, threshold_quantity, never_out, status
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
 
-			const product: any = {
+			const product: InternalProductSheet = {
 				id: row[0] || "",
 				sparkys_product_name: row[1] || "",
 				product_type: row[2] || "",
@@ -176,7 +180,7 @@ export class GoogleSheetsService {
 				products: row[7] || "", // comma-separated barcodes
 				threshold_quantity: parseInt(row[8] || "0", 10), // Parse as integer
 				never_out: row[9] === "TRUE", // Parse boolean
-				status: row[10] || "active", // status field
+				status: (row[10] || "active") as InternalProductSheet["status"], // status field
 			};
 			logger.debug("Sheets", "Parsed internal product:", product);
 
@@ -187,7 +191,9 @@ export class GoogleSheetsService {
 		return products;
 	}
 
-	async getExternalProductData(accessToken: string): Promise<any[]> {
+	async getExternalProductData(
+		accessToken: string,
+	): Promise<ExternalProductSheet[]> {
 		logger.debug("Sheets", "Fetching external_products sheet...");
 		const data = await this.getSheetData("external_products", accessToken);
 		logger.debug("Sheets", "External products sheet data:", data);
@@ -199,17 +205,17 @@ export class GoogleSheetsService {
 			return [];
 		}
 
-		const headers = data[0];
+		const _headers = data[0];
 		const values = data;
 
-		const products: any[] = [];
+		const products: ExternalProductSheet[] = [];
 
 		// Header: unique_id_sku, manufacturer_color, brand, size, bag_quantity, distributors, quantity
 		for (let i = 1; i < values.length; i++) {
 			const row = values[i];
 			if (!row[0] || row[0].trim() === "") continue;
 
-			const product: any = {
+			const product: ExternalProductSheet = {
 				unique_id_sku: row[0] || "",
 				manufacturer_color: row[1] || "",
 				brand: row[2] || "",
@@ -217,7 +223,7 @@ export class GoogleSheetsService {
 				bag_quantity: parseInt(row[4] || "0", 10),
 				distributors: row[5] || "", // comma-separated
 				quantity: parseInt(row[6] || "0", 10),
-				status: row[7] || "active", // status field
+				status: (row[7] || "active") as ExternalProductSheet["status"], // status field
 			};
 			logger.debug("Sheets", "Parsed external product:", product);
 
@@ -461,7 +467,10 @@ export class GoogleSheetsService {
 		);
 	}
 
-	async addExternalProduct(product: any, accessToken: string): Promise<void> {
+	async addExternalProduct(
+		product: ExternalProductSheet,
+		accessToken: string,
+	): Promise<void> {
 		const newRow = [
 			product.unique_id_sku,
 			product.manufacturer_color,
@@ -496,7 +505,7 @@ export class GoogleSheetsService {
 	}
 
 	async updateExternalProduct(
-		product: any,
+		product: ExternalProductSheet,
 		accessToken: string,
 		skipAuditLog: boolean = false,
 	): Promise<void> {
@@ -515,7 +524,7 @@ export class GoogleSheetsService {
 			throw new Error(`External product "${product.unique_id_sku}" not found`);
 		}
 
-		let beforeState: any = {};
+		let beforeState: Record<string, unknown> = {};
 		if (!skipAuditLog && currentData.length > rowNumber - 1) {
 			const currentRow = currentData[rowNumber - 1];
 			beforeState = {
@@ -554,8 +563,8 @@ export class GoogleSheetsService {
 
 		// Log audit event only if not skipped
 		if (!skipAuditLog && Object.keys(beforeState).length > 0) {
-			const changes: any = {};
-			const before: any = {};
+			const changes: Record<string, unknown> = {};
+			const before: Record<string, unknown> = {};
 
 			let hasQuantityChange = false;
 			let hasStatusChange = false;
@@ -724,7 +733,7 @@ export class GoogleSheetsService {
 	}
 
 	async updateInternalProduct(
-		product: any,
+		product: InternalProductSheet,
 		accessToken: string,
 	): Promise<void> {
 		// First, get the current row data for this specific product
@@ -743,7 +752,7 @@ export class GoogleSheetsService {
 		}
 
 		// Capture current state for audit log
-		let beforeState: any = {};
+		let beforeState: Record<string, unknown> = {};
 		if (currentData.length > rowNumber - 1) {
 			const currentRow = currentData[rowNumber - 1];
 			beforeState = {
@@ -788,8 +797,8 @@ export class GoogleSheetsService {
 
 		// Log audit event with actual changes only
 		if (Object.keys(beforeState).length > 0) {
-			const changes: any = {};
-			const before: any = {};
+			const changes: Record<string, unknown> = {};
+			const before: Record<string, unknown> = {};
 
 			// Compare fields and only include actual changes
 			if (beforeState.sparkys_product_name !== product.sparkys_product_name) {
@@ -845,74 +854,6 @@ export class GoogleSheetsService {
 					accessToken,
 				);
 			}
-		}
-	}
-
-	private async handleExternalProductAssignmentChanges(
-		oldProducts: string,
-		newProducts: string,
-		oldInternalProductName: string,
-		newInternalProductName: string,
-		allProductsData: any[],
-		accessToken: string,
-	): Promise<void> {
-		const oldBarcodes = oldProducts
-			? oldProducts
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean)
-			: [];
-		const newBarcodes = newProducts
-			? newProducts
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean)
-			: [];
-
-		// Handle barcodes that were REMOVED from this internal product
-		const removedBarcodes = oldBarcodes.filter(
-			(barcode) => !newBarcodes.includes(barcode),
-		);
-
-		for (const barcode of removedBarcodes) {
-			// Create event showing this barcode was unassigned from this product
-			await this.logEvent(
-				{
-					timestamp: new Date().toISOString(),
-					event_type: "edit",
-					object_type: "external_product",
-					object_id: barcode,
-					object_name: barcode,
-					changes: JSON.stringify({ internal_product: "Unassigned" }),
-					before_state: JSON.stringify({
-						internal_product: oldInternalProductName,
-					}),
-					sheet_name: "external_products",
-				},
-				accessToken,
-			);
-		}
-
-		// Handle barcodes that were ADDED to this internal product
-		const addedBarcodes = newBarcodes.filter(
-			(barcode) => !oldBarcodes.includes(barcode),
-		);
-
-		for (const barcode of addedBarcodes) {
-			// Create event showing this barcode was assigned to this product
-			await this.logEvent(
-				{
-					timestamp: new Date().toISOString(),
-					event_type: "edit",
-					object_type: "external_product",
-					object_id: barcode,
-					object_name: barcode,
-					changes: JSON.stringify({ internal_product: newInternalProductName }),
-					before_state: JSON.stringify({ internal_product: "Unassigned" }),
-					sheet_name: "external_products",
-				},
-				accessToken,
-			);
 		}
 	}
 
