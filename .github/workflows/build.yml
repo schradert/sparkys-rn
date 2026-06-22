@@ -99,14 +99,17 @@ jobs:
           # is an alphabetical dependency scheme like AppAuth).
           SCHEME="${WORKSPACE%.xcworkspace}"
           echo "Workspace: $WORKSPACE  Scheme: $SCHEME"
+          # macOS runners are Apple Silicon, so build only the arm64 simulator
+          # slice — the generic destination also builds x86_64, which fails
+          # against the arm64-only prebuilt dependencies (Hermes, etc.).
           xcodebuild \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
+            ARCHS=arm64 \
             build
 
       - name: Package .app
