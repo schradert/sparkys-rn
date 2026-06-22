@@ -7,8 +7,6 @@ name: Build app artifacts
 on:
   push:
     branches: [trunk]
-  pull_request:
-    branches: [trunk]
   workflow_dispatch:
 
 concurrency:
