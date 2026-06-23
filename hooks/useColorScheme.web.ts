@@ -1,8 +1,11 @@
+/** Web override of `useColorScheme` that is hydration-safe for static render. */
+
 import { useEffect, useState } from "react";
 import { useColorScheme as useRNColorScheme } from "react-native";
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * The color scheme on web. Returns `"light"` until the client has hydrated, then
+ * the real scheme, so static-rendered markup matches the first client paint.
  */
 export function useColorScheme() {
 	const [hasHydrated, setHasHydrated] = useState(false);

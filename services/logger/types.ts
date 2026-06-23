@@ -6,8 +6,10 @@
  * `serialize.ts` for how arbitrary context is made JSON-safe + redacted.
  */
 
+/** Severity of a log entry, ordered debug < info < warn < error. */
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
+/** A single structured log record, persisted as one NDJSON line. */
 export interface LogEntry {
 	/** Monotonic sequence number within the current session. */
 	seq: number;

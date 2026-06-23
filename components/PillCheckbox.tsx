@@ -1,7 +1,9 @@
+/** Pill-shaped toggle used in filter lists. */
 import { Pressable, StyleSheet, Text } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
+/** Props for {@link PillCheckbox}; `archived` dims the pill and strikes the label. */
 interface PillCheckboxProps {
 	label: string;
 	selected: boolean;
@@ -9,6 +11,7 @@ interface PillCheckboxProps {
 	archived?: boolean;
 }
 
+/** A selectable pill that fills with the accent color when `selected`. */
 export default function PillCheckbox({
 	label,
 	selected,

@@ -1,3 +1,5 @@
+/** Pure filter/sort helpers for the inventory products view. */
+
 import type {
 	ExternalFilters,
 	InternalFilters,

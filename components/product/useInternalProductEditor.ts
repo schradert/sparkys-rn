@@ -1,3 +1,4 @@
+/** Hook owning the internal-product edit lifecycle and save flow. */
 import { useState } from "react";
 import { Alert } from "react-native";
 import type {

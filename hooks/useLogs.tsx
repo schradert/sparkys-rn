@@ -11,6 +11,7 @@ import {
 	subscribeToLogs,
 } from "@/services/logger";
 
+/** Returns `{ entries }`, the current log buffer, re-rendering as logs arrive. */
 export function useLogs() {
 	const [entries, setEntries] = useState<LogEntry[]>(() => getLogEntries());
 

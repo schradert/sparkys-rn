@@ -1,3 +1,5 @@
+/** Create + update for external products, with per-dimension audit diffing. */
+
 import type { ExternalProductSheet } from "@/constants/Products";
 import { logger } from "@/services/logger";
 import { logEvent } from "./audit";

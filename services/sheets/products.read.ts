@@ -1,3 +1,5 @@
+/** Parses the product sheets into typed rows. */
+
 import type {
 	ExternalProductSheet,
 	InternalProductSheet,

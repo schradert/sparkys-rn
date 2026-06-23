@@ -1,6 +1,11 @@
+/**
+ * Pure archive/unarchive helpers over in-memory product lists. Each returns a
+ * new array with the matched product's status flipped; non-matches pass through.
+ */
+
 import type { ExternalProduct, InternalProduct } from "./types";
 
-// Archive/unarchive product functions
+/** Return the list with the named internal product marked archived. */
 export function archiveInternalProduct(
 	productName: string,
 	products: InternalProduct[],
@@ -12,6 +17,7 @@ export function archiveInternalProduct(
 	);
 }
 
+/** Return the list with the named internal product marked active. */
 export function unarchiveInternalProduct(
 	productName: string,
 	products: InternalProduct[],
@@ -23,6 +29,7 @@ export function unarchiveInternalProduct(
 	);
 }
 
+/** Return the list with the SKU's external product marked archived. */
 export function archiveExternalProduct(
 	sku: string,
 	products: ExternalProduct[],
@@ -34,6 +41,7 @@ export function archiveExternalProduct(
 	);
 }
 
+/** Return the list with the SKU's external product marked active. */
 export function unarchiveExternalProduct(
 	sku: string,
 	products: ExternalProduct[],
@@ -45,6 +53,7 @@ export function unarchiveExternalProduct(
 	);
 }
 
+/** Whether the named internal product is currently archived. */
 export function isInternalProductArchived(
 	productName: string,
 	products: InternalProduct[],
@@ -53,6 +62,7 @@ export function isInternalProductArchived(
 	return product?.status === "archived";
 }
 
+/** Whether the SKU's external product is currently archived. */
 export function isExternalProductArchived(
 	sku: string,
 	products: ExternalProduct[],

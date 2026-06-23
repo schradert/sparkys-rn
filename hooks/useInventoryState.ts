@@ -1,3 +1,5 @@
+/** View-model hook backing the inventory screen. */
+
 import { useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { useState } from "react";

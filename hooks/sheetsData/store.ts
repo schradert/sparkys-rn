@@ -1,6 +1,13 @@
+/**
+ * Module-singleton store backing {@link useSheetsData}: holds the loaded sheets
+ * state plus pub/sub for state and metadata-change notifications. Lives outside
+ * React so non-hook operation modules can read and mutate it directly.
+ */
+
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import { updateFieldOptions, updateMetadataItems } from "@/constants/Products";
 
+/** The full sheets snapshot the hook exposes (products, metadata, status). */
 export interface SheetsDataState {
 	internalProducts: InternalProduct[];
 	externalProducts: ExternalProduct[];
@@ -11,6 +18,7 @@ export interface SheetsDataState {
 	lastUpdated: Date | null;
 }
 
+/** A metadata rename broadcast to subscribers (e.g. inventory filters). */
 export interface MetadataChange {
 	fieldKey: string;
 	oldValue: string;
@@ -41,6 +49,7 @@ export function getSheetsState(): SheetsDataState {
 	return globalSheetsState;
 }
 
+/** Subscribe to sheets-state changes; returns an unsubscribe function. */
 export function subscribeToSheetsData(callback: () => void) {
 	sheetsSubscribers.push(callback);
 	return () => {
@@ -48,6 +57,7 @@ export function subscribeToSheetsData(callback: () => void) {
 	};
 }
 
+/** Subscribe to metadata renames; returns an unsubscribe function. */
 export function subscribeToMetadataChanges(
 	callback: (change: MetadataChange) => void,
 ) {
@@ -59,12 +69,14 @@ export function subscribeToMetadataChanges(
 	};
 }
 
+/** Broadcast a metadata rename to all metadata-change subscribers. */
 export function notifyMetadataChange(change: MetadataChange) {
 	metadataChangeSubscribers.forEach((callback) => {
 		callback(change);
 	});
 }
 
+/** Merge a partial update into the shared state and notify subscribers. */
 export function updateSheetsState(newState: Partial<SheetsDataState>) {
 	globalSheetsState = { ...globalSheetsState, ...newState };
 	sheetsSubscribers.forEach((callback) => {
@@ -72,6 +84,11 @@ export function updateSheetsState(newState: Partial<SheetsDataState>) {
 	});
 }
 
+/**
+ * Apply an updater to the metadata map, persist it to state, and refresh the
+ * derived `Products` caches — active-only names for field options, the full map
+ * (with statuses) for metadata items — so components reflect changes at once.
+ */
 export function setMetadata(
 	updater: (
 		prev: Record<string, Array<{ name: string; status: string }>>,

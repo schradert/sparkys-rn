@@ -36,6 +36,10 @@ interface SubmitMetadataArgs {
 	onSuccess: () => void;
 }
 
+/**
+ * Validate and add a metadata value to its sheet, rejecting blanks, duplicates,
+ * and categories with no writable sheet; alerts on the outcome.
+ */
 export async function submitMetadata({
 	view,
 	value,
@@ -87,6 +91,10 @@ interface SubmitInternalArgs {
 	onSuccess: () => void;
 }
 
+/**
+ * Validate and create an internal product (required fields, unique name), write
+ * it to the sheet and store, and alert on the outcome.
+ */
 export async function submitInternalProduct({
 	form,
 	internalProducts,
@@ -176,6 +184,10 @@ interface SubmitExternalArgs {
 	onSuccess: () => void;
 }
 
+/**
+ * Validate and create an external product, then link it to its assigned internal
+ * product; reports partial success when the product is added but linking fails.
+ */
 export async function submitExternalProduct({
 	form,
 	internalProducts,

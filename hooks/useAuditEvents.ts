@@ -1,3 +1,5 @@
+/** Paginated server-state hook for the audit-event feed. */
+
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useSheetsData } from "@/hooks/useSheetsData";

@@ -1,3 +1,4 @@
+/** Root route layout: app-wide providers, the expo-router stack, and chrome. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as NavigationBar from "expo-navigation-bar";
 import { Stack } from "expo-router";
@@ -22,6 +23,10 @@ const queryClient = new QueryClient({
 	},
 });
 
+/**
+ * The themed shell rendered inside the providers: keeps the Android navigation
+ * bar hidden across app-state and theme changes and hosts the router stack.
+ */
 function ThemedRootLayout() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];
@@ -100,6 +105,7 @@ function ThemedRootLayout() {
 	);
 }
 
+/** The app root — wraps every route in the query client and theme providers. */
 export default function RootLayout() {
 	return (
 		<QueryClientProvider client={queryClient}>

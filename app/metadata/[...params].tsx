@@ -1,3 +1,4 @@
+/** Route `/metadata/[...params]` — view/edit a single metadata value. */
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -13,6 +14,11 @@ import { isMetadataItemArchived } from "@/constants/Products";
 import { useMetadataActions } from "@/hooks/useMetadataActions";
 import { useTheme } from "@/hooks/useTheme";
 
+/**
+ * Route `/metadata/[...params]` — resolves a `[viewMode, itemName]` catch-all
+ * into a metadata category and value, then renders that value with archive and
+ * inline-edit actions; shows an invalid-route guard for malformed params.
+ */
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
 	const { theme } = useTheme();

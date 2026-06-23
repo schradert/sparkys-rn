@@ -17,6 +17,7 @@ import { collectLogs, type LogScope } from "./collect";
 import { DriveService } from "./drive";
 import { logger } from "./logger";
 
+/** Outcome of an upload: file details on success, a friendly error otherwise. */
 export type UploadResult =
 	| { ok: true; fileName: string; link?: string; entryCount: number }
 	| { ok: false; error: string };
@@ -101,6 +102,7 @@ async function run(
 	}
 }
 
+/** Upload the scope's logs to Drive, single-flighted across concurrent calls. */
 export function uploadDiagnostics(
 	scope: LogScope,
 	getToken: GetToken,

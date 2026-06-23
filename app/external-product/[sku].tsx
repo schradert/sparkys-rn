@@ -1,3 +1,4 @@
+/** Route `/external-product/[sku]` — the external-product detail screen. */
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -31,6 +32,11 @@ import {
 
 type MutationResult = { success: boolean; error?: string };
 
+/**
+ * Route `/external-product/[sku]` — loads the external product by SKU and its
+ * owning internal product from the store, then renders the loading/not-found
+ * states or the detail body.
+ */
 export default function ExternalProductDetail() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];

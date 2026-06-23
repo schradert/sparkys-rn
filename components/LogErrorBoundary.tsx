@@ -65,13 +65,19 @@ function ErrorFallback({
 	);
 }
 
+/**
+ * Error boundary that logs render-phase errors with their component stack,
+ * flushes logs to disk, and renders a themed recovery screen with a retry.
+ */
 export class LogErrorBoundary extends Component<Props, State> {
 	state: State = { error: null };
 
+	/** Capture the render error into state so the fallback UI renders. */
 	static getDerivedStateFromError(error: Error): State {
 		return { error };
 	}
 
+	/** Log the error with its component stack, then flush logs to disk. */
 	componentDidCatch(error: Error, info: { componentStack?: string }) {
 		logger.error("react", error?.message || "Render error", {
 			error,
@@ -84,6 +90,7 @@ export class LogErrorBoundary extends Component<Props, State> {
 		this.setState({ error: null });
 	};
 
+	/** Show the recovery screen when an error was caught, otherwise children. */
 	render() {
 		if (this.state.error) {
 			return <ErrorFallback error={this.state.error} onReset={this.reset} />;

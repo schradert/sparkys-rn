@@ -1,3 +1,5 @@
+/** Create + update for internal products, with single-edit audit diffing. */
+
 import type { InternalProductSheet } from "@/constants/Products";
 import { logger } from "@/services/logger";
 import { logEvent } from "./audit";

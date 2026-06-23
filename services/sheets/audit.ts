@@ -1,3 +1,5 @@
+/** Read/write helpers for the `events` audit-log sheet. */
+
 import { logger } from "@/services/logger";
 import type { SheetsClient } from "./client";
 import type { AuditEvent } from "./types";

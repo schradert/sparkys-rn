@@ -1,3 +1,4 @@
+/** Route `/internal-product/[id]` — the internal-product detail screen. */
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -44,6 +45,11 @@ function quantityColorValue(
 	}
 }
 
+/**
+ * Route `/internal-product/[id]` — loads the internal product (and its grouped
+ * external products) from the store by id, keeping them in sync with store
+ * changes, then renders the loading/not-found states or the detail body.
+ */
 export default function InternalProductDetail() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];

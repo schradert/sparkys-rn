@@ -1,3 +1,4 @@
+/** Expandable internal-product card with threshold status and nested externals. */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -30,6 +31,7 @@ if (
 	UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+/** Renders one internal product with its threshold status and expandable externals. */
 export default function InternalProductCard({
 	internalProduct,
 	externalProducts,

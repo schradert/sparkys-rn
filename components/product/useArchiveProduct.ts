@@ -1,3 +1,4 @@
+/** Hook driving the archive/unarchive confirmation flow on product screens. */
 import { useState } from "react";
 import { Alert } from "react-native";
 import { logger } from "@/services/logger";

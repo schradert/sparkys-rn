@@ -1,9 +1,11 @@
+/** Single log entry row for the diagnostics list. */
 import { Text, View } from "react-native";
 import type { ThemeColors } from "@/constants/Colors";
 import type { LogEntry } from "@/services/logger";
 import { getLevelColor, safeStringify } from "./diagnosticsFormat";
 import { styles } from "./styles";
 
+/** Renders one {@link LogEntry}: level, tag, time, message, and optional context. */
 export function LogRow({
 	item,
 	colors,

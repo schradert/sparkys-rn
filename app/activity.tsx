@@ -1,3 +1,4 @@
+/** Route `/activity` — the audit-event feed. */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -18,6 +19,10 @@ import { useAuditEvents } from "@/hooks/useAuditEvents";
 import { useTheme } from "@/hooks/useTheme";
 import type { AuditEvent } from "@/services/googleSheets";
 
+/**
+ * Route `/activity` — a paginated, pull-to-refresh list of audit events backed
+ * by `useAuditEvents`; tapping a row opens its detail modal.
+ */
 export default function Activity() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];

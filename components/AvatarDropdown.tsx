@@ -7,6 +7,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
 
+/**
+ * Header avatar button that opens a dropdown menu for toggling the theme,
+ * navigating to Activity and Diagnostics, and signing out.
+ */
 export default function AvatarDropdown() {
 	const { user, signOut } = useAuth();
 	const { theme, toggleTheme } = useTheme();

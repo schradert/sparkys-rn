@@ -1,3 +1,5 @@
+/** Mutation state and handlers for the metadata detail screen. */
+
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert } from "react-native";

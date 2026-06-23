@@ -4,6 +4,7 @@
  * here so the screen shell, the modals, and the view-model hook agree on shapes.
  */
 
+/** The inventory list mode: the hierarchical products view or a metadata category. */
 export type ViewMode =
 	| "products" // Internal products (hierarchical view)
 	| "productTypes"
@@ -17,7 +18,7 @@ export type ViewMode =
 	| "distributors"
 	| "occasions";
 
-// Filter types for internal and external products
+/** Active filter selections for internal products, including the boolean toggles. */
 export type InternalFilters = {
 	product_type: string[];
 	texture: string[];
@@ -28,6 +29,7 @@ export type InternalFilters = {
 	showArchived: boolean;
 };
 
+/** Active filter selections for external products. */
 export type ExternalFilters = {
 	manufacturer_color: string[];
 	brand: string[];
@@ -36,20 +38,21 @@ export type ExternalFilters = {
 	showArchived: boolean;
 };
 
-// Array-valued (multi-select) filter keys, excluding the boolean toggles.
+/** Multi-select (array-valued) internal filter keys, excluding boolean toggles. */
 export type InternalArrayFilterKey =
 	| "product_type"
 	| "texture"
 	| "shape"
 	| "occasions"
 	| "sparkys_color";
+/** Multi-select (array-valued) external filter keys, excluding boolean toggles. */
 export type ExternalArrayFilterKey =
 	| "manufacturer_color"
 	| "brand"
 	| "size"
 	| "distributors";
 
-// Working copy of the internal-product add form.
+/** Working draft of the internal-product add form. */
 export type NewInternalProduct = {
 	id: string;
 	sparkys_product_name: string;
@@ -63,7 +66,7 @@ export type NewInternalProduct = {
 	never_out: boolean;
 };
 
-// Working copy of the external-product add form.
+/** Working draft of the external-product add form. */
 export type NewExternalProduct = {
 	unique_id_sku: string;
 	manufacturer_color: string;
@@ -75,6 +78,7 @@ export type NewExternalProduct = {
 	assigned_internal_product: string;
 };
 
+/** Initial internal filter state: nothing selected, toggles off. */
 export const defaultInternalFilters: InternalFilters = {
 	product_type: [],
 	texture: [],
@@ -85,6 +89,7 @@ export const defaultInternalFilters: InternalFilters = {
 	showArchived: false,
 };
 
+/** Initial external filter state: nothing selected, archived hidden. */
 export const defaultExternalFilters: ExternalFilters = {
 	manufacturer_color: [],
 	brand: [],
@@ -93,6 +98,7 @@ export const defaultExternalFilters: ExternalFilters = {
 	showArchived: false,
 };
 
+/** Blank internal-product form draft used to reset the add flow. */
 export const emptyNewInternalProduct: NewInternalProduct = {
 	id: "",
 	sparkys_product_name: "",
@@ -106,6 +112,7 @@ export const emptyNewInternalProduct: NewInternalProduct = {
 	never_out: false,
 };
 
+/** Blank external-product form draft (defaults bag quantity to 50). */
 export const emptyNewExternalProduct: NewExternalProduct = {
 	unique_id_sku: "",
 	manufacturer_color: "",

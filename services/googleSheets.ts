@@ -39,16 +39,19 @@ export type { AuditEvent, AuditEventSheet } from "@/services/sheets/types";
 export class GoogleSheetsService {
 	private client: SheetsClient;
 
+	/** Construct the facade and its underlying client for the spreadsheet. */
 	constructor(spreadsheetId: string) {
 		this.client = new SheetsClient(spreadsheetId);
 	}
 
 	// --- Client primitives ---------------------------------------------------
 
+	/** Read a whole sheet as a row/column string grid. */
 	getSheetData(sheetName: string, accessToken: string): Promise<string[][]> {
 		return this.client.getSheetData(sheetName, accessToken);
 	}
 
+	/** Append rows to a sheet. */
 	appendToSheet(
 		sheetName: string,
 		values: string[][],
@@ -57,10 +60,12 @@ export class GoogleSheetsService {
 		return this.client.appendToSheet(sheetName, values, accessToken);
 	}
 
+	/** Next integer id for a sheet. */
 	getNextId(sheetName: string, accessToken: string): Promise<number> {
 		return this.client.getNextId(sheetName, accessToken);
 	}
 
+	/** 1-based row number of the first row whose column equals `value`, else null. */
 	findRowByValue(
 		sheetName: string,
 		columnName: string,
@@ -75,6 +80,7 @@ export class GoogleSheetsService {
 		);
 	}
 
+	/** Overwrite a 1-based row's cells with `values`. */
 	updateRow(
 		sheetName: string,
 		rowNumber: number,
@@ -86,14 +92,17 @@ export class GoogleSheetsService {
 
 	// --- Products ------------------------------------------------------------
 
+	/** Read the internal products sheet into typed rows. */
 	getInternalProductData(accessToken: string): Promise<InternalProductSheet[]> {
 		return getInternalProductData(this.client, accessToken);
 	}
 
+	/** Read the external products sheet into typed rows. */
 	getExternalProductData(accessToken: string): Promise<ExternalProductSheet[]> {
 		return getExternalProductData(this.client, accessToken);
 	}
 
+	/** Append an internal product and log a create event. */
 	addInternalProduct(
 		product: InternalProductSheet,
 		accessToken: string,
@@ -101,6 +110,7 @@ export class GoogleSheetsService {
 		return addInternalProduct(this.client, product, accessToken);
 	}
 
+	/** Append an external product and log a create event. */
 	addExternalProduct(
 		product: ExternalProductSheet,
 		accessToken: string,
@@ -108,6 +118,7 @@ export class GoogleSheetsService {
 		return addExternalProduct(this.client, product, accessToken);
 	}
 
+	/** Update an internal product, logging an edit event for changes. */
 	updateInternalProduct(
 		product: InternalProductSheet,
 		accessToken: string,
@@ -115,6 +126,7 @@ export class GoogleSheetsService {
 		return updateInternalProduct(this.client, product, accessToken);
 	}
 
+	/** Update an external product, optionally skipping the audit log. */
 	updateExternalProduct(
 		product: ExternalProductSheet,
 		accessToken: string,
@@ -128,24 +140,29 @@ export class GoogleSheetsService {
 		);
 	}
 
+	/** Archive an external product by SKU. */
 	archiveExternalProduct(sku: string, accessToken: string): Promise<void> {
 		return archiveExternalProduct(this.client, sku, accessToken);
 	}
 
+	/** Unarchive an external product by SKU. */
 	unarchiveExternalProduct(sku: string, accessToken: string): Promise<void> {
 		return unarchiveExternalProduct(this.client, sku, accessToken);
 	}
 
+	/** Archive an internal product by id. */
 	archiveInternalProduct(id: string, accessToken: string): Promise<void> {
 		return archiveInternalProduct(this.client, id, accessToken);
 	}
 
+	/** Unarchive an internal product by id. */
 	unarchiveInternalProduct(id: string, accessToken: string): Promise<void> {
 		return unarchiveInternalProduct(this.client, id, accessToken);
 	}
 
 	// --- Metadata ------------------------------------------------------------
 
+	/** Read `{ name, status }` pairs from a metadata sheet. */
 	getMetadataValues(
 		sheetName: string,
 		accessToken: string,
@@ -153,6 +170,7 @@ export class GoogleSheetsService {
 		return getMetadataValues(this.client, sheetName, accessToken);
 	}
 
+	/** Append a metadata item and log a create event. */
 	addMetadataItem(
 		sheetName: string,
 		name: string,
@@ -161,6 +179,7 @@ export class GoogleSheetsService {
 		return addMetadataItem(this.client, sheetName, name, accessToken);
 	}
 
+	/** Rename a metadata item, log the edit, and cascade into product sheets. */
 	updateMetadataItem(
 		sheetName: string,
 		oldName: string,
@@ -176,6 +195,7 @@ export class GoogleSheetsService {
 		);
 	}
 
+	/** Cascade a metadata rename through every product sheet that references it. */
 	updateProductsWithMetadataChange(
 		metadataSheetName: string,
 		oldValue: string,
@@ -191,6 +211,7 @@ export class GoogleSheetsService {
 		);
 	}
 
+	/** Archive a metadata item and log an archive event. */
 	archiveMetadataItem(
 		sheetName: string,
 		name: string,
@@ -199,6 +220,7 @@ export class GoogleSheetsService {
 		return archiveMetadataItem(this.client, sheetName, name, accessToken);
 	}
 
+	/** Unarchive a metadata item and log an unarchive event. */
 	unarchiveMetadataItem(
 		sheetName: string,
 		name: string,
@@ -209,12 +231,14 @@ export class GoogleSheetsService {
 
 	// --- Aggregate -----------------------------------------------------------
 
+	/** Fetch all metadata + product sheets and assemble the combined app view. */
 	getAllSheetsData(accessToken: string) {
 		return getAllSheetsData(this.client, accessToken);
 	}
 
 	// --- Audit ---------------------------------------------------------------
 
+	/** Append an audit event row. */
 	logEvent(
 		event: Omit<AuditEvent, "id" | "user_email">,
 		accessToken: string,
@@ -222,6 +246,7 @@ export class GoogleSheetsService {
 		return logEvent(this.client, event, accessToken);
 	}
 
+	/** Read audit events, most-recent first, with pagination. */
 	getAuditEvents(
 		accessToken: string,
 		limit: number = 50,
