@@ -74,6 +74,13 @@ Upgrading the SDK is scripted — see `scripts/upgrade-expo.sh` and the
 
 Run all push-stage hooks manually with `pre-commit run --all-files`.
 
+## AI skills
+
+Claude Code task playbooks live in `.claude/skills/` — `onboarding`,
+`dev-workflow`, `eas-release`, `generate-docs`, `security-scan`, `ci-workflows`,
+and `upgrade-expo-sdk` — each encoding one of the workflows above so it can be
+invoked by name.
+
 ## Security
 
 `security` scans JS dependencies (bun audit, osv-scanner), the Nix toolchain
