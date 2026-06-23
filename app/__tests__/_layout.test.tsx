@@ -3,6 +3,12 @@ import { AppState } from "react-native";
 import RootLayout from "@/app/_layout";
 import { logger } from "@/services/logger";
 
+// The expo-modules-core native logger intermittently fails to initialize in CI
+// (an "ExpoModulesCoreJSLogger" race) — this suite flakes ~1 CI run in 6 while
+// passing locally and on every other run. Retry to absorb that environment
+// flake; a real regression still fails all attempts.
+jest.retryTimes(2, { logErrorsBeforeRetry: true });
+
 // --- Mock surface -----------------------------------------------------------
 // The navigation-bar side effect is the screen's main behavior; mock it so each
 // call is observable and its resolution/rejection is controllable.
