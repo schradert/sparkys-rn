@@ -5,17 +5,21 @@ import {
 	LayoutAnimation,
 	Platform,
 	Pressable,
-	StyleSheet,
 	Text,
 	UIManager,
 	View,
 } from "react-native";
-import { getFieldIcon } from "@/components/activity/eventPresentation";
+import { CardMetadata } from "@/components/internalProductCard/CardMetadata";
+import { matchesExternalDisplayFilter } from "@/components/internalProductCard/displayFilter";
+import {
+	filterRelatedExternals,
+	sortRelatedExternals,
+} from "@/components/internalProductCard/sortExternals";
+import { styles } from "@/components/internalProductCard/styles";
+import type { InternalProductCardProps } from "@/components/internalProductCard/types";
 import { Colors } from "@/constants/Colors";
-import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 import { getQuantityColor } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
-import type { AuditEvent } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import ExternalProductCard from "./ExternalProductCard";
 
@@ -24,29 +28,6 @@ if (
 	UIManager.setLayoutAnimationEnabledExperimental
 ) {
 	UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-interface InternalProductCardProps {
-	internalProduct: InternalProduct;
-	externalProducts: ExternalProduct[];
-	events?: AuditEvent[];
-	onMetadataPress?: (field: string, value: string) => void;
-	selectedFilters?: {
-		internal?: {
-			product_type?: string[];
-			texture?: string[];
-			shape?: string[];
-			occasions?: string[];
-			sparkys_color?: string[];
-		};
-		external?: {
-			manufacturer_color?: string[];
-			brand?: string[];
-			size?: string[];
-			distributors?: string[];
-			showArchived?: boolean;
-		};
-	};
 }
 
 export default function InternalProductCard({
@@ -60,7 +41,6 @@ export default function InternalProductCard({
 	const colors = Colors[theme];
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	// Debug logging
 	logger.debug("Products", "InternalProductCard props:", {
 		internalProduct,
 		externalProductsCount: externalProducts?.length || 0,
@@ -73,7 +53,6 @@ export default function InternalProductCard({
 		threshold_type: typeof internalProduct?.threshold_quantity,
 	});
 
-	// Debug the barcode matching
 	logger.debug(
 		"Products",
 		`Barcode matching debug for ${internalProduct.sparkys_product_name}`,
@@ -91,74 +70,14 @@ export default function InternalProductCard({
 		internalProduct.products.includes(ext.unique_id_sku),
 	);
 
-	// Helper functions for sorting external products
-	function getEventCount(
-		productId: string,
-		productType: "internal_product" | "external_product",
-	): number {
-		return events.filter(
-			(event) =>
-				event.object_type === productType && event.object_id === productId,
-		).length;
-	}
-
-	function getMostRecentEventTimestamp(
-		productId: string,
-		productType: "internal_product" | "external_product",
-	): string | null {
-		const productEvents = events.filter(
-			(event) =>
-				event.object_type === productType && event.object_id === productId,
-		);
-
-		if (productEvents.length === 0) return null;
-
-		// Events are already sorted by ID descending (most recent first)
-		return productEvents[0].timestamp;
-	}
-
-	// For display, respect the showArchived filter
+	// For display, respect the showArchived filter, then sort by frequency,
+	// recency, then reverse alphabetical.
 	const showArchived = selectedFilters?.external?.showArchived === true;
-	const filteredExternals = showArchived
-		? allRelatedExternals
-		: allRelatedExternals.filter(
-				(ext) => (ext.status || "active") === "active",
-			);
-
-	// Sort external products by frequency, then recency, then reverse alphabetical
-	const relatedExternals = filteredExternals.sort((a, b) => {
-		// Sort by: 1) most frequently updated, 2) most recently updated, 3) reverse alphabetical
-		const aEventCount = getEventCount(a.unique_id_sku, "external_product");
-		const bEventCount = getEventCount(b.unique_id_sku, "external_product");
-
-		// First sort by frequency (descending)
-		if (aEventCount !== bEventCount) {
-			return bEventCount - aEventCount;
-		}
-
-		const reverseAlpha = b.unique_id_sku.localeCompare(a.unique_id_sku);
-
-		// Then sort by most recent activity
-		const aTimestamp = getMostRecentEventTimestamp(
-			a.unique_id_sku,
-			"external_product",
-		);
-		const bTimestamp = getMostRecentEventTimestamp(
-			b.unique_id_sku,
-			"external_product",
-		);
-
-		// Equal event counts imply both timestamps are present or both absent, so a
-		// missing timestamp means neither has events -> fall straight to reverse-alpha.
-		if (!aTimestamp || !bTimestamp) {
-			return reverseAlpha;
-		}
-
-		const timeDiff =
-			new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
-		// If same timestamp, use reverse alphabetical
-		return timeDiff !== 0 ? timeDiff : reverseAlpha;
-	});
+	const filteredExternals = filterRelatedExternals(
+		allRelatedExternals,
+		showArchived,
+	);
+	const relatedExternals = sortRelatedExternals(filteredExternals, events);
 
 	logger.debug(
 		"Products",
@@ -175,7 +94,7 @@ export default function InternalProductCard({
 		},
 	);
 
-	// Calculate quantity from active products only (for threshold calculations)
+	// Quantity from active products only (for threshold calculations).
 	const totalQuantity = allRelatedExternals
 		.filter((ext) => (ext.status || "active") === "active")
 		.reduce((total, ext) => total + ext.quantity, 0);
@@ -184,13 +103,6 @@ export default function InternalProductCard({
 		totalQuantity,
 		internalProduct.threshold_quantity,
 	);
-
-	logger.debug("Products", "Color calculation:", {
-		productName: internalProduct.sparkys_product_name,
-		totalQuantity,
-		threshold: internalProduct.threshold_quantity,
-		colorType: quantityColorType,
-	});
 
 	const getQuantityColorValue = (colorType: "red" | "blue" | "green") => {
 		switch (colorType) {
@@ -203,43 +115,9 @@ export default function InternalProductCard({
 		}
 	};
 
-	const metadataItems = [
-		{
-			field: "product_type",
-			value: internalProduct.product_type,
-			icon: getFieldIcon("product_type"),
-		},
-		{
-			field: "texture",
-			value: internalProduct.texture,
-			icon: getFieldIcon("texture"),
-		},
-		{
-			field: "shape",
-			value: internalProduct.shape,
-			icon: getFieldIcon("shape"),
-		},
-		{
-			field: "sparkys_color",
-			value: internalProduct.sparkys_color,
-			icon: getFieldIcon("sparkys_color"),
-		},
-	].filter((item) => item.value && item.value.trim() !== "");
-
 	const toggleExpansion = () => {
 		LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 		setIsExpanded(!isExpanded);
-	};
-
-	const handleMetadataPress = (field: string, value: string) => {
-		onMetadataPress?.(field, value);
-	};
-
-	const isMetadataSelected = (field: string, value: string): boolean => {
-		const internalFilters = selectedFilters?.internal;
-		if (!internalFilters) return false;
-		const fieldFilters = internalFilters[field as keyof typeof internalFilters];
-		return fieldFilters ? fieldFilters.includes(value) : false;
 	};
 
 	const isArchived = internalProduct.status === "archived";
@@ -317,121 +195,23 @@ export default function InternalProductCard({
 				</View>
 			</Pressable>
 
-			{/* Internal product metadata */}
-			<View style={styles.metadataGrid}>
-				{metadataItems.map((item) => {
-					const isSelected = isMetadataSelected(item.field, item.value);
-					return (
-						<Pressable
-							key={item.field}
-							style={[
-								styles.metadataItem,
-								{ backgroundColor: colors.metadataBackground },
-								isSelected && {
-									backgroundColor: colors.primary,
-								},
-							]}
-							onPress={() => handleMetadataPress(item.field, item.value)}
-						>
-							<Ionicons
-								name={item.icon}
-								size={16}
-								color={isSelected ? "white" : colors.icon}
-							/>
-							<Text
-								style={[
-									styles.metadataValue,
-									{ color: colors.textSecondary },
-									isSelected && { color: "white", fontWeight: "600" },
-								]}
-								numberOfLines={1}
-							>
-								{item.value}
-							</Text>
-						</Pressable>
-					);
-				})}
-			</View>
+			<CardMetadata
+				internalProduct={internalProduct}
+				colors={colors}
+				selectedFilters={selectedFilters}
+				onMetadataPress={onMetadataPress}
+			/>
 
-			{/* Occasions displayed horizontally */}
-			{internalProduct?.occasions &&
-				Array.isArray(internalProduct.occasions) &&
-				internalProduct.occasions.length > 0 && (
-					<View style={styles.occasionsContainer}>
-						{internalProduct.occasions?.map((occasion, index) => {
-							const isSelected = isMetadataSelected("occasions", occasion);
-							return (
-								<Pressable
-									// biome-ignore lint/suspicious/noArrayIndexKey: occasion names are not guaranteed unique within the list, so a value+index composite is used; the list is static display only
-									key={`${occasion}-${index}`}
-									style={[
-										styles.occasionPill,
-										{ backgroundColor: colors.metadataBackground },
-										isSelected && {
-											backgroundColor: colors.primary,
-										},
-									]}
-									onPress={() => handleMetadataPress("occasions", occasion)}
-								>
-									<Ionicons
-										name="calendar-outline"
-										size={16}
-										color={isSelected ? "white" : colors.icon}
-									/>
-									<Text
-										style={[
-											styles.occasionText,
-											{ color: colors.textSecondary },
-											isSelected && { color: "white", fontWeight: "600" },
-										]}
-										numberOfLines={1}
-									>
-										{occasion}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				)}
-
-			{/* Expandable external products */}
 			{isExpanded && (
 				<View style={styles.externalProductsContainer}>
 					{relatedExternals.length > 0 ? (
 						relatedExternals
-							.filter((externalProduct) => {
-								// Apply external product filters only for display
-								return Object.entries(selectedFilters?.external || {}).every(
-									([key, selectedValues]) => {
-										if (key === "showArchived") {
-											// Handle showArchived filter (boolean)
-											const isProductArchived =
-												(externalProduct.status || "active") === "archived";
-											if (selectedValues === true) {
-												// Show all products (both active and archived)
-												return true;
-											} else {
-												// Show only active products (exclude archived)
-												return !isProductArchived;
-											}
-										}
-										if (
-											!Array.isArray(selectedValues) ||
-											selectedValues.length === 0
-										)
-											return true;
-										if (key === "distributors") {
-											return selectedValues.some((selectedValue) =>
-												externalProduct.distributors.includes(selectedValue),
-											);
-										}
-										const productValue = externalProduct[
-											key as keyof ExternalProduct
-										] as string;
-										return selectedValues.includes(productValue);
-									},
-								);
-							})
+							.filter((externalProduct) =>
+								matchesExternalDisplayFilter(
+									externalProduct,
+									selectedFilters?.external,
+								),
+							)
 							.map((externalProduct) => (
 								<ExternalProductCard
 									key={externalProduct.unique_id_sku}
@@ -452,136 +232,3 @@ export default function InternalProductCard({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	card: {
-		backgroundColor: "white",
-		borderRadius: 12,
-		padding: 16,
-		marginVertical: 8,
-		elevation: 2,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 2,
-	},
-	cardHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "flex-start",
-		marginBottom: 12,
-	},
-	headerLeft: {
-		flex: 1,
-		marginRight: 12,
-	},
-	productNameRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		flexWrap: "wrap",
-	},
-	headerRight: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	productName: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#1a1a1a",
-		marginBottom: 2,
-	},
-	externalCount: {
-		fontSize: 12,
-		color: "#6c757d",
-		fontStyle: "italic",
-	},
-	quantity: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#007bff",
-	},
-	expandButton: {
-		padding: 4,
-	},
-	occasionsContainer: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		marginTop: 12,
-		marginBottom: 4,
-		gap: 6,
-		justifyContent: "flex-start",
-	},
-	occasionPill: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#f8f9fa",
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 6,
-		gap: 4,
-	},
-	occasionText: {
-		fontSize: 11,
-		fontWeight: "500",
-		color: "#495057",
-	},
-	archivedLabel: {
-		fontSize: 12,
-		fontWeight: "400",
-		fontStyle: "italic",
-	},
-	metadataGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 8,
-		marginTop: 4,
-	},
-	metadataItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#f8f9fa",
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 6,
-		flex: 0,
-		minWidth: "22%",
-		maxWidth: "24%",
-		gap: 4,
-	},
-	metadataValue: {
-		fontSize: 11,
-		color: "#495057",
-		fontWeight: "500",
-		flex: 1,
-	},
-	externalProductsContainer: {
-		marginTop: 12,
-		paddingTop: 12,
-		borderTopWidth: 1,
-		borderTopColor: "#e1e5e9",
-	},
-	neverOutBadge: {
-		backgroundColor: "#c026d3",
-		paddingHorizontal: 8,
-		paddingVertical: 3,
-		borderRadius: 12,
-		alignSelf: "center",
-	},
-	neverOutText: {
-		fontSize: 10,
-		fontWeight: "600",
-		color: "white",
-		textTransform: "uppercase",
-	},
-	emptyExternalProducts: {
-		padding: 16,
-		alignItems: "center",
-	},
-	emptyText: {
-		fontSize: 14,
-		fontStyle: "italic",
-		textAlign: "center",
-	},
-});
