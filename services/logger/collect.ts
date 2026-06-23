@@ -13,12 +13,14 @@ import { readAllSegments } from "./fileSink";
 import { flushLogs, getSessionId } from "./logger";
 import type { LogEntry } from "./types";
 
+/** Selects which retained log entries an upload includes. */
 export type LogScope =
 	| "session"
 	| "last15min"
 	| "sinceLastError"
 	| "allRetained";
 
+/** The selectable scopes with user-facing label and hint, in display order. */
 export const LOG_SCOPES: { key: LogScope; label: string; hint: string }[] = [
 	{
 		key: "session",
@@ -41,6 +43,7 @@ export const LOG_SCOPES: { key: LogScope; label: string; hint: string }[] = [
 const MAX_BODY_BYTES = 4 * 1024 * 1024; // stay under Drive's 5 MB multipart cap
 const LAST_MINUTES = 15;
 
+/** A scope's logs prepared for upload: header, body, file name, and entry count. */
 export interface CollectedLogs {
 	header: string;
 	body: string;

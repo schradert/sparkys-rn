@@ -1,3 +1,11 @@
+/**
+ * Product + audit-log operations against the Google Sheets backend.
+ *
+ * Thin wrappers over the sheets service: each catches errors into an
+ * {@link OperationResult}. Product store updates flow back via the store's own
+ * change subscription, so these intentionally skip a full refresh.
+ */
+
 import type {
 	ExternalProductSheet,
 	InternalProductSheet,
@@ -9,6 +17,7 @@ import { GoogleSheetsService } from "@/services/googleSheets";
 import { logger } from "@/services/logger";
 import type { OperationResult } from "./store";
 
+/** Append a new internal product to its sheet. */
 export async function addInternalProductToSheet(
 	product: InternalProductSheet,
 	accessToken: string,
@@ -30,6 +39,7 @@ export async function addInternalProductToSheet(
 	}
 }
 
+/** Append a new external product to its sheet. */
 export async function addExternalProductToSheet(
 	product: ExternalProductSheet,
 	accessToken: string,
@@ -51,6 +61,7 @@ export async function addExternalProductToSheet(
 	}
 }
 
+/** Update an existing internal product row; the caller updates the store. */
 export async function updateInternalProductInSheet(
 	product: InternalProductSheet,
 	accessToken: string,
@@ -69,6 +80,10 @@ export async function updateInternalProductInSheet(
 	}
 }
 
+/**
+ * Update an existing external product row. Pass `skipAuditLog` for changes that
+ * should not record an audit event (e.g. derived/cascade updates).
+ */
 export async function updateExternalProductInSheet(
 	product: ExternalProductSheet,
 	accessToken: string,
@@ -92,6 +107,7 @@ export async function updateExternalProductInSheet(
 	}
 }
 
+/** Archive the external product identified by `sku`. */
 export async function archiveExternalProductInSheet(
 	sku: string,
 	accessToken: string,
@@ -109,6 +125,7 @@ export async function archiveExternalProductInSheet(
 	}
 }
 
+/** Unarchive the external product identified by `sku`. */
 export async function unarchiveExternalProductInSheet(
 	sku: string,
 	accessToken: string,
@@ -126,6 +143,7 @@ export async function unarchiveExternalProductInSheet(
 	}
 }
 
+/** Archive the internal product identified by `name`. */
 export async function archiveInternalProductInSheet(
 	name: string,
 	accessToken: string,
@@ -143,6 +161,7 @@ export async function archiveInternalProductInSheet(
 	}
 }
 
+/** Unarchive the internal product identified by `name`. */
 export async function unarchiveInternalProductInSheet(
 	name: string,
 	accessToken: string,
@@ -160,6 +179,10 @@ export async function unarchiveInternalProductInSheet(
 	}
 }
 
+/**
+ * Append an audit event (id and user_email are filled in by the service).
+ * Best-effort: logging failures are swallowed so they never block the action.
+ */
 export async function logAuditEvent(
 	event: Omit<AuditEvent, "id" | "user_email">,
 	accessToken: string,
@@ -172,6 +195,7 @@ export async function logAuditEvent(
 	}
 }
 
+/** Fetch a page of audit events; returns an empty array on error. */
 export async function getAuditEvents(
 	accessToken: string,
 	limit: number,

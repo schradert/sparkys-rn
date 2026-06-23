@@ -1,3 +1,4 @@
+/** Hook owning the external-product edit lifecycle, save, and reassignment. */
 import { useState } from "react";
 import { Alert } from "react-native";
 import type {

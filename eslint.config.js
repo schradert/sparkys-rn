@@ -9,6 +9,7 @@
 // turned off here.
 const { defineConfig } = require("eslint/config");
 const expoConfig = require("eslint-config-expo/flat");
+const jsdoc = require("eslint-plugin-jsdoc");
 
 module.exports = defineConfig([
 	expoConfig,
@@ -28,6 +29,30 @@ module.exports = defineConfig([
 			"react-hooks/refs": "error",
 			"react-hooks/immutability": "error",
 			"react-hooks/exhaustive-deps": "error",
+		},
+	},
+	{
+		// Documentation coverage: every exported function/class/method/component
+		// and exported interface/type carries a TSDoc block, so the 100% doc
+		// baseline cannot silently regress.
+		files: ["**/*.{ts,tsx}"],
+		ignores: ["**/__tests__/**", "**/*.test.{ts,tsx}", "test-support/**"],
+		plugins: { jsdoc },
+		rules: {
+			"jsdoc/require-jsdoc": [
+				"error",
+				{
+					publicOnly: true,
+					require: {
+						FunctionDeclaration: true,
+						ClassDeclaration: true,
+						MethodDefinition: true,
+						ArrowFunctionExpression: true,
+						FunctionExpression: true,
+					},
+					contexts: ["TSInterfaceDeclaration", "TSTypeAliasDeclaration"],
+				},
+			],
 		},
 	},
 	{

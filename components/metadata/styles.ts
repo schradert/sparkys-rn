@@ -1,5 +1,7 @@
+/** Shared styles for the metadata detail and edit screens. */
 import { StyleSheet } from "react-native";
 
+/** StyleSheet for the metadata detail screen header, value display, and form. */
 export const styles = StyleSheet.create({
 	container: {
 		flex: 1,

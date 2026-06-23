@@ -1,6 +1,11 @@
+/** Builds the metadata chip list for an internal product card. */
 import { getFieldIcon } from "@/components/activity/eventPresentation";
 import type { InternalProduct } from "@/constants/Products";
 
+/**
+ * The metadata chips (field, value, icon) for an internal product, omitting any
+ * field with an empty value.
+ */
 export function buildMetadataItems(internalProduct: InternalProduct) {
 	return [
 		{

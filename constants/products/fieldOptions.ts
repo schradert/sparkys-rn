@@ -1,3 +1,10 @@
+/**
+ * In-memory catalog of selectable values for each product field. Seeded with
+ * built-in defaults and overlaid at runtime from the metadata sheets, so the UI
+ * has options before the first fetch and stays in sync after it.
+ */
+
+/** Built-in fallback options used until the metadata sheets are loaded. */
 export const DEFAULT_FIELD_OPTIONS = {
 	productType: [
 		"Latex Balloons",
@@ -46,9 +53,10 @@ export const DEFAULT_FIELD_OPTIONS = {
 	],
 } as const;
 
+/** Live, mutable field options; starts as the defaults and is overlaid at runtime. */
 export let PRODUCT_FIELD_OPTIONS = { ...DEFAULT_FIELD_OPTIONS };
 
-// Archive management for metadata items
+/** Per-field lists of archived metadata names, keyed by field. */
 export const ARCHIVED_METADATA_ITEMS: Record<string, string[]> = {
 	productType: [],
 	manufacturer_color: [],
@@ -64,6 +72,7 @@ export const ARCHIVED_METADATA_ITEMS: Record<string, string[]> = {
 
 type FieldOptionInput = string | { name: string };
 
+/** Overlay loaded options onto the live set, coercing items to plain names. */
 export function updateFieldOptions(
 	newOptions: Record<string, FieldOptionInput[]>,
 ) {
@@ -83,12 +92,14 @@ let METADATA_ITEMS: Record<
 	Array<{ name: string; status: string }>
 > = {};
 
+/** Replace the stored metadata items (name + status) keyed by field. */
 export function updateMetadataItems(
 	metadata: Record<string, Array<{ name: string; status: string }>>,
 ) {
 	METADATA_ITEMS = { ...metadata };
 }
 
+/** Metadata items for a field; active-only unless `includeArchived`. */
 export function getMetadataItems(
 	fieldKey: string,
 	includeArchived: boolean = false,
@@ -99,6 +110,7 @@ export function getMetadataItems(
 		: items.filter((item) => item.status === "active");
 }
 
+/** Whether a field's metadata value is marked archived. */
 export function isMetadataItemArchived(
 	fieldKey: string,
 	value: string,
@@ -108,6 +120,7 @@ export function isMetadataItemArchived(
 	return item?.status === "archived" || false;
 }
 
+/** Names for a field: active options, plus archived names when requested. */
 export function getAllMetadataItems(
 	fieldKey: string,
 	includeArchived: boolean = false,
@@ -123,8 +136,11 @@ export function getAllMetadataItems(
 	return [...activeItems, ...archivedItems];
 }
 
+/** The shape of the live field-options map. */
 export type FieldOptions = typeof PRODUCT_FIELD_OPTIONS;
+/** A field-options key (e.g. `"productType"`, `"size"`). */
 export type Field = keyof FieldOptions;
+/** A selected-values filter holding a string array per field. */
 export type FieldFilters = {
 	[K in Field]: string[];
 };

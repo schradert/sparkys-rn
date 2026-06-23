@@ -1,6 +1,8 @@
+/** Route fallback — the 404 screen for unmatched paths. */
 import { Link, Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
+/** The not-found screen shown for unmatched routes, with a link back to `/`. */
 export default function NotFoundScreen() {
 	return (
 		<>

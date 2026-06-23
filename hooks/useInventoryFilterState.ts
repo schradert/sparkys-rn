@@ -1,3 +1,5 @@
+/** State and handlers for the inventory filter selections. */
+
 import { useEffect, useState } from "react";
 import {
 	defaultExternalFilters,

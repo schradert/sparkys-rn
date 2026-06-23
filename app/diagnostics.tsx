@@ -1,3 +1,4 @@
+/** Route `/diagnostics` — the in-app log viewer and Drive upload panel. */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -15,6 +16,10 @@ import type { LogEntry, LogLevel } from "@/services/logger";
 import type { LogScope } from "@/services/logger/collect";
 import { type UploadResult, uploadDiagnostics } from "@/services/logger/upload";
 
+/**
+ * Route `/diagnostics` — lists captured log entries filtered by level and scope
+ * and uploads the selected scope to Drive, surfacing a shareable link.
+ */
 export default function Diagnostics() {
 	const { theme } = useTheme();
 	const colors = Colors[theme];

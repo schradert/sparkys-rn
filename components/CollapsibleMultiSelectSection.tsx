@@ -12,6 +12,7 @@ import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
+/** Props for {@link CollapsibleMultiSelectSection}; reports the full multi-select set on change. */
 interface CollapsibleMultiSelectSectionProps {
 	title: string;
 	options: readonly string[];
@@ -19,6 +20,10 @@ interface CollapsibleMultiSelectSectionProps {
 	onSelectionChange: (values: string[]) => void;
 }
 
+/**
+ * Collapsible filter section for choosing many options, with a search box and
+ * a preview of the first selected pills while collapsed.
+ */
 export default function CollapsibleMultiSelectSection({
 	title,
 	options,

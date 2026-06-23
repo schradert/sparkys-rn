@@ -1,3 +1,5 @@
+/** CRUD + archive for metadata sheets, with audit logging and rename cascade. */
+
 import { logger } from "@/services/logger";
 import { logEvent } from "./audit";
 import type { SheetsClient } from "./client";

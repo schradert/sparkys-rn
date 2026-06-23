@@ -12,10 +12,12 @@ export class SheetsClient {
 	private baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
 	private spreadsheetId: string;
 
+	/** Bind the client to the spreadsheet it reads and writes. */
 	constructor(spreadsheetId: string) {
 		this.spreadsheetId = spreadsheetId;
 	}
 
+	/** Resolve the signed-in user's email, or `"unknown"` on failure. */
 	async getUserEmail(accessToken: string): Promise<string> {
 		try {
 			const response = await fetch(
@@ -40,6 +42,7 @@ export class SheetsClient {
 		}
 	}
 
+	/** GET a spreadsheet endpoint and return parsed JSON; throws on non-2xx. */
 	async makeRequest(endpoint: string, accessToken: string): Promise<unknown> {
 		const url = `${this.baseUrl}/${this.spreadsheetId}/${endpoint}`;
 
@@ -68,6 +71,7 @@ export class SheetsClient {
 		return response.json();
 	}
 
+	/** Read a whole sheet's `A:Z` range as a row/column string grid. */
 	async getSheetData(
 		sheetName: string,
 		accessToken: string,
@@ -82,6 +86,7 @@ export class SheetsClient {
 		return data.values || [];
 	}
 
+	/** Append rows to a sheet (user-entered parsing); throws on failure. */
 	async appendToSheet(
 		sheetName: string,
 		values: string[][],
@@ -123,6 +128,7 @@ export class SheetsClient {
 		);
 	}
 
+	/** Next integer id for a sheet (max of its `id` column + 1, else 1). */
 	async getNextId(sheetName: string, accessToken: string): Promise<number> {
 		const values = await this.getSheetData(sheetName, accessToken);
 
@@ -147,6 +153,7 @@ export class SheetsClient {
 		return maxId + 1;
 	}
 
+	/** 1-based row number of the first row whose column equals `value`, else null. */
 	async findRowByValue(
 		sheetName: string,
 		columnName: string,
@@ -173,6 +180,7 @@ export class SheetsClient {
 		return null;
 	}
 
+	/** Overwrite a 1-based row's `A:Z` cells with `values`; throws on failure. */
 	async updateRow(
 		sheetName: string,
 		rowNumber: number,

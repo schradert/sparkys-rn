@@ -1,3 +1,4 @@
+/** Route `/login` — Google sign-in screen. */
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,6 +11,10 @@ import {
 } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 
+/**
+ * Route `/login` — prompts Google sign-in and, on success, redirects to
+ * `/inventory`; shows a spinner while auth state is still loading.
+ */
 export default function Login() {
 	const { signIn, isLoading } = useAuth();
 	const [isSigningIn, setIsSigningIn] = useState(false);

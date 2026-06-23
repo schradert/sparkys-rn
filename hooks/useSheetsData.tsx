@@ -1,3 +1,11 @@
+/**
+ * React entry point for the Google Sheets data layer.
+ *
+ * Subscribes to the shared sheets store and binds every operation (load,
+ * refresh, product/metadata CRUD, audit logging) to the current access token,
+ * so callers get the live state and ready-to-call, token-aware mutations.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import type {
@@ -40,6 +48,11 @@ const NO_TOKEN_RESULT: OperationResult = {
 	error: "No access token",
 };
 
+/**
+ * The shared sheets state spread together with all sheet operations bound to the
+ * signed-in user's token. Auto-loads once on first sign-in and re-renders on
+ * store changes; returns the data plus refresh and CRUD/audit actions.
+ */
 export function useSheetsData() {
 	const [, forceUpdate] = useState({});
 	const { getAccessToken, isSignedIn } = useAuth();

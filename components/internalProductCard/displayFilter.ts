@@ -1,5 +1,7 @@
+/** Display-time filter predicate for external products on a card. */
 import type { ExternalProduct } from "@/constants/Products";
 
+/** Active external-product filter selections; empty arrays are treated as "no filter". */
 type ExternalFilters = {
 	manufacturer_color?: string[];
 	brand?: string[];
@@ -8,6 +10,11 @@ type ExternalFilters = {
 	showArchived?: boolean;
 };
 
+/**
+ * Whether an external product passes the active display filters. Empty/absent
+ * value arrays match everything; `showArchived` hides archived products unless
+ * `true`.
+ */
 export function matchesExternalDisplayFilter(
 	externalProduct: ExternalProduct,
 	externalFilters: ExternalFilters | undefined,

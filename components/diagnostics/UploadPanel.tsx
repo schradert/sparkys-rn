@@ -7,6 +7,10 @@ import type { UploadResult } from "@/services/logger/upload";
 import { LEVEL_FILTERS } from "./diagnosticsFormat";
 import { styles } from "./styles";
 
+/**
+ * Diagnostics upload controls: pick a log scope, upload to Drive, surface the
+ * result with a share link, and filter the recent-logs list by level.
+ */
 export function UploadPanel({
 	colors,
 	scope,

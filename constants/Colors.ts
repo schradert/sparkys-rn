@@ -2,6 +2,7 @@
  * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
  */
 
+/** Light and dark palettes; index by scheme then color key. */
 export const Colors = {
 	light: {
 		// Primary colors

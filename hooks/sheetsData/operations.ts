@@ -1,3 +1,11 @@
+/**
+ * Metadata + bulk-load operations against the Google Sheets backend.
+ *
+ * Each operation calls the sheets service, then patches the shared store
+ * locally instead of triggering a full refresh, and returns an
+ * {@link OperationResult} the hook surfaces to the UI.
+ */
+
 import { Alert } from "react-native";
 import {
 	convertExternalProductSheetToModel,
@@ -18,6 +26,11 @@ import {
 	updateSheetsState,
 } from "./store";
 
+/**
+ * Fetch every sheet, convert rows to app models, and populate both the product
+ * store and the shared sheets state. Sets loading/error flags unless
+ * `isRefresh`, which leaves the existing data visible while reloading.
+ */
 export async function loadSheetsData(
 	accessToken: string,
 	isRefresh = false,
@@ -99,6 +112,10 @@ export async function loadSheetsData(
 	}
 }
 
+/**
+ * Pull-to-refresh wrapper around {@link loadSheetsData}: toggles the refreshing
+ * flag and alerts on failure rather than returning the result.
+ */
 export async function refreshSheetsData(accessToken: string): Promise<void> {
 	updateSheetsState({ isRefreshing: true });
 	const result = await loadSheetsData(accessToken, true);
@@ -109,6 +126,7 @@ export async function refreshSheetsData(accessToken: string): Promise<void> {
 	}
 }
 
+/** Append a metadata item to its sheet and add it to the local store as active. */
 export async function addMetadataToSheet(
 	sheetName: string,
 	name: string,
@@ -143,6 +161,11 @@ export async function addMetadataToSheet(
 	}
 }
 
+/**
+ * Rename a metadata item in its sheet, patch the local store, and notify
+ * metadata-change subscribers so dependent selections (e.g. inventory filters)
+ * follow the rename. Returns the change details alongside the result.
+ */
 export async function updateMetadataInSheet(
 	sheetName: string,
 	oldName: string,
@@ -203,6 +226,7 @@ export async function updateMetadataInSheet(
 	}
 }
 
+/** Archive a metadata item and mark it archived in the local store. */
 export async function archiveMetadataInSheet(
 	sheetName: string,
 	name: string,
@@ -236,6 +260,7 @@ export async function archiveMetadataInSheet(
 	}
 }
 
+/** Unarchive a metadata item and mark it active again in the local store. */
 export async function unarchiveMetadataInSheet(
 	sheetName: string,
 	name: string,

@@ -1,12 +1,15 @@
+/** Themed pressable button used for primary and default actions. */
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+/** Props for {@link Button}: a label, optional `"primary"` theme, and tap handler. */
 type Props = {
 	label: string;
 	theme?: "primary";
 	onPress?: () => void;
 };
 
+/** A tappable button; the `"primary"` theme adds a gold border and image icon. */
 export default function Button({ label, theme, onPress }: Props) {
 	const isPrimary = theme === "primary";
 	return (

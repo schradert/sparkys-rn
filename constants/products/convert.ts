@@ -5,21 +5,28 @@ import {
 	safeParseExternalProductSheet,
 	safeParseInternalProductSheet,
 } from "./schema";
+/**
+ * Maps between the flat, string-typed sheet rows and the app's product models.
+ * Multi-value fields (occasions, distributors, products) are stored as
+ * comma-separated strings on the sheet and parsed into arrays for the app.
+ */
+
 import type { ExternalProduct, InternalProduct } from "./types";
 
-// Utility functions for parsing comma-separated values
+/** Split a comma-separated cell into trimmed, unquoted items ([] when empty). */
 export function parseCommaSeparated(value: string): string[] {
 	if (!value || value.trim() === "") return [];
 	return value.split(",").map((item) => item.trim().replace(/^"|"$/g, ""));
 }
 
+/** Join items into a comma-separated cell, quoting any that contain a comma. */
 export function formatCommaSeparated(values: string[]): string {
 	return values
 		.map((value) => (value.includes(",") ? `"${value}"` : value))
 		.join(",");
 }
 
-// Convert between sheet and app models
+/** Build the app's internal-product model from a sheet row (warns if invalid). */
 export function convertInternalProductSheetToModel(
 	sheet: InternalProductSheet,
 ): InternalProduct {
@@ -41,6 +48,7 @@ export function convertInternalProductSheetToModel(
 	};
 }
 
+/** Flatten an internal-product model back into a sheet row for persistence. */
 export function convertInternalProductModelToSheet(
 	internal: InternalProduct,
 ): InternalProductSheet {
@@ -59,6 +67,7 @@ export function convertInternalProductModelToSheet(
 	};
 }
 
+/** Build the app's external-product model from a sheet row (warns if invalid). */
 export function convertExternalProductSheetToModel(
 	sheet: ExternalProductSheet,
 ): ExternalProduct {
@@ -77,6 +86,7 @@ export function convertExternalProductSheetToModel(
 	};
 }
 
+/** Flatten an external-product model back into a sheet row for persistence. */
 export function convertExternalProductModelToSheet(
 	external: ExternalProduct,
 ): ExternalProductSheet {

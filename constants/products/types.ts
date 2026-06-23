@@ -1,4 +1,10 @@
-// Updated field options that include the new color fields
+/**
+ * Core product domain models and the field-name lists that drive metadata-backed
+ * editing. Internal products are Sparky's catalog entries; external products are
+ * the manufacturer SKUs they roll up.
+ */
+
+/** Internal-product fields backed by editable metadata. */
 export const INTERNAL_PRODUCT_FIELDS = [
 	"product_type",
 	"texture",
@@ -7,6 +13,7 @@ export const INTERNAL_PRODUCT_FIELDS = [
 	"sparkys_color",
 ] as const;
 
+/** External-product fields backed by editable metadata. */
 export const EXTERNAL_PRODUCT_FIELDS = [
 	"manufacturer_color",
 	"brand",
@@ -15,9 +22,12 @@ export const EXTERNAL_PRODUCT_FIELDS = [
 	"distributors",
 ] as const;
 
+/** One of the internal-product metadata field names. */
 export type InternalProductField = (typeof INTERNAL_PRODUCT_FIELDS)[number];
+/** One of the external-product metadata field names. */
 export type ExternalProductField = (typeof EXTERNAL_PRODUCT_FIELDS)[number];
 
+/** A Sparky's catalog product that rolls up one or more external SKUs. */
 export interface InternalProduct {
 	id: string; // unique identifier
 	sparkys_product_name: string;
@@ -32,6 +42,7 @@ export interface InternalProduct {
 	status?: "active" | "archived"; // archive status
 }
 
+/** A manufacturer SKU (barcode-identified) tracked for stock. */
 export interface ExternalProduct {
 	unique_id_sku: string; // barcode - unique identifier
 	manufacturer_color: string;

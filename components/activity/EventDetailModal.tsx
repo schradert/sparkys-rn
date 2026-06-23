@@ -13,6 +13,7 @@ import {
 	getItemRoute,
 } from "./eventPresentation";
 
+/** Props for {@link EventDetailModal}; a `null` `event` renders an empty sheet. */
 interface EventDetailModalProps {
 	event: AuditEvent | null;
 	visible: boolean;

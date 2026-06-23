@@ -61,14 +61,17 @@ export function getLogEntries(): LogEntry[] {
 	return ring.slice();
 }
 
+/** The id identifying the current app session. */
 export function getSessionId(): string {
 	return sessionId;
 }
 
+/** The current minimum level; entries below it are dropped. */
 export function getMinLevel(): LogLevel {
 	return minLevel;
 }
 
+/** Set the minimum level emitted (e.g. to mute debug in production). */
 export function setMinLevel(level: LogLevel): void {
 	minLevel = level;
 }
@@ -123,6 +126,7 @@ function emit(level: LogLevel, tag: string, msg: string, ctx?: unknown): void {
 	}
 }
 
+/** App-wide logger: `logger.debug/info/warn/error(tag, msg, context?)`. */
 export const logger = {
 	debug: (tag: string, msg: string, ctx?: unknown) =>
 		emit("debug", tag, msg, ctx),
@@ -134,4 +138,5 @@ export const logger = {
 		emit("error", tag, msg, ctx),
 };
 
+/** The logger's type, for typing injected/wrapped logger references. */
 export type Logger = typeof logger;

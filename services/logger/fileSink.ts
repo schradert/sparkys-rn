@@ -144,6 +144,7 @@ export async function readAllSegments(): Promise<string> {
 	return parts.join("");
 }
 
+/** Name/size/mtime for each retained segment, oldest → newest. */
 export function listSegmentInfo(): SegmentInfo[] {
 	return listSegments().map((f) => ({
 		name: f.name,
@@ -171,6 +172,7 @@ export function listSegmentInfo(): SegmentInfo[] {
  */
 const MARKER_NAME = ".session.json";
 
+/** Read the raw session-marker JSON, or null when none is stored. */
 export function readMarker(): string | null {
 	try {
 		const f = new File(getDir(), MARKER_NAME);
@@ -180,6 +182,7 @@ export function readMarker(): string | null {
 	}
 }
 
+/** Write the session-marker JSON, used to infer abnormal termination. */
 export function writeMarker(json: string): void {
 	try {
 		const f = new File(getDir(), MARKER_NAME);

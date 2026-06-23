@@ -1,3 +1,5 @@
+/** Propagates metadata renames into the product sheets that mirror the value. */
+
 import { logger } from "@/services/logger";
 import type { SheetsClient } from "./client";
 

@@ -1,3 +1,5 @@
+/** Audit-event loader that keeps the inventory activity ordering fresh. */
+
 import { useEffect, useState } from "react";
 import type { AuditEvent } from "@/services/googleSheets";
 import { logger } from "@/services/logger";

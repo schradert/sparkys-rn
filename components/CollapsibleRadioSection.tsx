@@ -12,6 +12,7 @@ import PillCheckbox from "@/components/PillCheckbox";
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
+/** Props for {@link CollapsibleRadioSection}; reports the single chosen value on change. */
 interface CollapsibleRadioSectionProps {
 	title: string;
 	options: readonly string[];
@@ -19,6 +20,10 @@ interface CollapsibleRadioSectionProps {
 	onSelectionChange: (value: string) => void;
 }
 
+/**
+ * Collapsible filter section for choosing one option, with a search box; picking
+ * a value collapses the section back to a single selected pill.
+ */
 export default function CollapsibleRadioSection({
 	title,
 	options,

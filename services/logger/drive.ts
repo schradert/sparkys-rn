@@ -14,6 +14,7 @@ import { logger } from "./logger";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
+/** Metadata returned by Drive for an uploaded file. */
 export interface DriveUploadResult {
 	id: string;
 	name: string;
@@ -28,6 +29,7 @@ async function readError(response: Response): Promise<string> {
 	}
 }
 
+/** Minimal Drive v3 client for the find-or-create folder + upload flow. */
 export class DriveService {
 	private baseUrl = "https://www.googleapis.com/drive/v3";
 	private uploadUrl = "https://www.googleapis.com/upload/drive/v3";
@@ -70,6 +72,7 @@ export class DriveService {
 		return data.files?.[0]?.id ?? null;
 	}
 
+	/** Create a folder (optionally under a parent) and return its id. */
 	async createFolder(
 		name: string,
 		accessToken: string,
@@ -101,6 +104,7 @@ export class DriveService {
 		return data.id;
 	}
 
+	/** Return an existing folder's id, creating it if absent. */
 	async findOrCreateFolder(
 		name: string,
 		accessToken: string,

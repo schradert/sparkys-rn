@@ -1,5 +1,7 @@
+/** Shared styles for the internal product card and its metadata grid. */
 import { StyleSheet } from "react-native";
 
+/** StyleSheet for the card shell, header, metadata chips, and occasion pills. */
 export const styles = StyleSheet.create({
 	card: {
 		backgroundColor: "white",

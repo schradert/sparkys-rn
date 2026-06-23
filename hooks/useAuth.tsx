@@ -1,3 +1,11 @@
+/**
+ * Google Sign-In auth state and token access for the app.
+ *
+ * Holds a module-singleton auth state with a subscriber list (the same idiom as
+ * the sheets store) so sign-in/out propagate everywhere. Owns access-token
+ * retrieval, including just-in-time Drive-scope elevation for diagnostics upload.
+ */
+
 import {
 	GoogleSignin,
 	isSuccessResponse,
@@ -171,6 +179,11 @@ export async function getDriveAccessToken(): Promise<string | null> {
 	}
 }
 
+/**
+ * Subscribe to the shared auth state and expose the auth actions. Returns the
+ * current `user`/`isSignedIn`/`isLoading` plus `signIn`, `signOut`,
+ * `getAccessToken`, and `getDriveAccessToken`.
+ */
 export function useAuth() {
 	const [, forceUpdate] = useState({});
 

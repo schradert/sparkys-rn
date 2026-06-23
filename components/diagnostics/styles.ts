@@ -1,5 +1,7 @@
+/** Shared styles for the diagnostics screen and its rows. */
 import { StyleSheet } from "react-native";
 
+/** StyleSheet for the diagnostics header, upload panel, filters, and log rows. */
 export const styles = StyleSheet.create({
 	container: {
 		flex: 1,

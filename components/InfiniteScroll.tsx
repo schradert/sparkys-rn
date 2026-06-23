@@ -13,6 +13,10 @@ import {
 import { Colors } from "@/constants/Colors";
 import { useTheme } from "@/hooks/useTheme";
 
+/**
+ * Props for {@link InfiniteScroll}. `itemsPerLoad` controls the page size grown
+ * on end-reach; `onRefresh`/`refreshing` wire up pull-to-refresh.
+ */
 interface InfiniteScrollProps<T> {
 	data: T[];
 	renderItem: ({ item }: { item: T }) => React.ReactElement;
@@ -23,6 +27,10 @@ interface InfiniteScrollProps<T> {
 	refreshing?: boolean;
 }
 
+/**
+ * A `FlatList` that reveals items in pages as the user scrolls and shows a
+ * floating jump-to-start/end overlay with the current position.
+ */
 export default function InfiniteScroll<T>({
 	data,
 	renderItem,

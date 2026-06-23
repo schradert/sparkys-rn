@@ -3,6 +3,7 @@
  * product field key, and formatting a category segment into a display title.
  */
 
+/** The product field key for a metadata view-mode segment, or `null` if unknown. */
 export function getFieldKey(viewMode: string) {
 	switch (viewMode) {
 		case "productTypes":
@@ -28,6 +29,7 @@ export function getFieldKey(viewMode: string) {
 	}
 }
 
+/** A human-readable title for a metadata category segment. */
 export function formatCategoryTitle(category: string): string {
 	if (category === "manufacturer") return "Brand";
 	if (category === "bagQuantity") return "Bag Quantity";

@@ -1,11 +1,15 @@
+/**
+ * valibot schemas for the flat sheet representations of products (multi-value
+ * fields stored as comma-separated strings). The schemas are the source of
+ * truth: row types are inferred from them, and raw Google Sheets rows are
+ * validated at the boundary via the `safeParse*` helpers below.
+ */
+
 import * as v from "valibot";
 
-// Spreadsheet representations with comma-separated arrays.
-// valibot schemas are the source of truth; the row types are inferred from
-// them, and raw Google Sheets rows are validated at the boundary via the
-// safeParse* helpers below.
 const SheetStatusSchema = v.optional(v.picklist(["active", "archived"]));
 
+/** Schema for an internal-product sheet row. */
 export const InternalProductSheetSchema = v.object({
 	id: v.string(),
 	sparkys_product_name: v.string(),
@@ -20,6 +24,7 @@ export const InternalProductSheetSchema = v.object({
 	status: SheetStatusSchema,
 });
 
+/** Schema for an external-product sheet row. */
 export const ExternalProductSheetSchema = v.object({
 	unique_id_sku: v.string(),
 	manufacturer_color: v.string(),
@@ -31,18 +36,21 @@ export const ExternalProductSheetSchema = v.object({
 	status: SheetStatusSchema,
 });
 
+/** An internal-product row, inferred from its schema. */
 export type InternalProductSheet = v.InferOutput<
 	typeof InternalProductSheetSchema
 >;
+/** An external-product row, inferred from its schema. */
 export type ExternalProductSheet = v.InferOutput<
 	typeof ExternalProductSheetSchema
 >;
 
-// Boundary validation helpers — validate untrusted Google Sheets rows.
+/** Validate an untrusted internal-product sheet row. */
 export function safeParseInternalProductSheet(raw: unknown) {
 	return v.safeParse(InternalProductSheetSchema, raw);
 }
 
+/** Validate an untrusted external-product sheet row. */
 export function safeParseExternalProductSheet(raw: unknown) {
 	return v.safeParse(ExternalProductSheetSchema, raw);
 }

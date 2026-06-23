@@ -1,3 +1,4 @@
+/** Transactional move of a SKU between internal products, with rollback. */
 import { Alert } from "react-native";
 import type {
 	InternalProduct,

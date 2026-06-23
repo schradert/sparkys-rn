@@ -1,3 +1,4 @@
+/** Card for a single external product with tappable metadata and distributor pills. */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -7,6 +8,10 @@ import type { ExternalProduct } from "@/constants/Products";
 import { useTheme } from "@/hooks/useTheme";
 import { logger } from "@/services/logger";
 
+/**
+ * Props for {@link ExternalProductCard}. `selectedFilters.external` highlights
+ * metadata/distributor chips that match the active inventory filter.
+ */
 interface ExternalProductCardProps {
 	externalProduct: ExternalProduct;
 	onMetadataPress?: (field: string, value: string) => void;
@@ -20,6 +25,7 @@ interface ExternalProductCardProps {
 	};
 }
 
+/** Renders one external product's SKU, quantity, metadata, and distributors. */
 export default function ExternalProductCard({
 	externalProduct,
 	onMetadataPress,

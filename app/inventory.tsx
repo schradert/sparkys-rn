@@ -1,3 +1,4 @@
+/** Route `/inventory` — the product/metadata inventory list. */
 import { Platform, StyleSheet, UIManager } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AddProductModal from "@/components/inventory/AddProductModal";

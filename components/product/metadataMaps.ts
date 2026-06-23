@@ -1,3 +1,4 @@
+/** Data-driven builders for the clickable metadata rows on product detail screens. */
 import type { Ionicons } from "@expo/vector-icons";
 import type { Href } from "expo-router";
 import type React from "react";
@@ -124,12 +125,14 @@ const EXTERNAL_METADATA_FIELDS: readonly MetadataFieldConfig<ExternalProduct>[] 
 		},
 	];
 
+/** The displayable metadata rows for an internal product. */
 export function getInternalMetadataItems(
 	product: InternalProduct,
 ): MetadataItem[] {
 	return buildMetadataItems(product, INTERNAL_METADATA_FIELDS);
 }
 
+/** The displayable metadata rows for an external product. */
 export function getExternalMetadataItems(
 	product: ExternalProduct,
 ): MetadataItem[] {

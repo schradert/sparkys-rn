@@ -1,3 +1,5 @@
+/** Combines metadata + product sheets into the single view the app consumes. */
+
 import { logger } from "@/services/logger";
 import type { SheetsClient } from "./client";
 import { getMetadataValues } from "./metadata";

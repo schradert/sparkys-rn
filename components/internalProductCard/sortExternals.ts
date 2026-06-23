@@ -1,6 +1,8 @@
+/** Filtering and ordering helpers for a card's related external products. */
 import type { ExternalProduct } from "@/constants/Products";
 import type { AuditEvent } from "@/services/googleSheets";
 
+/** Count of audit events targeting a given product. */
 export function getEventCount(
 	events: AuditEvent[],
 	productId: string,
@@ -12,6 +14,7 @@ export function getEventCount(
 	).length;
 }
 
+/** Timestamp of the most recent event for a product, or `null` if it has none. */
 export function getMostRecentEventTimestamp(
 	events: AuditEvent[],
 	productId: string,
@@ -28,7 +31,7 @@ export function getMostRecentEventTimestamp(
 	return productEvents[0].timestamp;
 }
 
-// For display, respect the showArchived filter
+/** Drops archived externals unless `showArchived` is set. */
 export function filterRelatedExternals(
 	allRelated: ExternalProduct[],
 	showArchived: boolean,
@@ -38,7 +41,7 @@ export function filterRelatedExternals(
 		: allRelated.filter((ext) => (ext.status || "active") === "active");
 }
 
-// Sort external products by frequency, then recency, then reverse alphabetical
+/** Sorts externals by update frequency, then recency, then reverse-alphabetical SKU. */
 export function sortRelatedExternals(
 	externals: ExternalProduct[],
 	events: AuditEvent[],

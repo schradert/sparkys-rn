@@ -1,6 +1,12 @@
+/**
+ * Zustand store holding the in-memory internal/external product lists, plus a
+ * backwards-compatible imperative API for non-React callers.
+ */
+
 import { create } from "zustand";
 import type { ExternalProduct, InternalProduct } from "@/constants/Products";
 
+/** Store state: the product lists and their mutators. */
 interface ProductState {
 	internalProducts: InternalProduct[];
 	externalProducts: ExternalProduct[];
@@ -57,16 +63,19 @@ export const useProductStore = create<ProductState>((set) => ({
 // ---------------------------------------------------------------------------
 
 // Internal products
+/** Snapshot of all internal products. */
 export function getAllInternalProducts(): InternalProduct[] {
 	return useProductStore.getState().internalProducts;
 }
 
+/** Find an internal product by id. */
 export function getInternalProductById(
 	id: string,
 ): InternalProduct | undefined {
 	return useProductStore.getState().internalProducts.find((p) => p.id === id);
 }
 
+/** Find an internal product by Sparky's product name. */
 export function getInternalProductByName(
 	name: string,
 ): InternalProduct | undefined {
@@ -75,10 +84,12 @@ export function getInternalProductByName(
 		.internalProducts.find((p) => p.sparkys_product_name === name);
 }
 
+/** Append an internal product to the store. */
 export function addInternalProduct(product: InternalProduct): void {
 	useProductStore.getState().addInternalProduct(product);
 }
 
+/** Replace the internal product matching `id`. */
 export function updateInternalProduct(
 	id: string,
 	updatedProduct: InternalProduct,
@@ -86,6 +97,7 @@ export function updateInternalProduct(
 	useProductStore.getState().updateInternalProduct(id, updatedProduct);
 }
 
+/** Replace the internal product matching `name`. */
 export function updateInternalProductByName(
 	name: string,
 	updatedProduct: InternalProduct,
@@ -93,15 +105,18 @@ export function updateInternalProductByName(
 	useProductStore.getState().updateInternalProductByName(name, updatedProduct);
 }
 
+/** Replace the entire internal product list. */
 export function setInternalProducts(newProducts: InternalProduct[]): void {
 	useProductStore.getState().setInternalProducts(newProducts);
 }
 
 // External products
+/** Snapshot of all external products. */
 export function getAllExternalProducts(): ExternalProduct[] {
 	return useProductStore.getState().externalProducts;
 }
 
+/** Find an external product by SKU. */
 export function getExternalProductBySku(
 	sku: string,
 ): ExternalProduct | undefined {
@@ -110,6 +125,7 @@ export function getExternalProductBySku(
 		.externalProducts.find((p) => p.unique_id_sku === sku);
 }
 
+/** The store's external products belonging to an internal product. */
 export function getExternalProductsForInternal(
 	internalProduct: InternalProduct,
 ): ExternalProduct[] {
@@ -120,10 +136,12 @@ export function getExternalProductsForInternal(
 		);
 }
 
+/** Append an external product to the store. */
 export function addExternalProduct(product: ExternalProduct): void {
 	useProductStore.getState().addExternalProduct(product);
 }
 
+/** Replace the external product matching `sku`. */
 export function updateExternalProduct(
 	sku: string,
 	updatedProduct: ExternalProduct,
@@ -131,6 +149,7 @@ export function updateExternalProduct(
 	useProductStore.getState().updateExternalProduct(sku, updatedProduct);
 }
 
+/** Replace the entire external product list. */
 export function setExternalProducts(newProducts: ExternalProduct[]): void {
 	useProductStore.getState().setExternalProducts(newProducts);
 }

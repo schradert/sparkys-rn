@@ -1,3 +1,5 @@
+/** Archive/unarchive product status flips on the sheets, with audit logging. */
+
 import { logger } from "@/services/logger";
 import { logEvent } from "./audit";
 import type { SheetsClient } from "./client";
