@@ -246,6 +246,14 @@
     # the spell-checker; skip the file rather than chase each false positive.
     typos.excludes = ["^eas\\.json$"];
 
+    # extra languages — shell (shellcheck lint + shfmt format), GitHub
+    # workflows (actionlint), all YAML (yamllint), and TOML (taplo).
+    actionlint.enable = true;
+    shellcheck.enable = true;
+    shfmt.enable = true;
+    taplo.enable = true;
+    yamllint.enable = true;
+
     # nix
     alejandra.enable = true;
     deadnix.enable = true;
