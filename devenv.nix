@@ -242,6 +242,9 @@
     mdsh.enable = true;
     tagref.enable = true;
     typos.enable = true;
+    # eas.json holds opaque Google Sheet IDs whose substrings read as typos to
+    # the spell-checker; skip the file rather than chase each false positive.
+    typos.excludes = ["^eas\\.json$"];
 
     # nix
     alejandra.enable = true;

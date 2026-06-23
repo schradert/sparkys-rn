@@ -19,13 +19,13 @@
 			},
 			"env": {
 				"APP_VARIANT": "preview",
-				"EXPO_PUBLIC_SPREADSHEET_ID": "11HdaY0ZoqDAPA7-fYAKl0GSp54mUMOAuTYVV4B91pwI"
+				"EXPO_PUBLIC_SPREADSHEET_ID": "1wsCPF5Cyu2kQHteKThuv302bfWLVmEVqA-Sh02RRUiM"
 			}
 		},
 		"production": {
 			"autoIncrement": true,
 			"env": {
-				"EXPO_PUBLIC_SPREADSHEET_ID": "11HdaY0ZoqDAPA7-fYAKl0GSp54mUMOAuTYVV4B91pwI"
+				"EXPO_PUBLIC_SPREADSHEET_ID": "1BwTZk64tQIaoCxg61bvPFVoapOJ7C7XV70BCpixmBhY"
 			}
 		},
 		"ios-simulator": {
