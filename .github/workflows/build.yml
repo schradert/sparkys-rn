@@ -137,6 +137,8 @@ jobs:
       - name: Build (simulator, unsigned)
         working-directory: ios
         run: |
+          # ls of a single known *.xcworkspace; silence find/glob style nits.
+          # shellcheck disable=SC2012,SC2035
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
           # Expo names the workspace, Xcode project, and app scheme identically,
           # so derive the app scheme from the workspace (not `schemes[0]`, which

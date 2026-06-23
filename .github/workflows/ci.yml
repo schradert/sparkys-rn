@@ -75,3 +75,24 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: bun audit
         run: bun audit
+
+  lint-langs:
+    name: Shell · YAML · TOML
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: actionlint (workflows)
+        run: nix run nixpkgs#actionlint
+      - name: shellcheck + shfmt (shell)
+        run: |
+          nix run nixpkgs#shellcheck -- scripts/upgrade-expo.sh
+          nix run nixpkgs#shfmt -- -d -s scripts/upgrade-expo.sh
+      - name: taplo (TOML)
+        run: nix run nixpkgs#taplo -- fmt --check
+      - name: yamllint (YAML)
+        run: nix run nixpkgs#yamllint -- -c .yamllint.yaml .github/workflows devenv.yaml

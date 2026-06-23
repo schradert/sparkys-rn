@@ -8,17 +8,21 @@
 set -euo pipefail
 
 TARGET="${1:-}"
-if [[ -z "$TARGET" ]]; then
-  echo "usage: scripts/upgrade-expo.sh <target-sdk-major>   (e.g. 56)" >&2
-  exit 2
+if [[ -z $TARGET ]]; then
+	echo "usage: scripts/upgrade-expo.sh <target-sdk-major>   (e.g. 56)" >&2
+	exit 2
 fi
 
 # bun/expo only exist inside the devenv shell.
 if ! command -v bun >/dev/null 2>&1; then
-  exec devenv shell -- bash "$0" "$@"
+	exec devenv shell -- bash "$0" "$@"
 fi
 
-run() { echo; echo "==> $*"; "$@"; }
+run() {
+	echo
+	echo "==> $*"
+	"$@"
+}
 
 # Keep bun as the single lockfile.
 [[ -f yarn.lock ]] && run rm -f yarn.lock
@@ -34,9 +38,9 @@ run bun install
 
 # Print the devenv.nix Android pins, read from the installed native code.
 NDK="$(sed -nE 's/^ndkVersion *= *"([^"]+)".*/\1/p' \
-  node_modules/react-native/gradle/libs.versions.toml 2>/dev/null || true)"
+	node_modules/react-native/gradle/libs.versions.toml 2>/dev/null || true)"
 COMPILE="$(sed -nE 's/.*safeExtGet\("compileSdkVersion", *([0-9]+)\).*/\1/p' \
-  node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle 2>/dev/null | head -1 || true)"
+	node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle 2>/dev/null | head -1 || true)"
 echo
 echo "==> devenv.nix android pins for SDK ${TARGET} (edit devenv.nix, then re-enter the shell):"
 cat <<EOF

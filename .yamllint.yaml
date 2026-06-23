@@ -1,0 +1,10 @@
+---
+# Relaxed config: keep structural/syntax checks but drop the style rules that
+# fight GitHub Actions workflows — long `run:` commands, the `on:` key (read as
+# a boolean), and the optional document-start marker.
+extends: default
+rules:
+  document-start: disable
+  line-length: disable
+  truthy:
+    check-keys: false
