@@ -1,38 +1,45 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-	Alert,
-	Pressable,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
-} from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors } from "@/constants/Colors";
 import {
-	isMetadataItemArchived,
-	PRODUCT_FIELD_OPTIONS,
-} from "@/constants/Products";
-import { getSheetNameForViewMode } from "@/hooks/sheetsData/mappings";
-import { useSheetsData } from "@/hooks/useSheetsData";
+	formatCategoryTitle,
+	getFieldKey,
+} from "@/components/metadata/metadataFields";
+import { styles } from "@/components/metadata/styles";
+import { Colors } from "@/constants/Colors";
+import { isMetadataItemArchived } from "@/constants/Products";
+import { useMetadataActions } from "@/hooks/useMetadataActions";
 import { useTheme } from "@/hooks/useTheme";
-import { logger } from "@/services/logger";
 
 export default function MetadataDetail() {
 	const { params } = useLocalSearchParams<{ params: string[] }>();
-	const { updateMetadata, archiveMetadata, unarchiveMetadata } =
-		useSheetsData();
 	const { theme } = useTheme();
 	const colors = Colors[theme];
 
 	const [viewMode, itemName] = params;
 	const decodedItemName = decodeURIComponent(itemName);
 	const [editedValue, setEditedValue] = useState(decodedItemName);
-	const [isSaving, setIsSaving] = useState(false);
-	const [isEditing, setIsEditing] = useState(false);
-	const [isArchiving, setIsArchiving] = useState(false);
+
+	const fieldKey = getFieldKey(viewMode);
+
+	const {
+		isSaving,
+		isEditing,
+		setIsEditing,
+		isArchiving,
+		handleSave,
+		handleArchive,
+		handleUnarchive,
+		handleCancel,
+	} = useMetadataActions({
+		viewMode,
+		decodedItemName,
+		fieldKey,
+		editedValue,
+		setEditedValue,
+	});
 
 	if (!params || params.length < 2) {
 		return (
@@ -50,7 +57,6 @@ export default function MetadataDetail() {
 		);
 	}
 
-	const fieldKey = getFieldKey(viewMode);
 	const categoryTitle = formatCategoryTitle(viewMode);
 	const isArchived = fieldKey
 		? isMetadataItemArchived(fieldKey, decodedItemName)
@@ -70,196 +76,6 @@ export default function MetadataDetail() {
 				</View>
 			</SafeAreaView>
 		);
-	}
-
-	function getFieldKey(viewMode: string) {
-		switch (viewMode) {
-			case "productTypes":
-				return "productType";
-			case "occasions":
-				return "occasion";
-			case "colors":
-				return "color";
-			case "sizes":
-				return "size";
-			case "manufacturers":
-				return "manufacturer";
-			case "textures":
-				return "texture";
-			case "bagQuantities":
-				return "bagQuantity";
-			case "shapes":
-				return "shape";
-			case "distributors":
-				return "distributor";
-			default:
-				return null;
-		}
-	}
-
-	function formatCategoryTitle(category: string): string {
-		if (category === "manufacturer") return "Brand";
-		if (category === "bagQuantity") return "Bag Quantity";
-		if (category === "productType") return "Product Type";
-
-		return (
-			category.charAt(0).toUpperCase() +
-			category.slice(1).replace(/([A-Z])/g, " $1")
-		);
-	}
-
-	async function handleSave() {
-		if (!editedValue.trim()) {
-			Alert.alert("Error", "Please enter a value");
-			return;
-		}
-
-		const trimmedValue = editedValue.trim();
-
-		if (trimmedValue === decodedItemName) {
-			Alert.alert("Info", "No changes to save");
-			router.back();
-			return;
-		}
-
-		const existingValues: readonly string[] =
-			PRODUCT_FIELD_OPTIONS[fieldKey as keyof typeof PRODUCT_FIELD_OPTIONS] ??
-			[];
-		if (existingValues.includes(trimmedValue)) {
-			Alert.alert("Error", "This value already exists");
-			return;
-		}
-
-		const sheetName = getSheetNameForViewMode(viewMode);
-		if (!sheetName) {
-			Alert.alert("Error", "Cannot update this metadata type");
-			return;
-		}
-
-		setIsSaving(true);
-		try {
-			const result = await updateMetadata(
-				sheetName,
-				decodedItemName,
-				trimmedValue,
-			);
-
-			if (result.success) {
-				Alert.alert("Success", `"${trimmedValue}" has been saved!`);
-				router.back();
-			} else {
-				Alert.alert("Error", result.error || "Failed to save changes");
-			}
-		} catch (error) {
-			logger.error("Metadata", "Failed to save changes", {
-				error,
-				sheetName,
-				oldValue: decodedItemName,
-				newValue: trimmedValue,
-			});
-			Alert.alert("Error", "Failed to save changes");
-		} finally {
-			setIsSaving(false);
-		}
-	}
-
-	async function handleArchive() {
-		const sheetName = getSheetNameForViewMode(viewMode);
-		if (!sheetName) {
-			Alert.alert("Error", "Cannot archive this metadata type");
-			return;
-		}
-
-		Alert.alert(
-			"Archive Value",
-			`Are you sure you want to archive "${decodedItemName}"?`,
-			[
-				{ text: "Cancel", style: "cancel" },
-				{
-					text: "Archive",
-					style: "default",
-					onPress: async () => {
-						setIsArchiving(true);
-						try {
-							const result = await archiveMetadata(sheetName, decodedItemName);
-							if (result.success) {
-								Alert.alert(
-									"Success",
-									`"${decodedItemName}" has been archived!`,
-								);
-								router.back();
-							} else {
-								Alert.alert("Error", result.error || "Failed to archive item");
-							}
-						} catch (error) {
-							logger.error("Metadata", "Failed to archive item", {
-								error,
-								sheetName,
-								value: decodedItemName,
-							});
-							Alert.alert("Error", "Failed to archive item");
-						} finally {
-							setIsArchiving(false);
-						}
-					},
-				},
-			],
-		);
-	}
-
-	async function handleUnarchive() {
-		const sheetName = getSheetNameForViewMode(viewMode);
-		if (!sheetName) {
-			Alert.alert("Error", "Cannot unarchive this metadata type");
-			return;
-		}
-
-		Alert.alert(
-			"Unarchive Value",
-			`Are you sure you want to unarchive "${decodedItemName}"?`,
-			[
-				{ text: "Cancel", style: "cancel" },
-				{
-					text: "Unarchive",
-					style: "default",
-					onPress: async () => {
-						setIsArchiving(true);
-						try {
-							const result = await unarchiveMetadata(
-								sheetName,
-								decodedItemName,
-							);
-							if (result.success) {
-								Alert.alert(
-									"Success",
-									`"${decodedItemName}" has been unarchived!`,
-								);
-								router.back();
-							} else {
-								Alert.alert(
-									"Error",
-									result.error || "Failed to unarchive item",
-								);
-							}
-						} catch (error) {
-							logger.error("Metadata", "Failed to unarchive item", {
-								error,
-								sheetName,
-								value: decodedItemName,
-							});
-							Alert.alert("Error", "Failed to unarchive item");
-						} finally {
-							setIsArchiving(false);
-						}
-					},
-				},
-			],
-		);
-	}
-
-	function handleCancel() {
-		setEditedValue(decodedItemName);
-		setIsEditing(false);
 	}
 
 	return (
@@ -431,160 +247,3 @@ export default function MetadataDetail() {
 		</SafeAreaView>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#f8f9fa",
-	},
-	contentContainer: {
-		flex: 1,
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: "white",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e1e5e9",
-	},
-	backButton: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: "#f8f9fa",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	headerTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#1a1a1a",
-		flex: 1,
-		textAlign: "center",
-		marginHorizontal: 16,
-	},
-	circleButton: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	disabledButton: {
-		opacity: 0.7,
-	},
-	saveButton: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: "#007bff",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	saveButtonDisabled: {
-		backgroundColor: "#6c757d",
-	},
-	headerActions: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	valueDisplay: {
-		backgroundColor: "#f8f9fa",
-		borderWidth: 1,
-		borderColor: "#dee2e6",
-		borderRadius: 8,
-		padding: 16,
-		marginBottom: 24,
-	},
-	valueText: {
-		fontSize: 16,
-		fontWeight: "500",
-		color: "#1a1a1a",
-	},
-	unarchiveButton: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		backgroundColor: "#007bff",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	content: {
-		flex: 1,
-		paddingHorizontal: 16,
-		paddingTop: 24,
-	},
-	section: {
-		marginBottom: 24,
-	},
-	sectionTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#1a1a1a",
-		marginBottom: 16,
-	},
-	inputGroup: {
-		marginBottom: 24,
-	},
-	inputLabel: {
-		fontSize: 14,
-		fontWeight: "600",
-		color: "#495057",
-		marginBottom: 8,
-	},
-	textInput: {
-		borderWidth: 1,
-		borderColor: "#dee2e6",
-		borderRadius: 8,
-		padding: 12,
-		fontSize: 16,
-		backgroundColor: "white",
-		color: "#495057",
-	},
-	archiveButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: "#6c757d",
-		borderRadius: 8,
-		padding: 16,
-		gap: 8,
-	},
-	archiveButtonText: {
-		color: "white",
-		fontSize: 16,
-		fontWeight: "600",
-	},
-	archivedIndicator: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: "#f8f9fa",
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "#dee2e6",
-		padding: 16,
-		gap: 8,
-	},
-	archivedText: {
-		color: "#6c757d",
-		fontSize: 16,
-		fontWeight: "500",
-	},
-	errorContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		padding: 40,
-	},
-	errorText: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#6c757d",
-		textAlign: "center",
-	},
-});
