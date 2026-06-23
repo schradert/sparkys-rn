@@ -45,8 +45,9 @@ Two tools, no overlap (so nothing is reported twice):
 Rules Biome owns are turned **off** in ESLint, and vice-versa. When adding a
 rule, pick the owner and disable it in the other tool. `react/no-unescaped-
 entities` is off (irrelevant in RN `<Text>`); the React-Compiler hook rules
-(`set-state-in-effect`, `refs`, `immutability`) are warnings; `noExplicitAny` is
-a Biome warning because the Sheets data layer is intentionally dynamic.
+(`set-state-in-effect`, `refs`, `immutability`, `exhaustive-deps`) are errors;
+`noExplicitAny` and `noNonNullAssertion` are Biome errors (the codebase has zero
+`any`).
 
 ## Types & tests
 
