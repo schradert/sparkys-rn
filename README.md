@@ -73,6 +73,12 @@ profiles and per-variant env (e.g. `EXPO_PUBLIC_SPREADSHEET_ID`) live in
 
 ## Continuous integration
 
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) gates every pull request
+(and push to `trunk`) with the same checks as the local pre-push hooks —
+typecheck, ESLint, Biome, and Jest — plus a non-blocking dependency audit, so
+nothing merges past them even if the hooks are skipped. Make the `check` job a
+required status check on `trunk` to enforce it.
+
 [`.github/workflows/build.yml`](.github/workflows/build.yml) builds the app on
 every push to `trunk` (and on demand via the Actions tab) and uploads the
 binaries as GitHub Actions artifacts:
