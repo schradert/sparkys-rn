@@ -128,7 +128,6 @@ the canonical examples.
 (`ColorScheme`, `ColorKey`) and `toColorScheme()` (coerces the platform value,
 which can be `null`/`"unspecified"`). `components/ThemeProvider.tsx` exposes
 `{ theme, toggleTheme }` via context; screens do `const colors = Colors[theme]`.
-`hooks/useThemeColor.ts` resolves a single color with light/dark overrides.
 
 ## Logging
 

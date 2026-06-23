@@ -284,27 +284,6 @@ export function safeParseExternalProductSheet(raw: unknown) {
 	return v.safeParse(ExternalProductSheetSchema, raw);
 }
 
-// Model schema for the editable internal product (react-hook-form resolver).
-// Inferred output matches the InternalProduct interface above; the refinements
-// add form validation (required name, non-negative threshold).
-export const InternalProductSchema = v.object({
-	id: v.string(),
-	sparkys_product_name: v.pipe(
-		v.string(),
-		v.trim(),
-		v.minLength(1, "Product name is required"),
-	),
-	product_type: v.string(),
-	sparkys_color: v.string(),
-	texture: v.string(),
-	shape: v.string(),
-	occasions: v.array(v.string()),
-	products: v.array(v.string()),
-	threshold_quantity: v.pipe(v.number(), v.minValue(0, "Must be 0 or more")),
-	never_out: v.boolean(),
-	status: SheetStatusSchema,
-});
-
 // Utility functions for parsing comma-separated values
 export function parseCommaSeparated(value: string): string[] {
 	if (!value || value.trim() === "") return [];
