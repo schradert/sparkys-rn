@@ -21,9 +21,9 @@
   packages = with pkgs;
     lib.mkMerge [
       # claude-code: AI CLI; gcloud/eas: release tooling;
-      # osv-scanner/vulnix: dependency + Nix-toolchain CVE scanning (see `security`);
+      # osv-scanner/vulnix/gitleaks: dependency/toolchain CVE + secret scanning (see `security`);
       # nixd/alejandra: Nix LSP + formatter for the Zed/Helix integration.
-      [claude-code google-cloud-sdk eas-cli osv-scanner vulnix nixd alejandra]
+      [claude-code google-cloud-sdk eas-cli osv-scanner vulnix gitleaks nixd alejandra]
       (lib.mkIf pkgs.stdenv.isDarwin [cocoapods fastlane])
     ];
 

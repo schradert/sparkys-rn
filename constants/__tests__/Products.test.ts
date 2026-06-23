@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+
 import {
 	archiveExternalProduct,
 	archiveInternalProduct,
@@ -27,6 +28,7 @@ import {
 	updateFieldOptions,
 	updateMetadataItems,
 } from "@/constants/Products";
+import { logger } from "@/services/logger";
 
 const internal = (over: Partial<InternalProduct> = {}): InternalProduct => ({
 	id: "1",
@@ -217,7 +219,7 @@ describe("archive helpers", () => {
 
 describe("conversion validation warnings", () => {
 	it("warns on an invalid internal sheet row but still converts", () => {
-		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		const warn = jest.spyOn(logger, "warn").mockImplementation(() => {});
 		// threshold_quantity is required to be a number; a string fails validation.
 		const bad = {
 			id: "1",
@@ -233,15 +235,16 @@ describe("conversion validation warnings", () => {
 		} as unknown as InternalProductSheet;
 		const model = convertInternalProductSheetToModel(bad);
 		expect(warn).toHaveBeenCalledWith(
+			"Products",
 			"Invalid internal product sheet row",
-			bad,
+			{ sheet: bad },
 		);
 		expect(model.occasions).toEqual(["Birthday"]);
 		warn.mockRestore();
 	});
 
 	it("warns on an invalid external sheet row but still converts", () => {
-		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		const warn = jest.spyOn(logger, "warn").mockImplementation(() => {});
 		// quantity is required to be a number; a string fails validation.
 		const bad = {
 			unique_id_sku: "9",
@@ -254,8 +257,9 @@ describe("conversion validation warnings", () => {
 		} as unknown as ExternalProductSheet;
 		const model = convertExternalProductSheetToModel(bad);
 		expect(warn).toHaveBeenCalledWith(
+			"Products",
 			"Invalid external product sheet row",
-			bad,
+			{ sheet: bad },
 		);
 		expect(model.distributors).toEqual(["Acme"]);
 		warn.mockRestore();
