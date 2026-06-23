@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { logger } from "@/services/logger";
 
 export const DEFAULT_FIELD_OPTIONS = {
 	productType: [
@@ -301,7 +302,7 @@ export function convertInternalProductSheetToModel(
 	sheet: InternalProductSheet,
 ): InternalProduct {
 	if (!safeParseInternalProductSheet(sheet).success) {
-		console.warn("Invalid internal product sheet row", sheet);
+		logger.warn("Products", "Invalid internal product sheet row", { sheet });
 	}
 	return {
 		id: sheet.id,
@@ -340,7 +341,7 @@ export function convertExternalProductSheetToModel(
 	sheet: ExternalProductSheet,
 ): ExternalProduct {
 	if (!safeParseExternalProductSheet(sheet).success) {
-		console.warn("Invalid external product sheet row", sheet);
+		logger.warn("Products", "Invalid external product sheet row", { sheet });
 	}
 	return {
 		unique_id_sku: sheet.unique_id_sku,
