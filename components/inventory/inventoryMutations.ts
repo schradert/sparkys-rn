@@ -1,6 +1,5 @@
 import { Alert } from "react-native";
 import {
-	type InternalProduct,
 	type InternalProductSheet,
 	PRODUCT_FIELD_OPTIONS,
 } from "@/constants/Products";
@@ -13,9 +12,12 @@ import {
 import {
 	FIELD_KEY_FOR_VIEW_MODE,
 	getSheetNameForViewMode,
-	type MetadataViewMode,
 } from "./inventoryMaps";
-import type { NewExternalProduct, NewInternalProduct } from "./types";
+import type {
+	SubmitExternalArgs,
+	SubmitInternalArgs,
+	SubmitMetadataArgs,
+} from "./inventoryMutations.types";
 
 /**
  * The add-flow mutations for the inventory screen: adding a metadata value, an
@@ -25,16 +27,6 @@ import type { NewExternalProduct, NewInternalProduct } from "./types";
  * Kept pure (no hooks) so the view-model hook stays small and these stay
  * directly testable.
  */
-
-type MutationResult = { success: boolean; error?: string };
-
-interface SubmitMetadataArgs {
-	view: MetadataViewMode;
-	value: string;
-	addMetadata: (sheetName: string, name: string) => Promise<MutationResult>;
-	onSubmittingChange: (submitting: boolean) => void;
-	onSuccess: () => void;
-}
 
 /**
  * Validate and add a metadata value to its sheet, rejecting blanks, duplicates,
@@ -79,16 +71,6 @@ export async function submitMetadata({
 	} finally {
 		onSubmittingChange(false);
 	}
-}
-
-interface SubmitInternalArgs {
-	form: NewInternalProduct;
-	internalProducts: InternalProduct[];
-	addInternalProduct: (
-		product: InternalProductSheet,
-	) => Promise<MutationResult>;
-	onSubmittingChange: (submitting: boolean) => void;
-	onSuccess: () => void;
 }
 
 /**
@@ -163,25 +145,6 @@ export async function submitInternalProduct({
 	} finally {
 		onSubmittingChange(false);
 	}
-}
-
-interface SubmitExternalArgs {
-	form: NewExternalProduct;
-	internalProducts: InternalProduct[];
-	addExternalProduct: (product: {
-		unique_id_sku: string;
-		manufacturer_color: string;
-		brand: string;
-		size: string;
-		bag_quantity: number;
-		distributors: string;
-		quantity: number;
-	}) => Promise<MutationResult>;
-	updateInternalProduct: (
-		product: InternalProductSheet,
-	) => Promise<MutationResult>;
-	onSubmittingChange: (submitting: boolean) => void;
-	onSuccess: () => void;
 }
 
 /**
